@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import BackButton from "@/components/layout/BackButton";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,6 +34,7 @@ const Login = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-16">
+        <BackButton />
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-3 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
