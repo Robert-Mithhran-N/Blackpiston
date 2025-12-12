@@ -110,6 +110,17 @@
   h1, h2, h3, h4, h5, h6 {
     @apply font-display;
   }
+
+  /* Fix selection/highlighting visibility */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.3);
+    color: hsl(var(--foreground));
+  }
+
+  ::-moz-selection {
+    background-color: hsl(var(--primary) / 0.3);
+    color: hsl(var(--foreground));
+  }
 }
 
 /* Custom utility classes */
@@ -132,5 +143,16 @@
   
   .text-metal-light {
     @apply text-[hsl(var(--metal-light))];
+  }
+}
+
+/* Prevent logo from being obscured by highlighting */
+@layer components {
+  /* Ensure images in links remain visible */
+  a img {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
   }
 }
