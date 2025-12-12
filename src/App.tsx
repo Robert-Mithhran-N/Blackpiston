@@ -18,14 +18,6 @@ import Shipping from "./pages/Shipping";
 import Warranty from "./pages/Warranty";
 import Privacy from "./pages/Privacy";
 import Login from "./pages/Login";
-import Admin from "./pages/Admin";
-import AdminProducts from "./pages/admin/AdminProducts";
-import AdminOrders from "./pages/admin/AdminOrders";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminPayments from "./pages/admin/AdminPayments";
-import AdminAnalytics from "./pages/admin/AdminAnalytics";
-import AdminReports from "./pages/admin/AdminReports";
-import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
@@ -50,15 +42,6 @@ const App = () => (
           <Route path="/warranty" element={<Warranty />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/login" element={<Login />} />
-          {/* Admin Routes */}
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/admin/products" element={<AdminProducts />} />
-          <Route path="/admin/orders" element={<AdminOrders />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/payments" element={<AdminPayments />} />
-          <Route path="/admin/analytics" element={<AdminAnalytics />} />
-          <Route path="/admin/reports" element={<AdminReports />} />
-          <Route path="/admin/settings" element={<AdminSettings />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
