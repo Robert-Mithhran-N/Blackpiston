@@ -12,20 +12,13 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import logo from "@/assets/logo.png";
 
-const categories = [
-  { name: "Helmets", href: "/shop/helmets" },
-  { name: "Riding Jackets", href: "/shop/jackets" },
-  { name: "Riding Boots", href: "/shop/boots" },
-  { name: "Lights & DRLs", href: "/shop/lights" },
-  { name: "Mounting & Plates", href: "/shop/mounting" },
-  { name: "Oils & Filters", href: "/shop/oils" },
-  { name: "Handlebars & Displays", href: "/shop/handlebars" },
-  { name: "Accessories", href: "/shop/accessories" },
-];
-
 const Header = () => {
+  // TODO: Fetch categories from API
+  const categories: Array<{ name: string; href: string }> = [];
+  
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [cartCount] = useState(3); // Demo cart count
+  // TODO: Fetch cart count from API
+  const [cartCount] = useState(0);
   const { pathname } = useLocation();
 
   const navState = useMemo(
@@ -60,16 +53,20 @@ const Header = () => {
               Shop <ChevronDown className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-48 bg-card border-border">
-              {categories.map((category) => (
-                <DropdownMenuItem key={category.name} asChild>
-                  <Link
-                    to={category.href}
-                    className="w-full cursor-pointer hover:text-primary"
-                  >
-                    {category.name}
-                  </Link>
-                </DropdownMenuItem>
-              ))}
+              {categories.length === 0 ? (
+                <DropdownMenuItem disabled>No categories available</DropdownMenuItem>
+              ) : (
+                categories.map((category) => (
+                  <DropdownMenuItem key={category.name} asChild>
+                    <Link
+                      to={category.href}
+                      className="w-full cursor-pointer hover:text-primary"
+                    >
+                      {category.name}
+                    </Link>
+                  </DropdownMenuItem>
+                ))
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -158,15 +155,19 @@ const Header = () => {
                   <p className="text-sm font-ui font-semibold text-primary uppercase tracking-wider">
                     Shop
                   </p>
-                  {categories.map((category) => (
-                    <Link
-                      key={category.name}
-                      to={category.href}
-                      className="block py-2 text-metal-light hover:text-primary transition-colors"
-                    >
-                      {category.name}
-                    </Link>
-                  ))}
+                  {categories.length === 0 ? (
+                    <p className="py-2 text-metal-light text-sm">No categories available</p>
+                  ) : (
+                    categories.map((category) => (
+                      <Link
+                        key={category.name}
+                        to={category.href}
+                        className="block py-2 text-metal-light hover:text-primary transition-colors"
+                      >
+                        {category.name}
+                      </Link>
+                    ))
+                  )}
                 </div>
                 <div className="border-t border-border pt-4 space-y-2">
                   <NavLink
