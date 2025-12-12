@@ -98,15 +98,16 @@ const Hero = () => {
               </div>
               
               {/* Floating badges */}
-              <div className="absolute top-8 -right-4 bg-card border border-border rounded-lg p-4 shadow-xl animate-fade-in" style={{ animationDelay: '0.3s' }}>
-                <p className="font-display text-2xl text-primary">500+</p>
+              {/* TODO: Fetch stats from API */}
+              {/* <div className="absolute top-8 -right-4 bg-card border border-border rounded-lg p-4 shadow-xl animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                <p className="font-display text-2xl text-primary">0</p>
                 <p className="text-xs text-metal">Products</p>
               </div>
               
               <div className="absolute bottom-20 -left-8 bg-card border border-border rounded-lg p-4 shadow-xl animate-fade-in" style={{ animationDelay: '0.5s' }}>
-                <p className="font-display text-2xl text-primary">15+</p>
+                <p className="font-display text-2xl text-primary">0</p>
                 <p className="text-xs text-metal">Services</p>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
