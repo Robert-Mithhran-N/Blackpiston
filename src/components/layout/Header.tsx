@@ -79,7 +79,7 @@ const Header = () => {
           </NavLink>
 
           <NavLink to="/about" className={({ isActive }) => navClass(isActive || navState.about)}>
-            About
+            About Us
           </NavLink>
 
           <NavLink to="/blog" className={({ isActive }) => navClass(isActive || navState.blog)}>
@@ -105,10 +105,10 @@ const Header = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden text-metal-light hover:text-primary"
+            className="md:hidden text-metal-light hover:bg-[#f97316] transition-all duration-300 group"
             onClick={() => setIsSearchOpen(!isSearchOpen)}
           >
-            <Search className="h-5 w-5" />
+            <Search className="h-5 w-5 transition-colors duration-300 group-hover:text-black" />
           </Button>
 
           {/* Account */}
@@ -116,9 +116,9 @@ const Header = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="text-metal-light hover:text-primary"
+              className="text-metal-light hover:bg-[#f97316] transition-all duration-300 group"
             >
-              <User className="h-5 w-5" />
+              <User className="h-5 w-5 transition-colors duration-300 group-hover:text-black" />
             </Button>
           </Link>
 
@@ -127,9 +127,9 @@ const Header = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="text-metal-light hover:text-primary"
+              className="text-metal-light hover:bg-[#f97316] transition-all duration-300 group"
             >
-              <ShoppingCart className="h-5 w-5" />
+              <ShoppingCart className="h-5 w-5 transition-colors duration-300 group-hover:text-black" />
               {cartCount > 0 && (
                 <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                   {cartCount}
@@ -139,16 +139,18 @@ const Header = () => {
           </Link>
 
           {/* Mobile Menu */}
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="lg:hidden text-metal-light hover:text-primary"
-              >
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
+          <div className="flex lg:hidden">
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-metal-light hover:bg-[#f97316] transition-all duration-300 group"
+                  aria-label="Open menu"
+                >
+                  <Menu className="h-5 w-5 transition-colors duration-300 group-hover:text-black" />
+                </Button>
+              </SheetTrigger>
             <SheetContent side="right" className="w-80 bg-card border-border">
               <nav className="flex flex-col gap-4 mt-8">
                 <div className="space-y-2">
@@ -203,7 +205,7 @@ const Header = () => {
                       ].join(" ")
                     }
                   >
-                    About
+                    About Us
                   </NavLink>
                   <NavLink
                     to="/blog"
@@ -226,6 +228,7 @@ const Header = () => {
               </nav>
             </SheetContent>
           </Sheet>
+          </div>
         </div>
       </div>
 

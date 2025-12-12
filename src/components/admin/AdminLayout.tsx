@@ -23,8 +23,10 @@ import {
   LogOut,
   BarChart3,
   FileText,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import BackButton from "@/components/layout/BackButton";
 import logo from "@/assets/logo.png";
 
 const menuItems = [
@@ -47,6 +49,11 @@ const menuItems = [
     title: "Users",
     icon: Users,
     url: "/admin/users",
+  },
+  {
+    title: "Payment Status",
+    icon: CreditCard,
+    url: "/admin/payments",
   },
   {
     title: "Analytics",
@@ -133,7 +140,10 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
               <Link to="/">View Site</Link>
             </Button>
           </header>
-          <main className="flex-1 overflow-auto p-6">{children}</main>
+          <main className="flex-1 overflow-auto p-6">
+            <BackButton />
+            {children}
+          </main>
         </SidebarInset>
       </div>
     </SidebarProvider>

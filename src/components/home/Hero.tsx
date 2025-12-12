@@ -41,22 +41,22 @@ const Hero = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Link to="/shop">
+              <Link to="/shop" className="inline-block">
                 <Button 
                   size="lg" 
-                  className="bg-gradient-flame hover:opacity-90 transition-all text-lg font-ui font-semibold px-8 py-6 group"
+                  className="bg-gradient-flame hover:bg-[#f97316] hover:scale-110 hover:text-black transition-all duration-300 text-lg font-ui font-semibold px-8 py-6 group rounded-md"
                 >
                   Shop Gear
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 group-hover:text-black transition-all duration-300" />
                 </Button>
               </Link>
-              <Link to="/garage">
+              <Link to="/garage" className="inline-block">
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="border-metal text-metal-light hover:bg-secondary hover:text-foreground text-lg font-ui font-semibold px-8 py-6 group"
+                  className="border-metal text-metal-light hover:bg-white hover:text-black hover:scale-110 transition-all duration-300 text-lg font-ui font-semibold px-8 py-6 group rounded-md"
                 >
-                  <Wrench className="mr-2 h-5 w-5" />
+                  <Wrench className="mr-2 h-5 w-5 group-hover:text-black transition-colors duration-300" />
                   Book Service
                 </Button>
               </Link>
