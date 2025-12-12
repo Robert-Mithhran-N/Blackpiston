@@ -1,23 +1,22 @@
 import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import PagePlaceholder from "@/components/layout/PagePlaceholder";
 
 const NotFound = () => {
   const location = useLocation();
 
-  useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
-  }, [location.pathname]);
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">404</h1>
-        <p className="mb-4 text-xl text-muted-foreground">Oops! Page not found</p>
-        <a href="/" className="text-primary underline hover:text-primary/90">
-          Return to Home
-        </a>
-      </div>
-    </div>
+    <PagePlaceholder
+      eyebrow="404"
+      title="This page can't be found"
+      description={`We looked for "${location.pathname}" but couldn't find it. Try heading back or explore the shop.`}
+      primaryAction={{ label: "Go home", to: "/" }}
+      secondaryAction={{ label: "Shop gear", to: "/shop" }}
+      highlights={[
+        "Rider-focused gear and services",
+        "Fast replies if you need help",
+        "Use the menu to find categories",
+      ]}
+    />
   );
 };
 
