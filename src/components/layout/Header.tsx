@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { Search, ShoppingCart, User, Menu, X, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,24 @@ const categories = [
 const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [cartCount] = useState(3); // Demo cart count
+  const { pathname } = useLocation();
+
+  const navState = useMemo(
+    () => ({
+      shop: pathname.startsWith("/shop"),
+      garage: pathname.startsWith("/garage"),
+      build: pathname.startsWith("/build"),
+      about: pathname.startsWith("/about"),
+      blog: pathname.startsWith("/blog"),
+    }),
+    [pathname],
+  );
+
+  const navClass = (isActive: boolean) =>
+    [
+      "text-sm font-ui font-medium transition-colors",
+      isActive ? "text-primary" : "text-metal-light hover:text-primary",
+    ].join(" ");
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -38,7 +56,7 @@ const Header = () => {
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-6">
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-ui font-medium text-metal-light hover:text-primary transition-colors">
+            <DropdownMenuTrigger className={`flex items-center gap-1 ${navClass(navState.shop)}`}>
               Shop <ChevronDown className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-48 bg-card border-border">
@@ -55,33 +73,21 @@ const Header = () => {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <Link
-            to="/garage"
-            className="text-sm font-ui font-medium text-metal-light hover:text-primary transition-colors"
-          >
+          <NavLink to="/garage" className={({ isActive }) => navClass(isActive || navState.garage)}>
             Garage & Services
-          </Link>
+          </NavLink>
 
-          <Link
-            to="/build"
-            className="text-sm font-ui font-medium text-metal-light hover:text-primary transition-colors"
-          >
+          <NavLink to="/build" className={({ isActive }) => navClass(isActive || navState.build)}>
             Build & Fit
-          </Link>
+          </NavLink>
 
-          <Link
-            to="/about"
-            className="text-sm font-ui font-medium text-metal-light hover:text-primary transition-colors"
-          >
+          <NavLink to="/about" className={({ isActive }) => navClass(isActive || navState.about)}>
             About
-          </Link>
+          </NavLink>
 
-          <Link
-            to="/blog"
-            className="text-sm font-ui font-medium text-metal-light hover:text-primary transition-colors"
-          >
+          <NavLink to="/blog" className={({ isActive }) => navClass(isActive || navState.blog)}>
             Blog
-          </Link>
+          </NavLink>
         </nav>
 
         {/* Search Bar - Desktop */}
@@ -109,7 +115,7 @@ const Header = () => {
           </Button>
 
           {/* Account */}
-          <Link to="/account">
+          <Link to="/login">
             <Button
               variant="ghost"
               size="icon"
@@ -163,30 +169,52 @@ const Header = () => {
                   ))}
                 </div>
                 <div className="border-t border-border pt-4 space-y-2">
-                  <Link
+                  <NavLink
                     to="/garage"
-                    className="block py-2 text-metal-light hover:text-primary transition-colors font-medium"
+                    className={({ isActive }) =>
+                      [
+                        "block py-2 font-medium transition-colors",
+                        isActive || navState.garage
+                          ? "text-primary"
+                          : "text-metal-light hover:text-primary",
+                      ].join(" ")
+                    }
                   >
                     Garage & Services
-                  </Link>
-                  <Link
+                  </NavLink>
+                  <NavLink
                     to="/build"
-                    className="block py-2 text-metal-light hover:text-primary transition-colors font-medium"
+                    className={({ isActive }) =>
+                      [
+                        "block py-2 font-medium transition-colors",
+                        isActive || navState.build ? "text-primary" : "text-metal-light hover:text-primary",
+                      ].join(" ")
+                    }
                   >
                     Build & Fit
-                  </Link>
-                  <Link
+                  </NavLink>
+                  <NavLink
                     to="/about"
-                    className="block py-2 text-metal-light hover:text-primary transition-colors font-medium"
+                    className={({ isActive }) =>
+                      [
+                        "block py-2 font-medium transition-colors",
+                        isActive || navState.about ? "text-primary" : "text-metal-light hover:text-primary",
+                      ].join(" ")
+                    }
                   >
                     About
-                  </Link>
-                  <Link
+                  </NavLink>
+                  <NavLink
                     to="/blog"
-                    className="block py-2 text-metal-light hover:text-primary transition-colors font-medium"
+                    className={({ isActive }) =>
+                      [
+                        "block py-2 font-medium transition-colors",
+                        isActive || navState.blog ? "text-primary" : "text-metal-light hover:text-primary",
+                      ].join(" ")
+                    }
                   >
                     Blog
-                  </Link>
+                  </NavLink>
                   <Link
                     to="/contact"
                     className="block py-2 text-metal-light hover:text-primary transition-colors font-medium"
