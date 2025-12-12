@@ -1,41 +1,15 @@
 import { Star, Quote } from "lucide-react";
 
-const testimonials = [
-  {
-    id: 1,
-    name: "Arjun Sharma",
-    bike: "Kawasaki Ninja 650",
-    rating: 5,
-    text: "Absolutely incredible service! The team at BlackPiston completely transformed my Ninja with a custom exhaust and ECU tune. The power delivery is now buttery smooth.",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-  },
-  {
-    id: 2,
-    name: "Priya Menon",
-    bike: "Royal Enfield Interceptor",
-    rating: 5,
-    text: "Found the perfect riding jacket here! Great quality, fast shipping, and the fit guide was spot-on. Will definitely be back for more gear.",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face",
-  },
-  {
-    id: 3,
-    name: "Vikram Patel",
-    bike: "Triumph Street Triple",
-    rating: 5,
-    text: "The suspension setup service was worth every penny. My Street Triple handles like a dream now. The team really knows their stuff!",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-  },
-  {
-    id: 4,
-    name: "Sneha Reddy",
-    bike: "KTM Duke 390",
-    rating: 5,
-    text: "Best helmet shopping experience! They helped me find the perfect fit with their detailed sizing guide. The helmet arrived in perfect condition.",
-    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
-  },
-];
-
 const Testimonials = () => {
+  // TODO: Fetch testimonials from API
+  const testimonials: Array<{
+    id: number;
+    name: string;
+    bike: string;
+    rating: number;
+    text: string;
+    image: string;
+  }> = [];
   return (
     <section className="py-20 bg-card">
       <div className="container">
@@ -50,8 +24,13 @@ const Testimonials = () => {
         </div>
 
         {/* Testimonials Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {testimonials.map((testimonial) => (
+        {testimonials.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            No testimonials available
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {testimonials.map((testimonial) => (
             <div
               key={testimonial.id}
               className="bg-background rounded-lg p-6 border border-border hover:border-primary/30 transition-colors"
@@ -90,7 +69,8 @@ const Testimonials = () => {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     </section>
   );

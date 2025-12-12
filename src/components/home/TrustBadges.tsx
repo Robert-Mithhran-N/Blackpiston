@@ -1,44 +1,22 @@
 import { Shield, Truck, RotateCcw, Wrench, Award, HeadphonesIcon } from "lucide-react";
 
-const badges = [
-  {
-    icon: Shield,
-    title: "Certified Mechanics",
-    description: "Factory-trained experts on all major brands",
-  },
-  {
-    icon: Truck,
-    title: "Same-Day Shipping",
-    description: "Order before 2PM for same-day dispatch",
-  },
-  {
-    icon: RotateCcw,
-    title: "30-Day Returns",
-    description: "Hassle-free returns on all products",
-  },
-  {
-    icon: Award,
-    title: "Genuine Parts",
-    description: "100% authentic products guaranteed",
-  },
-  {
-    icon: Wrench,
-    title: "Expert Fitting",
-    description: "Professional installation at our garage",
-  },
-  {
-    icon: HeadphonesIcon,
-    title: "24/7 Support",
-    description: "Always here to help with your queries",
-  },
-];
-
 const TrustBadges = () => {
+  // TODO: Fetch badges from API
+  const badges: Array<{
+    icon: typeof Shield;
+    title: string;
+    description: string;
+  }> = [];
   return (
     <section className="py-16 bg-secondary/50 border-y border-border">
       <div className="container">
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-          {badges.map((badge, index) => (
+        {badges.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            No trust badges available
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            {badges.map((badge, index) => (
             <div
               key={badge.title}
               className="text-center group"
@@ -54,7 +32,8 @@ const TrustBadges = () => {
               </p>
             </div>
           ))}
-        </div>
+          </div>
+        )}
       </div>
     </section>
   );
