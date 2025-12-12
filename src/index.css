@@ -1,0 +1,136 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* BlackPiston Garage Design System
+   Industrial/Premium Motorcycle Aesthetic
+   All colors in HSL format
+*/
+
+@layer base {
+  :root {
+    /* Core backgrounds */
+    --background: 220 14% 7%;          /* #0F1113 - Main dark background */
+    --foreground: 0 0% 96%;            /* #F6F6F6 - Primary text */
+    
+    /* Surface colors */
+    --card: 216 14% 12%;               /* #1B1F23 - Card/surface background */
+    --card-foreground: 0 0% 96%;
+    
+    --popover: 216 14% 12%;
+    --popover-foreground: 0 0% 96%;
+    
+    /* Metallic accents */
+    --metal: 200 4% 78%;               /* #C2C6C8 - Metallic silver */
+    --metal-light: 200 6% 91%;         /* #E6E9EA - Light metal highlights */
+    
+    /* Brand colors - Flame orange */
+    --primary: 24 100% 50%;            /* #FF6A00 - Primary orange CTA */
+    --primary-foreground: 0 0% 100%;
+    
+    /* Flame gradient colors */
+    --flame-start: 30 100% 50%;        /* #FF8A00 */
+    --flame-end: 10 100% 50%;          /* #FF2D00 */
+    
+    /* Secondary - Metallic */
+    --secondary: 216 14% 18%;
+    --secondary-foreground: 200 4% 78%;
+    
+    /* Muted */
+    --muted: 216 14% 15%;
+    --muted-foreground: 200 4% 60%;
+    
+    /* Accent */
+    --accent: 24 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Destructive */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    
+    /* Borders & inputs */
+    --border: 216 14% 20%;
+    --input: 216 14% 20%;
+    --ring: 24 100% 50%;
+    
+    --radius: 0.5rem;
+    
+    /* Sidebar */
+    --sidebar-background: 220 14% 7%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 24 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 216 14% 18%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 216 14% 20%;
+    --sidebar-ring: 24 100% 50%;
+  }
+
+  /* Dark mode is the default and only mode for this industrial theme */
+  .dark {
+    --background: 220 14% 7%;
+    --foreground: 0 0% 96%;
+    --card: 216 14% 12%;
+    --card-foreground: 0 0% 96%;
+    --popover: 216 14% 12%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 24 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 216 14% 18%;
+    --secondary-foreground: 200 4% 78%;
+    --muted: 216 14% 15%;
+    --muted-foreground: 200 4% 60%;
+    --accent: 24 100% 50%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 96%;
+    --border: 216 14% 20%;
+    --input: 216 14% 20%;
+    --ring: 24 100% 50%;
+    --sidebar-background: 220 14% 7%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 24 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 216 14% 18%;
+    --sidebar-accent-foreground: 0 0% 96%;
+    --sidebar-border: 216 14% 20%;
+    --sidebar-ring: 24 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+/* Custom utility classes */
+@layer utilities {
+  .text-gradient-flame {
+    @apply bg-gradient-to-r from-[hsl(var(--flame-start))] to-[hsl(var(--flame-end))] bg-clip-text text-transparent;
+  }
+  
+  .bg-gradient-flame {
+    @apply bg-gradient-to-r from-[hsl(var(--flame-start))] to-[hsl(var(--flame-end))];
+  }
+  
+  .border-metal {
+    @apply border-[hsl(var(--metal))];
+  }
+  
+  .text-metal {
+    @apply text-[hsl(var(--metal))];
+  }
+  
+  .text-metal-light {
+    @apply text-[hsl(var(--metal-light))];
+  }
+}

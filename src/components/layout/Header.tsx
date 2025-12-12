@@ -1,0 +1,221 @@
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Search, ShoppingCart, User, Menu, X, ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import logo from "@/assets/logo.png";
+
+const categories = [
+  { name: "Helmets", href: "/shop/helmets" },
+  { name: "Riding Jackets", href: "/shop/jackets" },
+  { name: "Riding Boots", href: "/shop/boots" },
+  { name: "Lights & DRLs", href: "/shop/lights" },
+  { name: "Mounting & Plates", href: "/shop/mounting" },
+  { name: "Oils & Filters", href: "/shop/oils" },
+  { name: "Handlebars & Displays", href: "/shop/handlebars" },
+  { name: "Accessories", href: "/shop/accessories" },
+];
+
+const Header = () => {
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [cartCount] = useState(3); // Demo cart count
+
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container flex h-16 items-center justify-between gap-4">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2">
+          <img src={logo} alt="BlackPiston Garage" className="h-12 w-auto" />
+        </Link>
+
+        {/* Desktop Navigation */}
+        <nav className="hidden lg:flex items-center gap-6">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-1 text-sm font-ui font-medium text-metal-light hover:text-primary transition-colors">
+              Shop <ChevronDown className="h-4 w-4" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48 bg-card border-border">
+              {categories.map((category) => (
+                <DropdownMenuItem key={category.name} asChild>
+                  <Link
+                    to={category.href}
+                    className="w-full cursor-pointer hover:text-primary"
+                  >
+                    {category.name}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Link
+            to="/garage"
+            className="text-sm font-ui font-medium text-metal-light hover:text-primary transition-colors"
+          >
+            Garage & Services
+          </Link>
+
+          <Link
+            to="/build"
+            className="text-sm font-ui font-medium text-metal-light hover:text-primary transition-colors"
+          >
+            Build & Fit
+          </Link>
+
+          <Link
+            to="/about"
+            className="text-sm font-ui font-medium text-metal-light hover:text-primary transition-colors"
+          >
+            About
+          </Link>
+
+          <Link
+            to="/blog"
+            className="text-sm font-ui font-medium text-metal-light hover:text-primary transition-colors"
+          >
+            Blog
+          </Link>
+        </nav>
+
+        {/* Search Bar - Desktop */}
+        <div className="hidden md:flex flex-1 max-w-md mx-4">
+          <div className="relative w-full">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search gear, parts, services..."
+              className="w-full pl-10 bg-secondary border-border focus:border-primary"
+            />
+          </div>
+        </div>
+
+        {/* Right Actions */}
+        <div className="flex items-center gap-2">
+          {/* Mobile Search Toggle */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden text-metal-light hover:text-primary"
+            onClick={() => setIsSearchOpen(!isSearchOpen)}
+          >
+            <Search className="h-5 w-5" />
+          </Button>
+
+          {/* Account */}
+          <Link to="/account">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-metal-light hover:text-primary"
+            >
+              <User className="h-5 w-5" />
+            </Button>
+          </Link>
+
+          {/* Cart */}
+          <Link to="/cart" className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-metal-light hover:text-primary"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                  {cartCount}
+                </span>
+              )}
+            </Button>
+          </Link>
+
+          {/* Mobile Menu */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden text-metal-light hover:text-primary"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" className="w-80 bg-card border-border">
+              <nav className="flex flex-col gap-4 mt-8">
+                <div className="space-y-2">
+                  <p className="text-sm font-ui font-semibold text-primary uppercase tracking-wider">
+                    Shop
+                  </p>
+                  {categories.map((category) => (
+                    <Link
+                      key={category.name}
+                      to={category.href}
+                      className="block py-2 text-metal-light hover:text-primary transition-colors"
+                    >
+                      {category.name}
+                    </Link>
+                  ))}
+                </div>
+                <div className="border-t border-border pt-4 space-y-2">
+                  <Link
+                    to="/garage"
+                    className="block py-2 text-metal-light hover:text-primary transition-colors font-medium"
+                  >
+                    Garage & Services
+                  </Link>
+                  <Link
+                    to="/build"
+                    className="block py-2 text-metal-light hover:text-primary transition-colors font-medium"
+                  >
+                    Build & Fit
+                  </Link>
+                  <Link
+                    to="/about"
+                    className="block py-2 text-metal-light hover:text-primary transition-colors font-medium"
+                  >
+                    About
+                  </Link>
+                  <Link
+                    to="/blog"
+                    className="block py-2 text-metal-light hover:text-primary transition-colors font-medium"
+                  >
+                    Blog
+                  </Link>
+                  <Link
+                    to="/contact"
+                    className="block py-2 text-metal-light hover:text-primary transition-colors font-medium"
+                  >
+                    Contact
+                  </Link>
+                </div>
+              </nav>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
+
+      {/* Mobile Search Bar */}
+      {isSearchOpen && (
+        <div className="md:hidden px-4 pb-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search gear, parts, services..."
+              className="w-full pl-10 bg-secondary border-border focus:border-primary"
+              autoFocus
+            />
+          </div>
+        </div>
+      )}
+    </header>
+  );
+};
+
+export default Header;
