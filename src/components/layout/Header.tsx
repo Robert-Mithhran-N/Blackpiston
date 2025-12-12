@@ -49,8 +49,8 @@ const Header = () => {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between gap-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="BlackPiston Garage" className="h-12 w-auto" />
+        <Link to="/" className="flex items-center gap-2 select-none">
+          <img src={logo} alt="BlackPiston Garage" className="h-12 w-auto pointer-events-none hover:opacity-90 transition-opacity" />
         </Link>
 
         {/* Desktop Navigation */}
