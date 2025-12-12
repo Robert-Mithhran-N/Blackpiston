@@ -50,24 +50,25 @@ const CTABanner = () => {
             </div>
 
             {/* Right Content - Stats */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* TODO: Fetch stats from API */}
+            {/* <div className="grid grid-cols-2 gap-4">
               <div className="bg-background/50 rounded-lg p-6 border border-border text-center">
-                <p className="font-display text-4xl text-gradient-flame">1500+</p>
+                <p className="font-display text-4xl text-gradient-flame">0</p>
                 <p className="text-metal text-sm mt-1">Bikes Serviced</p>
               </div>
               <div className="bg-background/50 rounded-lg p-6 border border-border text-center">
-                <p className="font-display text-4xl text-gradient-flame">98%</p>
+                <p className="font-display text-4xl text-gradient-flame">0%</p>
                 <p className="text-metal text-sm mt-1">Happy Customers</p>
               </div>
               <div className="bg-background/50 rounded-lg p-6 border border-border text-center">
-                <p className="font-display text-4xl text-gradient-flame">15+</p>
+                <p className="font-display text-4xl text-gradient-flame">0</p>
                 <p className="text-metal text-sm mt-1">Expert Mechanics</p>
               </div>
               <div className="bg-background/50 rounded-lg p-6 border border-border text-center">
-                <p className="font-display text-4xl text-gradient-flame">5★</p>
+                <p className="font-display text-4xl text-gradient-flame">0★</p>
                 <p className="text-metal text-sm mt-1">Average Rating</p>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

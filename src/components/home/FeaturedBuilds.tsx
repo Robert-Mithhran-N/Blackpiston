@@ -2,37 +2,17 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Clock, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-const builds = [
-  {
-    id: 1,
-    title: "Café Racer Revival",
-    bike: "Royal Enfield Continental GT",
-    description: "Complete custom build with clip-ons, rearsets, and bespoke exhaust system.",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop",
-    duration: "3 weeks",
-    services: ["Custom Exhaust", "Suspension", "Lighting"],
-  },
-  {
-    id: 2,
-    title: "Adventure Ready",
-    bike: "KTM 390 Adventure",
-    description: "Full adventure kit with crash guards, auxiliary lights, and luggage system.",
-    image: "https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?w=600&h=400&fit=crop",
-    duration: "1 week",
-    services: ["Protection", "Lighting", "Mounting"],
-  },
-  {
-    id: 3,
-    title: "Street Fighter Build",
-    bike: "Kawasaki Z900",
-    description: "Aggressive styling with shorty levers, tail tidy, and ECU flash.",
-    image: "https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=600&h=400&fit=crop",
-    duration: "2 weeks",
-    services: ["ECU Tuning", "Body Mods", "Performance"],
-  },
-];
-
 const FeaturedBuilds = () => {
+  // TODO: Fetch builds from API
+  const builds: Array<{
+    id: number;
+    title: string;
+    bike: string;
+    description: string;
+    image: string;
+    duration: string;
+    services: string[];
+  }> = [];
   return (
     <section className="py-20 bg-background">
       <div className="container">
@@ -56,8 +36,13 @@ const FeaturedBuilds = () => {
         </div>
 
         {/* Builds Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {builds.map((build, index) => (
+        {builds.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            No featured builds available
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {builds.map((build, index) => (
             <div
               key={build.id}
               className="group relative bg-card rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-all duration-300"
@@ -113,7 +98,8 @@ const FeaturedBuilds = () => {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* CTA */}
         <div className="mt-12 text-center">
