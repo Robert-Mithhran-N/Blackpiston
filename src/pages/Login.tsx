@@ -1,6 +1,6 @@
-import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import BackButton from "@/components/layout/BackButton";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -20,19 +20,11 @@ import {
 } from "@/components/ui/tabs";
 
 const Login = () => {
-  const navigate = useNavigate();
-
-  const handleAdminLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    // In a real app, you would validate credentials here
-    // For now, we'll just navigate to the admin dashboard
-    navigate("/admin");
-  };
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-16">
+        <BackButton />
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-3 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
@@ -101,7 +93,7 @@ const Login = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <Button type="submit" className="w-full sm:w-auto" onClick={handleAdminLogin}>
+                  <Button type="submit" className="w-full sm:w-auto">
                     Continue to admin portal
                   </Button>
                   <span className="text-sm text-muted-foreground">Need access? Contact an owner.</span>

@@ -79,7 +79,7 @@ const Header = () => {
           </NavLink>
 
           <NavLink to="/about" className={({ isActive }) => navClass(isActive || navState.about)}>
-            About
+            About Us
           </NavLink>
 
           <NavLink to="/blog" className={({ isActive }) => navClass(isActive || navState.blog)}>
@@ -105,7 +105,7 @@ const Header = () => {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden text-metal-light hover:text-primary"
+            className="md:hidden text-metal-light hover:text-primary hover:bg-transparent"
             onClick={() => setIsSearchOpen(!isSearchOpen)}
           >
             <Search className="h-5 w-5" />
@@ -116,7 +116,7 @@ const Header = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="text-metal-light hover:text-primary"
+              className="text-metal-light hover:text-primary hover:bg-transparent"
             >
               <User className="h-5 w-5" />
             </Button>
@@ -127,7 +127,7 @@ const Header = () => {
             <Button
               variant="ghost"
               size="icon"
-              className="text-metal-light hover:text-primary"
+              className="text-metal-light hover:text-primary hover:bg-transparent"
             >
               <ShoppingCart className="h-5 w-5" />
               {cartCount > 0 && (
@@ -144,7 +144,7 @@ const Header = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="lg:hidden text-metal-light hover:text-primary"
+                className="lg:hidden text-metal-light hover:text-primary hover:bg-transparent"
               >
                 <Menu className="h-5 w-5" />
               </Button>
@@ -203,7 +203,7 @@ const Header = () => {
                       ].join(" ")
                     }
                   >
-                    About
+                    About Us
                   </NavLink>
                   <NavLink
                     to="/blog"

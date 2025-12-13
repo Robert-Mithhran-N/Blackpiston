@@ -155,4 +155,9 @@
     -moz-user-select: none;
     -ms-user-select: none;
   }
+
+  /* Remove orange background hover on header buttons and links */
+  header .hover\:bg-transparent:hover {
+    background-color: transparent;
+  }
 }
