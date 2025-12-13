@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import Header from "./Header";
 import Footer from "./Footer";
+import BackButton from "./BackButton";
 import { Button } from "../ui/button";
 
 type Action = {
@@ -33,6 +34,7 @@ const PagePlaceholder = ({
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-16 space-y-12">
+        <BackButton />
         <section className="max-w-3xl space-y-6">
           {eyebrow && (
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">

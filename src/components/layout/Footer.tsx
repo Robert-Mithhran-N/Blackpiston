@@ -1,38 +1,10 @@
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Youtube, Twitter, Mail, Phone, MapPin } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import logo from "@/assets/logo.png";
 
 const Footer = () => {
   return (
     <footer className="bg-card border-t border-border">
-      {/* Newsletter Section */}
-      <div className="border-b border-border">
-        <div className="container py-12">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div>
-              <h3 className="font-display text-2xl text-foreground tracking-wide">
-                JOIN THE BLACKPISTON CREW
-              </h3>
-              <p className="text-metal mt-1">
-                Get exclusive deals, new arrivals, and workshop updates.
-              </p>
-            </div>
-            <div className="flex w-full md:w-auto gap-2">
-              <Input
-                type="email"
-                placeholder="Enter your email"
-                className="w-full md:w-80 bg-secondary border-border focus:border-primary"
-              />
-              <Button className="bg-gradient-flame hover:opacity-90 transition-opacity font-ui font-semibold">
-                Subscribe
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Footer */}
       <div className="container py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
