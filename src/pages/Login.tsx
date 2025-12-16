@@ -1,3 +1,4 @@
+import { FormEvent } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import BackButton from "@/components/layout/BackButton";
@@ -18,8 +19,17 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import { useAdminAuth } from "@/context/AdminAuthContext";
 
 const Login = () => {
+  const { login } = useAdminAuth();
+
+  const handleAdminSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    // Frontend-only: treat any credentials as valid and go to admin dashboard
+    login();
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -73,32 +83,53 @@ const Login = () => {
             </TabsContent>
 
             <TabsContent value="admin">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Admin login</CardTitle>
-                  <CardDescription>Manage catalog, orders, and service schedules.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="admin-email">Admin email</Label>
-                    <Input id="admin-email" type="email" placeholder="admin@blackpiston.com" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="admin-password">Password</Label>
-                    <Input id="admin-password" type="password" placeholder="••••••••" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="admin-code">Access code</Label>
-                    <Input id="admin-code" type="text" placeholder="One-time access code" required />
-                  </div>
-                </CardContent>
-                <CardFooter className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <Button type="submit" className="w-full sm:w-auto">
-                    Continue to admin portal
-                  </Button>
-                  <span className="text-sm text-muted-foreground">Need access? Contact an owner.</span>
-                </CardFooter>
-              </Card>
+              <form onSubmit={handleAdminSubmit}>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Admin login</CardTitle>
+                    <CardDescription>
+                      Manage catalog, orders, and service schedules.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="admin-email">Admin email</Label>
+                      <Input
+                        id="admin-email"
+                        type="email"
+                        placeholder="admin@blackpiston.com"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="admin-password">Password</Label>
+                      <Input
+                        id="admin-password"
+                        type="password"
+                        placeholder="••••••••"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="admin-code">Access code</Label>
+                      <Input
+                        id="admin-code"
+                        type="text"
+                        placeholder="One-time access code"
+                        required
+                      />
+                    </div>
+                  </CardContent>
+                  <CardFooter className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <Button type="submit" className="w-full sm:w-auto">
+                      Continue to admin portal
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      For now, any credentials will open the admin dashboard.
+                    </span>
+                  </CardFooter>
+                </Card>
+              </form>
             </TabsContent>
           </Tabs>
         </div>
