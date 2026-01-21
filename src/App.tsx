@@ -20,13 +20,12 @@ import Privacy from "./pages/Privacy";
 import Login from "./pages/Login";
 import AdminRoute from "./routes/AdminRoute";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
-import AdminPayments from "./pages/admin/AdminPayments";
 import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminProducts from "./pages/admin/AdminProducts";
-import AdminBuilds from "./pages/admin/AdminBuilds";
-import AdminBlog from "./pages/admin/AdminBlog";
-import AdminUsers from "./pages/admin/AdminUsers";
-import AdminMessages from "./pages/admin/AdminMessages";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminOrderHistory from "./pages/admin/AdminOrderHistory";
+import AdminLowStock from "./pages/admin/AdminLowStock";
+import AdminRequests from "./pages/admin/AdminRequests";
+import AdminTopOffers from "./pages/admin/AdminTopOffers";
 import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
@@ -56,12 +55,11 @@ const App = () => (
 
             <Route path="/admin" element={<AdminRoute />}>
               <Route index element={<AdminDashboard />} />
-              <Route path="products" element={<AdminProducts />} />
-              <Route path="builds" element={<AdminBuilds />} />
-              <Route path="blog" element={<AdminBlog />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="messages" element={<AdminMessages />} />
-              <Route path="payments" element={<AdminPayments />} />
+              <Route path="top-offers" element={<AdminTopOffers />} />
+              <Route path="orders" element={<AdminOrders />} />
+              <Route path="orders/history" element={<AdminOrderHistory />} />
+              <Route path="low-stock" element={<AdminLowStock />} />
+              <Route path="requests" element={<AdminRequests />} />
               <Route path="settings" element={<AdminSettings />} />
             </Route>
 

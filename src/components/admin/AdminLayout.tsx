@@ -16,6 +16,8 @@ import {
   Menu,
   X,
   LogOut,
+  Tag,
+  History,
 } from "lucide-react";
 import {
   Sidebar,
@@ -43,12 +45,11 @@ type AdminLayoutProps = {
 
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/admin/products", label: "Products / Gear", icon: ShoppingBag },
-  { to: "/admin/builds", label: "Custom Builds", icon: Factory },
-  { to: "/admin/blog", label: "Blog", icon: FileText },
-  { to: "/admin/users", label: "Users", icon: Users },
-  { to: "/admin/messages", label: "Messages", icon: MessagesSquare },
-  { to: "/admin/payments", label: "Payments", icon: CreditCard },
+  { to: "/admin/top-offers", label: "Top Offers", icon: Tag },
+  { to: "/admin/orders", label: "Orders", icon: ShoppingBag },
+  { to: "/admin/orders/history", label: "History", icon: History },
+  { to: "/admin/low-stock", label: "Low Stock", icon: Factory },
+  { to: "/admin/requests", label: "Requests", icon: MessagesSquare },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
