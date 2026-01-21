@@ -1,33 +1,55 @@
 import { BrandLogo } from "@/types/user";
 
-// Brand data for the marquee
+// Import brand logos from assets
+import axorLogo from "@/assets/homeBrandLogos/AXOR_NEW_LOGO.webp";
+import mtHelmetsLogo from "@/assets/homeBrandLogos/MT helmets.svg";
+import smkLogo from "@/assets/homeBrandLogos/SMK-LOGO-2.webp";
+import vegaLogo from "@/assets/homeBrandLogos/Vega_LOGO.webp";
+import motulLogo from "@/assets/homeBrandLogos/Motul_logo.svg.png";
+import liquiMolyLogo from "@/assets/homeBrandLogos/liqui molly logo.svg";
+import agvLogo from "@/assets/homeBrandLogos/AGV logo.svg";
+import daineseLogo from "@/assets/homeBrandLogos/Dainese logo.svg";
+import rcbLogo from "@/assets/homeBrandLogos/RCB logo.svg";
+import bremboLogo from "@/assets/homeBrandLogos/brembo Logo_White 1x.svg";
+import insta360Logo from "@/assets/homeBrandLogos/insta 360logo-black.svg";
+import planetDsgLogo from "@/assets/homeBrandLogos/planet_dsg_logo.avif";
+
+// Brand data with actual logo images
 const brandLogos: BrandLogo[] = [
-  { id: "axor", name: "Axor", image: "", altText: "Axor Helmets" },
-  { id: "mt-helmets", name: "MT Helmets", image: "", altText: "MT Helmets" },
-  { id: "smk", name: "SMK", image: "", altText: "SMK Helmets" },
-  { id: "steelbird", name: "Steelbird", image: "", altText: "Steelbird Helmets" },
-  { id: "vega", name: "Vega", image: "", altText: "Vega Helmets" },
-  { id: "motul", name: "Motul", image: "", altText: "Motul Oils" },
-  { id: "liqui-moly", name: "Liqui Moly", image: "", altText: "Liqui Moly" },
-  { id: "rynox", name: "Rynox", image: "", altText: "Rynox Gear" },
-  { id: "solace", name: "Solace", image: "", altText: "Solace Apparel" },
-  { id: "agv", name: "AGV", image: "", altText: "AGV Helmets" },
-  { id: "alpinestars", name: "Alpinestars", image: "", altText: "Alpinestars" },
-  { id: "dainese", name: "Dainese", image: "", altText: "Dainese Protection" },
+  { id: "axor", name: "Axor", image: axorLogo, altText: "Axor Helmets" },
+  { id: "mt-helmets", name: "MT Helmets", image: mtHelmetsLogo, altText: "MT Helmets" },
+  { id: "smk", name: "SMK", image: smkLogo, altText: "SMK Helmets" },
+  { id: "vega", name: "Vega", image: vegaLogo, altText: "Vega Helmets" },
+  { id: "motul", name: "Motul", image: motulLogo, altText: "Motul Oils" },
+  { id: "liqui-moly", name: "Liqui Moly", image: liquiMolyLogo, altText: "Liqui Moly" },
+  { id: "agv", name: "AGV", image: agvLogo, altText: "AGV Helmets" },
+  { id: "dainese", name: "Dainese", image: daineseLogo, altText: "Dainese Protection" },
+  { id: "rcb", name: "RCB", image: rcbLogo, altText: "Racing Boy" },
+  { id: "brembo", name: "Brembo", image: bremboLogo, altText: "Brembo Brakes" },
+  { id: "insta360", name: "Insta360", image: insta360Logo, altText: "Insta360 Cameras" },
+  { id: "planet-dsg", name: "Planet DSG", image: planetDsgLogo, altText: "Planet DSG" },
 ];
 
-// Brand Card Component - Pure CSS hover effects
-const BrandCard = ({ brand }: { brand: BrandLogo }) => (
+// Brand Logo Card Component - Individual hover effects only (no marquee pause)
+const BrandLogoCard = ({ brand }: { brand: BrandLogo }) => (
   <div
     className="brand-card flex-shrink-0 flex items-center justify-center
-      w-[120px] h-[60px] md:w-[140px] md:h-[70px]
-      rounded-xl bg-card/80 border border-border/50
+      w-[110px] h-[60px] md:w-[130px] md:h-[70px]
+      rounded-xl bg-card/60 border border-border/40
       transition-all duration-300 ease-out cursor-default
-      hover:scale-105 hover:brightness-125 hover:border-primary/50 hover:shadow-lg hover:shadow-primary/20"
+      hover:scale-105 hover:bg-card/80 hover:border-primary/40
+      group p-3"
   >
-    <span className="text-sm md:text-base font-semibold text-muted-foreground select-none pointer-events-none">
-      {brand.name}
-    </span>
+    <img
+      src={brand.image}
+      alt={brand.altText}
+      className="max-w-full max-h-full object-contain
+        filter grayscale opacity-50
+        group-hover:grayscale-0 group-hover:opacity-100
+        transition-all duration-300 ease-out
+        select-none pointer-events-none"
+      draggable={false}
+    />
   </div>
 );
 
@@ -52,39 +74,21 @@ const TrustBadges = () => {
         </div>
       </div>
 
-      {/* Marquee Container - Pure CSS pause on hover */}
-      <div className="marquee-container relative w-full">
+      {/* Marquee Container - NO hover pause, animation runs continuously */}
+      <div className="relative w-full">
         {/* Gradient Fade Edges */}
         <div className="absolute left-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
         <div className="absolute right-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
 
-        {/* Scrolling Track - CSS animation with hover pause */}
+        {/* Scrolling Track - Continuous animation, never pauses */}
         <div className="marquee-track flex gap-4 md:gap-6" style={{ width: "max-content" }}>
           {duplicatedBrands.map((brand, index) => (
-            <BrandCard key={`${brand.id}-${index}`} brand={brand} />
+            <BrandLogoCard key={`${brand.id}-${index}`} brand={brand} />
           ))}
         </div>
       </div>
 
-      {/* Bottom Trust Indicators */}
-      <div className="container mt-10">
-        <div className="flex flex-wrap items-center justify-center gap-8 pt-6 border-t border-border/50">
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-green-500" />
-            <span className="text-sm text-muted-foreground">100% Genuine Products</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-blue-500" />
-            <span className="text-sm text-muted-foreground">Authorized Dealer</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-orange-500" />
-            <span className="text-sm text-muted-foreground">Manufacturer Warranty</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Pure CSS Animation Styles - No JS state changes */}
+      {/* Pure CSS Animation Styles - No hover pause */}
       <style>{`
         /* Marquee keyframes */
         @keyframes marquee-scroll {
@@ -96,15 +100,10 @@ const TrustBadges = () => {
           }
         }
         
-        /* Animated track */
+        /* Animated track - runs continuously, never pauses */
         .marquee-track {
           animation: marquee-scroll 35s linear infinite;
           will-change: transform;
-        }
-        
-        /* Pause on hover - CSS only, resumes from same position */
-        .marquee-container:hover .marquee-track {
-          animation-play-state: paused;
         }
         
         /* Respect reduced motion preference */
