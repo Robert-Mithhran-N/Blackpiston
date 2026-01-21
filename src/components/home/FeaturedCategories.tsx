@@ -1,15 +1,16 @@
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, HardHat, Shirt, Footprints, Sparkles } from "lucide-react";
+import { categories } from "@/data/userMockData";
+
+// Category icons
+const categoryIcons: Record<string, React.ElementType> = {
+  helmets: HardHat,
+  jackets: Shirt,
+  boots: Footprints,
+  accessories: Sparkles,
+};
 
 const FeaturedCategories = () => {
-  // TODO: Fetch categories from API
-  const categories: Array<{
-    name: string;
-    description: string;
-    image: string;
-    href: string;
-    count: number;
-  }> = [];
   return (
     <section className="py-20 bg-card">
       <div className="container">
@@ -33,46 +34,64 @@ const FeaturedCategories = () => {
         </div>
 
         {/* Categories Grid */}
-        {categories.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            No categories available
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.map((category, index) => (
-            <Link
-              key={category.name}
-              to={category.href}
-              className="group relative overflow-hidden rounded-lg bg-secondary border border-border hover:border-primary/50 transition-all duration-300"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              {/* Image */}
-              <div className="aspect-square overflow-hidden">
-                <img
-                  src={category.image}
-                  alt={category.name}
-                  className="w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-110 transition-all duration-500"
-                />
-                {/* Overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
-              </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {categories.map((category, index) => {
+            const Icon = categoryIcons[category.id] || Sparkles;
+            return (
+              <Link
+                key={category.id}
+                to={`/shop/${category.id}`}
+                className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-muted to-muted/50 border-2 border-border hover:border-primary/50 transition-all duration-300"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                {/* Image */}
+                <div className="aspect-[4/3] overflow-hidden">
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-110 transition-all duration-500"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src =
+                        "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop";
+                    }}
+                  />
+                  {/* Overlay gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+                </div>
 
-              {/* Content */}
-              <div className="absolute bottom-0 left-0 right-0 p-4">
-                <p className="font-display text-lg text-foreground tracking-wide group-hover:text-primary transition-colors">
-                  {category.name.toUpperCase()}
-                </p>
-                <p className="text-xs text-metal mt-1">{category.count} products</p>
-              </div>
+                {/* Content */}
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center group-hover:bg-primary/30 transition-colors">
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-display text-xl text-foreground tracking-wide group-hover:text-primary transition-colors">
+                        {category.name.toUpperCase()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {category.productCount} products
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {category.description}
+                  </p>
+                </div>
 
-              {/* Hover indicator */}
-              <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <ArrowRight className="h-5 w-5 text-primary" />
-              </div>
-            </Link>
-          ))}
-          </div>
-        )}
+                {/* Hover indicator */}
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center">
+                    <ArrowRight className="h-4 w-4 text-primary" />
+                  </div>
+                </div>
+
+                {/* Bottom accent line */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-primary to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

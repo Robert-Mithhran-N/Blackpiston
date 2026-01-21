@@ -1,7 +1,9 @@
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Hero from "@/components/home/Hero";
+import TopOffers from "@/components/home/TopOffers";
 import FeaturedCategories from "@/components/home/FeaturedCategories";
+import FeaturedProducts from "@/components/home/FeaturedProducts";
 import FeaturedBuilds from "@/components/home/FeaturedBuilds";
 import TrustBadges from "@/components/home/TrustBadges";
 import Testimonials from "@/components/home/Testimonials";
@@ -14,7 +16,9 @@ const Index = () => {
       <main>
         <Hero />
         <TrustBadges />
+        <TopOffers />
         <FeaturedCategories />
+        <FeaturedProducts />
         <FeaturedBuilds />
         <CTABanner />
         <Testimonials />
