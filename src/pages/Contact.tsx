@@ -1,25 +1,190 @@
-import PagePlaceholder from "@/components/layout/PagePlaceholder";
+import { Link } from "react-router-dom";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Phone,
+  Mail,
+  MapPin,
+  Clock,
+  Send,
+  MessageCircle,
+} from "lucide-react";
+import { contactConfig } from "@/config/contact";
+import { toast } from "sonner";
 
 const Contact = () => {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    toast.success("Message sent successfully!", {
+      description: "We'll get back to you within 24 hours.",
+    });
+  };
+
   return (
-    <PagePlaceholder
-      eyebrow="Contact"
-      title="We’ll get you an answer fast"
-      description="Tell us about your bike, riding style, or the parts you’re eyeing. We reply with fitment guidance and timelines."
-      primaryAction={{ label: "Call the garage", to: "/garage" }}
-      secondaryAction={{ label: "Back to home", to: "/" }}
-      highlights={[
-        "Phone: +1 (234) 567-890",
-        "Email: info@blackpistongarage.com",
-        "Workshop hours: Mon-Fri 9-7, Sat 10-5",
-      ]}
-    />
+    <div className="min-h-screen bg-background">
+      <Header />
+      <main className="pb-16">
+        {/* Hero Section */}
+        <section className="bg-gradient-to-br from-primary/20 via-background to-orange-500/10 border-b border-border">
+          <div className="container py-16 md:py-24">
+            <div className="max-w-3xl mx-auto text-center">
+              <Badge className="mb-4 bg-primary/20 text-primary border-primary/30">
+                <MessageCircle className="h-3 w-3 mr-1" />
+                Get in Touch
+              </Badge>
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
+                Contact <span className="text-primary">Us</span>
+              </h1>
+              <p className="text-xl text-muted-foreground">
+                Have questions about our products or services? We're here to help!
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <div className="container py-12">
+          <div className="grid gap-8 lg:grid-cols-2">
+            {/* Contact Information */}
+            <div className="space-y-6">
+              <h2 className="text-2xl font-bold">Get in Touch</h2>
+              <p className="text-muted-foreground">
+                Visit our garage, give us a call, or drop us a message. We typically respond within 24 hours.
+              </p>
+
+              {/* Contact Cards */}
+              <div className="space-y-4">
+                {/* Address */}
+                <Card className="border-2 hover:border-primary/50 transition-colors">
+                  <CardContent className="p-6 flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <MapPin className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1">Visit Our Garage</h3>
+                      <p className="text-muted-foreground text-sm">
+                        {contactConfig.address.line1}<br />
+                        {contactConfig.address.line2}<br />
+                        {contactConfig.address.district} - {contactConfig.address.pincode}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Phone */}
+                <Card className="border-2 hover:border-primary/50 transition-colors">
+                  <CardContent className="p-6 flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
+                      <Phone className="h-6 w-6 text-green-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1">Call Us</h3>
+                      <a
+                        href={contactConfig.phone.link}
+                        className="text-primary hover:underline text-lg font-medium"
+                      >
+                        {contactConfig.phone.display}
+                      </a>
+                      <p className="text-muted-foreground text-sm mt-1">
+                        Available during business hours
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Email */}
+                <Card className="border-2 hover:border-primary/50 transition-colors">
+                  <CardContent className="p-6 flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                      <Mail className="h-6 w-6 text-blue-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1">Email Us</h3>
+                      <a
+                        href={contactConfig.email.link}
+                        className="text-primary hover:underline"
+                      >
+                        {contactConfig.email.display}
+                      </a>
+                      <p className="text-muted-foreground text-sm mt-1">
+                        We reply within 24 hours
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Business Hours */}
+                <Card className="border-2 hover:border-primary/50 transition-colors">
+                  <CardContent className="p-6 flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
+                      <Clock className="h-6 w-6 text-orange-500" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1">Business Hours</h3>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p><span className="text-foreground">Mon - Sat:</span> {contactConfig.businessHours?.weekdays}</p>
+                        <p><span className="text-foreground">Sunday:</span> {contactConfig.businessHours?.sunday}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+
+            {/* Contact Form */}
+            <div>
+              <Card className="border-2">
+                <CardContent className="p-6">
+                  <h2 className="text-2xl font-bold mb-6">Send us a Message</h2>
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Name</label>
+                        <Input placeholder="Your name" required />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">Phone</label>
+                        <Input type="tel" placeholder="Your phone number" required />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Email</label>
+                      <Input type="email" placeholder="your.email@example.com" required />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Subject</label>
+                      <Input placeholder="How can we help you?" required />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Message</label>
+                      <Textarea
+                        placeholder="Tell us about your requirements..."
+                        rows={5}
+                        required
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      size="lg"
+                      className="w-full bg-gradient-to-r from-primary to-orange-500 hover:opacity-90"
+                    >
+                      <Send className="mr-2 h-4 w-4" />
+                      Send Message
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      </main>
+      <Footer />
+    </div>
   );
 };
 
 export default Contact;
-
-
-
-
-

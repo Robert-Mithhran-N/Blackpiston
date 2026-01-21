@@ -16,6 +16,7 @@ import {
   Star,
 } from "lucide-react";
 import { services } from "@/data/userMockData";
+import { contactConfig } from "@/config/contact";
 
 const Garage = () => {
   return (
@@ -169,13 +170,13 @@ const Garage = () => {
                 Contact us to schedule an appointment or visit our garage for a consultation.
               </p>
               <div className="flex flex-wrap justify-center gap-4 mb-8">
-                <div className="flex items-center gap-2 text-sm">
+                <a href={contactConfig.phone.link} className="flex items-center gap-2 text-sm hover:text-primary transition-colors">
                   <Phone className="h-4 w-4 text-primary" />
-                  <span>+91 98765 43210</span>
-                </div>
+                  <span>{contactConfig.phone.display}</span>
+                </a>
                 <div className="flex items-center gap-2 text-sm">
                   <MapPin className="h-4 w-4 text-primary" />
-                  <span>Bangalore, Karnataka</span>
+                  <span>{contactConfig.address.city}, {contactConfig.address.district}</span>
                 </div>
               </div>
               <Link to="/contact">
