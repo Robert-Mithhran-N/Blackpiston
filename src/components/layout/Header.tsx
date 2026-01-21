@@ -1,35 +1,45 @@
 import { useMemo, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, X, ChevronDown } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, ChevronDown, HardHat, Shirt, Footprints, Sparkles, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import logo from "@/assets/logo.png";
+import { categories } from "@/data/userMockData";
+
+// Category icons mapping
+const categoryIcons: Record<string, React.ElementType> = {
+  helmets: HardHat,
+  jackets: Shirt,
+  boots: Footprints,
+  accessories: Sparkles,
+};
 
 const Header = () => {
-  // TODO: Fetch categories from API
-  const categories: Array<{ name: string; href: string }> = [];
-  
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  // TODO: Fetch cart count from API
-  const [cartCount] = useState(0);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // TODO: Fetch cart count from context/state
+  const [cartCount] = useState(2);
   const { pathname } = useLocation();
 
   const navState = useMemo(
     () => ({
+      home: pathname === "/",
       shop: pathname.startsWith("/shop"),
       garage: pathname.startsWith("/garage"),
       build: pathname.startsWith("/build"),
       about: pathname.startsWith("/about"),
       blog: pathname.startsWith("/blog"),
     }),
-    [pathname],
+    [pathname]
   );
 
   const navClass = (isActive: boolean) =>
@@ -43,47 +53,97 @@ const Header = () => {
       <div className="container flex h-16 items-center justify-between gap-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 select-none">
-          <img src={logo} alt="BlackPiston Garage" className="h-12 w-auto pointer-events-none hover:opacity-90 transition-opacity" />
+          <img
+            src={logo}
+            alt="BlackPiston Garage"
+            className="h-12 w-auto pointer-events-none hover:opacity-90 transition-opacity"
+          />
         </Link>
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-6">
-          <DropdownMenu>
-            <DropdownMenuTrigger className={`flex items-center gap-1 ${navClass(navState.shop)}`}>
-              Shop <ChevronDown className="h-4 w-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48 bg-card border-border">
-              {categories.length === 0 ? (
-                <DropdownMenuItem disabled>No categories available</DropdownMenuItem>
-              ) : (
-                categories.map((category) => (
-                  <DropdownMenuItem key={category.name} asChild>
-                    <Link
-                      to={category.href}
-                      className="w-full cursor-pointer hover:text-primary"
-                    >
-                      {category.name}
-                    </Link>
-                  </DropdownMenuItem>
-                ))
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Home */}
+          <NavLink to="/" className={({ isActive }) => navClass(isActive)}>
+            Home
+          </NavLink>
 
-          <NavLink to="/garage" className={({ isActive }) => navClass(isActive || navState.garage)}>
+          {/* Shop Mega Menu */}
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger
+                  className={`${navClass(navState.shop)} bg-transparent hover:bg-transparent data-[state=open]:bg-transparent px-0`}
+                >
+                  Shop
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <div className="w-[400px] p-4 bg-card border border-border">
+                    <div className="mb-4">
+                      <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">
+                        Shop by Category
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Premium motorcycle gear & accessories
+                      </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {categories.map((category) => {
+                        const Icon = categoryIcons[category.id] || Sparkles;
+                        return (
+                          <NavigationMenuLink key={category.id} asChild>
+                            <Link
+                              to={`/shop/${category.id}`}
+                              className="group flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 transition-colors border border-transparent hover:border-primary/30"
+                            >
+                              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                                <Icon className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                  {category.name}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {category.productCount} products
+                                </p>
+                              </div>
+                            </Link>
+                          </NavigationMenuLink>
+                        );
+                      })}
+                    </div>
+                    <div className="mt-4 pt-4 border-t border-border">
+                      <Link
+                        to="/shop"
+                        className="text-sm text-primary hover:underline font-medium"
+                      >
+                        View All Products →
+                      </Link>
+                    </div>
+                  </div>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+
+          <NavLink
+            to="/garage"
+            className={({ isActive }) => navClass(isActive || navState.garage)}
+          >
             Garage & Services
           </NavLink>
 
-          <NavLink to="/build" className={({ isActive }) => navClass(isActive || navState.build)}>
+          <NavLink
+            to="/build"
+            className={({ isActive }) => navClass(isActive || navState.build)}
+          >
             Build & Fit
           </NavLink>
 
-          <NavLink to="/about" className={({ isActive }) => navClass(isActive || navState.about)}>
+          <NavLink
+            to="/about"
+            className={({ isActive }) => navClass(isActive || navState.about)}
+          >
             About Us
-          </NavLink>
-
-          <NavLink to="/blog" className={({ isActive }) => navClass(isActive || navState.blog)}>
-            Blog
           </NavLink>
         </nav>
 
@@ -131,7 +191,7 @@ const Header = () => {
             >
               <ShoppingCart className="h-5 w-5" />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center animate-pulse">
                   {cartCount}
                 </span>
               )}
@@ -139,7 +199,7 @@ const Header = () => {
           </Link>
 
           {/* Mobile Menu */}
-          <Sheet>
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="ghost"
@@ -151,27 +211,41 @@ const Header = () => {
             </SheetTrigger>
             <SheetContent side="right" className="w-80 bg-card border-border">
               <nav className="flex flex-col gap-4 mt-8">
+                {/* Home */}
+                <Link
+                  to="/"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 py-2 text-foreground hover:text-primary transition-colors font-medium"
+                >
+                  <Home className="h-4 w-4" />
+                  Home
+                </Link>
+
+                {/* Shop Categories */}
                 <div className="space-y-2">
                   <p className="text-sm font-ui font-semibold text-primary uppercase tracking-wider">
                     Shop
                   </p>
-                  {categories.length === 0 ? (
-                    <p className="py-2 text-metal-light text-sm">No categories available</p>
-                  ) : (
-                    categories.map((category) => (
+                  {categories.map((category) => {
+                    const Icon = categoryIcons[category.id] || Sparkles;
+                    return (
                       <Link
-                        key={category.name}
-                        to={category.href}
-                        className="block py-2 text-metal-light hover:text-primary transition-colors"
+                        key={category.id}
+                        to={`/shop/${category.id}`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 py-2 text-metal-light hover:text-primary transition-colors"
                       >
+                        <Icon className="h-4 w-4" />
                         {category.name}
                       </Link>
-                    ))
-                  )}
+                    );
+                  })}
                 </div>
+
                 <div className="border-t border-border pt-4 space-y-2">
                   <NavLink
                     to="/garage"
+                    onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) =>
                       [
                         "block py-2 font-medium transition-colors",
@@ -185,10 +259,13 @@ const Header = () => {
                   </NavLink>
                   <NavLink
                     to="/build"
+                    onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) =>
                       [
                         "block py-2 font-medium transition-colors",
-                        isActive || navState.build ? "text-primary" : "text-metal-light hover:text-primary",
+                        isActive || navState.build
+                          ? "text-primary"
+                          : "text-metal-light hover:text-primary",
                       ].join(" ")
                     }
                   >
@@ -196,28 +273,21 @@ const Header = () => {
                   </NavLink>
                   <NavLink
                     to="/about"
+                    onClick={() => setMobileMenuOpen(false)}
                     className={({ isActive }) =>
                       [
                         "block py-2 font-medium transition-colors",
-                        isActive || navState.about ? "text-primary" : "text-metal-light hover:text-primary",
+                        isActive || navState.about
+                          ? "text-primary"
+                          : "text-metal-light hover:text-primary",
                       ].join(" ")
                     }
                   >
                     About Us
                   </NavLink>
-                  <NavLink
-                    to="/blog"
-                    className={({ isActive }) =>
-                      [
-                        "block py-2 font-medium transition-colors",
-                        isActive || navState.blog ? "text-primary" : "text-metal-light hover:text-primary",
-                      ].join(" ")
-                    }
-                  >
-                    Blog
-                  </NavLink>
                   <Link
                     to="/contact"
+                    onClick={() => setMobileMenuOpen(false)}
                     className="block py-2 text-metal-light hover:text-primary transition-colors font-medium"
                   >
                     Contact
