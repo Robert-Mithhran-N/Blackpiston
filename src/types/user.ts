@@ -62,3 +62,13 @@ export interface CartItem {
     product: Product;
     quantity: number;
 }
+
+// ============================================================
+// Brand Logo Types
+// ============================================================
+export interface BrandLogo {
+    id: string;
+    name: string;
+    image: string;
+    altText: string;
+}
