@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Youtube, Twitter, Mail, Phone, MapPin } from "lucide-react";
 import logo from "@/assets/logo.png";
+import { contactConfig } from "@/config/contact";
 
 const Footer = () => {
   return (
@@ -14,24 +15,30 @@ const Footer = () => {
               <img src={logo} alt="BlackPiston Garage" className="h-16 w-auto" />
             </Link>
             <p className="text-metal text-sm">
-              Premium motorcycle gear and professional workshop services. 
+              Premium motorcycle gear and professional workshop services.
               Gear up. Ride hard. Modify smarter.
             </p>
             <div className="flex gap-3">
               <a
-                href="#"
+                href={contactConfig.social?.facebook || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-metal hover:text-primary hover:bg-secondary/80 transition-colors"
               >
                 <Facebook className="h-5 w-5" />
               </a>
               <a
-                href="#"
+                href={contactConfig.social?.instagram || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-metal hover:text-primary hover:bg-secondary/80 transition-colors"
               >
                 <Instagram className="h-5 w-5" />
               </a>
               <a
-                href="#"
+                href={contactConfig.social?.youtube || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-metal hover:text-primary hover:bg-secondary/80 transition-colors"
               >
                 <Youtube className="h-5 w-5" />
@@ -92,7 +99,7 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Contact Info */}
+          {/* Contact Info - Using Global Config */}
           <div>
             <h4 className="font-display text-lg text-foreground tracking-wide mb-4">
               CONTACT
@@ -101,34 +108,33 @@ const Footer = () => {
               <li className="flex items-start gap-3">
                 <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                 <span className="text-metal text-sm">
-                  123 Garage Street, Motor City, MC 12345
+                  {contactConfig.address.full}
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-5 w-5 text-primary shrink-0" />
                 <a
-                  href="tel:+1234567890"
+                  href={contactConfig.phone.link}
                   className="text-metal hover:text-primary transition-colors text-sm"
                 >
-                  +1 (234) 567-890
+                  {contactConfig.phone.display}
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="h-5 w-5 text-primary shrink-0" />
                 <a
-                  href="mailto:info@blackpistongarage.com"
+                  href={contactConfig.email.link}
                   className="text-metal hover:text-primary transition-colors text-sm"
                 >
-                  info@blackpistongarage.com
+                  {contactConfig.email.display}
                 </a>
               </li>
             </ul>
             <div className="mt-4 pt-4 border-t border-border">
               <p className="text-xs text-muted-foreground">
                 Workshop Hours:<br />
-                Mon-Fri: 9AM - 7PM<br />
-                Sat: 10AM - 5PM<br />
-                Sun: Closed
+                Mon-Sat: {contactConfig.businessHours?.weekdays}<br />
+                Sunday: {contactConfig.businessHours?.sunday}
               </p>
             </div>
           </div>
@@ -140,7 +146,7 @@ const Footer = () => {
         <div className="container py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <p className="text-xs text-muted-foreground">
-              © 2024 BlackPiston Garage. All rights reserved.
+              © {new Date().getFullYear()} BlackPiston Garage. All rights reserved.
             </p>
             <div className="flex gap-6">
               <Link
