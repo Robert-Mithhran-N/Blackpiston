@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Shop from "./pages/Shop";
 import ShopCategory from "./pages/ShopCategory";
+import ProductDetail from "./pages/ProductDetail";
 import Garage from "./pages/Garage";
 import Build from "./pages/Build";
 import About from "./pages/About";
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/shop" element={<Shop />} />
             <Route path="/shop/:category" element={<ShopCategory />} />
+            <Route path="/product/:productId" element={<ProductDetail />} />
             <Route path="/garage" element={<Garage />} />
             <Route path="/build" element={<Build />} />
             <Route path="/about" element={<About />} />
