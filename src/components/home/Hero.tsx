@@ -2,13 +2,8 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Wrench, Truck, RotateCcw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Import rider image - add rider-hero.jpg to src/assets/ folder
-// Uncomment the line below and add your image file
-// import riderImage from "@/assets/rider-hero.jpg";
-
-// For now, using a path that will work when image is added to public folder
-// Or uncomment the import above and use: src={riderImage}
-const riderImageSrc = "/rider-hero.jpg";
+// Import hero image
+import heroImage from "@/assets/hero home img.png";
 
 const Hero = () => {
   return (
@@ -18,9 +13,9 @@ const Hero = () => {
         {/* Decorative elements */}
         <div className="absolute top-1/4 -right-20 w-96 h-96 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute bottom-1/4 -left-20 w-80 h-80 rounded-full bg-flame-end/10 blur-3xl" />
-        
+
         {/* Grid pattern overlay */}
-        <div 
+        <div
           className="absolute inset-0 opacity-5"
           style={{
             backgroundImage: `linear-gradient(hsl(var(--metal)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--metal)) 1px, transparent 1px)`,
@@ -43,12 +38,12 @@ const Hero = () => {
                 MODIFY SMARTER.
               </h1>
             </div>
-            
+
             {/* CTAs in compact row */}
             <div className="flex flex-wrap gap-3">
               <Link to="/shop" className="inline-block">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="bg-gradient-flame hover:bg-[#f97316] hover:scale-105 hover:text-black transition-all duration-300 text-base font-ui font-semibold px-6 py-5 group rounded-md"
                 >
                   Shop Gear
@@ -56,9 +51,9 @@ const Hero = () => {
                 </Button>
               </Link>
               <Link to="/garage" className="inline-block">
-                <Button 
-                  size="lg" 
-                  variant="outline" 
+                <Button
+                  size="lg"
+                  variant="outline"
                   className="border-metal text-metal-light hover:bg-white hover:text-black hover:scale-105 transition-all duration-300 text-base font-ui font-semibold px-6 py-5 group rounded-md"
                 >
                   <Wrench className="mr-2 h-4 w-4 group-hover:text-black transition-colors duration-300" />
@@ -86,7 +81,7 @@ const Hero = () => {
             </div>
           </div>
 
-          {/* Right Content - Rider/Product Image with animated ring */}
+          {/* Right Content - Hero Image with premium effects */}
           <div className="relative hidden lg:block">
             <div className="relative w-full aspect-[3/4] max-w-md mx-auto">
               {/* Animated parallax ring behind image */}
@@ -101,45 +96,132 @@ const Hero = () => {
                 <div className="w-full h-full rounded-2xl bg-gradient-to-br from-primary/50 via-flame-end/40 to-primary/30" />
               </div>
 
-              {/* Image container with blended border */}
-              <div className="relative w-full h-full rounded-2xl overflow-hidden animate-float">
-                {/* Subtle border overlay that blends with background - creates seamless edge */}
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-background/70 via-background/30 to-background/50 pointer-events-none z-10 mix-blend-soft-light" />
-                <div className="absolute inset-[1px] rounded-2xl border border-background/20 pointer-events-none z-10" />
-                {/* Additional soft edge fade */}
-                <div className="absolute inset-0 rounded-2xl shadow-[inset_0_0_40px_rgba(0,0,0,0.1)] pointer-events-none z-10" />
-                
-                {/* Rider image - 3/4 shot, properly fitted */}
-                <img 
-                  src={riderImageSrc} 
-                  alt="Rider with premium motorcycle gear" 
-                  className="w-full h-full object-cover object-center scale-105"
-                  onError={(e) => {
-                    // Fallback if image not found
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const fallback = target.nextElementSibling as HTMLElement;
-                    if (fallback) fallback.style.display = 'flex';
-                  }}
+              {/* Image container with effects */}
+              <div className="hero-image-container relative w-full h-full rounded-2xl overflow-hidden animate-float">
+                {/* Layer 1: Hero Image */}
+                <img
+                  src={heroImage}
+                  alt="Rider with premium motorcycle gear"
+                  className="absolute inset-0 w-full h-full object-cover object-center"
                 />
-                {/* Fallback placeholder - hidden by default */}
-                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-card via-secondary to-background" style={{ display: 'none' }}>
-                  <div className="text-center p-8">
-                    <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-gradient-flame opacity-20 blur-2xl" />
-                    <p className="font-display text-2xl text-gradient-flame mb-2">RIDER</p>
-                    <p className="font-ui text-metal-light text-sm uppercase tracking-widest">
-                      Premium Gear
-                    </p>
-                    <p className="font-ui text-metal text-xs mt-4 max-w-xs">
-                      Add rider-hero.jpg to src/assets/ or public/
-                    </p>
-                  </div>
+
+                {/* Layer 2: Dim overlay - darker for more contrast */}
+                <div className="absolute inset-0 bg-black/50 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/40 pointer-events-none" />
+
+                {/* Layer 3: Cross-direction diagonal white light sweep */}
+                <div className="hero-cross-light-sweep absolute inset-0 pointer-events-none" />
+
+                {/* Layer 4: Caption text - centered, orange-white gradient */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+                  <h2 className="hero-caption-gradient font-display text-xl md:text-2xl lg:text-3xl text-center tracking-wide leading-relaxed px-6">
+                    Ride to feel alive,
+                    <br />
+                    buy to stay alive
+                  </h2>
                 </div>
+
+
+                {/* Soft edge overlay */}
+                <div className="absolute inset-0 rounded-2xl shadow-[inset_0_0_80px_rgba(0,0,0,0.4)] pointer-events-none z-10" />
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* CSS Animations for Hero Effects */}
+      <style>{`
+        /* Cross-direction diagonal white light sweep */
+        @keyframes hero-cross-light-sweep {
+          0% {
+            transform: translateX(-150%) translateY(-150%) rotate(45deg) scaleY(0.5);
+            opacity: 0;
+          }
+          15% {
+            opacity: 0.8;
+            transform: translateX(-100%) translateY(-100%) rotate(45deg) scaleY(0.7);
+          }
+          50% {
+            opacity: 1;
+            transform: translateX(0%) translateY(0%) rotate(45deg) scaleY(1.2);
+          }
+          85% {
+            opacity: 0.8;
+            transform: translateX(100%) translateY(100%) rotate(45deg) scaleY(0.7);
+          }
+          100% {
+            transform: translateX(150%) translateY(150%) rotate(45deg) scaleY(0.5);
+            opacity: 0;
+          }
+        }
+        
+        .hero-cross-light-sweep {
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            transparent 35%,
+            rgba(255, 255, 255, 0.03) 40%,
+            rgba(255, 255, 255, 0.08) 45%,
+            rgba(255, 255, 255, 0.12) 50%,
+            rgba(255, 255, 255, 0.08) 55%,
+            rgba(255, 255, 255, 0.03) 60%,
+            transparent 65%,
+            transparent 100%
+          );
+          width: 300%;
+          height: 300%;
+          top: -100%;
+          left: -100%;
+          animation: hero-cross-light-sweep 10s ease-in-out infinite;
+          animation-delay: 2s;
+        }
+        
+        /* Caption text gradient - smooth orange to white */
+        .hero-caption-gradient {
+          background: linear-gradient(
+            135deg,
+            #f97316 0%,
+            #fb923c 25%,
+            #ffffff 50%,
+            #fb923c 75%,
+            #f97316 100%
+          );
+          background-size: 200% 200%;
+          -webkit-background-clip: text;
+          background-clip: text;
+          -webkit-text-fill-color: transparent;
+          animation: hero-gradient-shift 6s ease-in-out infinite;
+          text-shadow: none;
+          filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 30px rgba(249, 115, 22, 0.3));
+          letter-spacing: 0.05em;
+        }
+        
+        @keyframes hero-gradient-shift {
+          0%, 100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+
+        
+        /* Reduce motion for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+          .hero-cross-light-sweep {
+            animation: none;
+            opacity: 0;
+          }
+        }
+        
+        /* Simplify effects on smaller screens */
+        @media (max-width: 1024px) {
+          .hero-cross-light-sweep {
+            animation-duration: 12s;
+          }
+        }
+      `}</style>
     </section>
   );
 };

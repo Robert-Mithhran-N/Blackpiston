@@ -35,11 +35,12 @@ const BrandLogoCard = ({ brand }: { brand: BrandLogo }) => (
   <div
     className="brand-card flex-shrink-0 flex items-center justify-center
       w-[110px] h-[60px] md:w-[130px] md:h-[70px]
-      rounded-xl bg-card/60 border border-border/40
+      rounded-xl bg-zinc-800 border border-zinc-700/50
       transition-all duration-300 ease-out cursor-default
-      hover:scale-105 hover:bg-card/80 hover:border-primary/40
+      hover:scale-105 hover:border-primary/40
       group p-3"
   >
+
     <img
       src={brand.image}
       alt={brand.altText}
