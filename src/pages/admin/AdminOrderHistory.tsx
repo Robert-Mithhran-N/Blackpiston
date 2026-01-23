@@ -290,7 +290,7 @@ const AdminOrderHistory = () => {
 
                             {/* Sort By */}
                             <div className="flex gap-2">
-                                <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+                                <Select value={sortBy} onValueChange={(v) => setSortBy(v as "latest" | "amount")}>
                                     <SelectTrigger className="flex-1">
                                         <SelectValue placeholder="Sort By" />
                                     </SelectTrigger>

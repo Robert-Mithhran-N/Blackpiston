@@ -65,7 +65,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
 
     const redirect =
       opts?.redirectTo ||
-      (location.state as any)?.from?.pathname ||
+      (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
       "/admin";
     navigate(redirect, { replace: true });
   };

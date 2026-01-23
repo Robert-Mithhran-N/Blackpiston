@@ -94,7 +94,7 @@ export interface LowStockProduct {
 // ============================================================
 // User Product Request Types
 // ============================================================
-export type RequestStatus = 'Pending' | 'Approved' | 'Rejected';
+export type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Completed';
 
 export interface ProductRequest {
     id: string;

@@ -84,7 +84,7 @@ const Shop = () => {
     }
 
     return filtered;
-  }, [products, searchQuery, selectedCategory, sortBy]);
+  }, [searchQuery, selectedCategory, sortBy]);
 
   return (
     <div className="min-h-screen bg-background">

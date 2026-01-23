@@ -15,13 +15,28 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import logo from "@/assets/logo.png";
 import { categories } from "@/data/userMockData";
 
-// Category icons mapping
+// Import shop category images
+import helmetImg from "@/assets/shop-btn-logos/shop-helmet.png";
+import glovesImg from "@/assets/shop-btn-logos/shop-gloves.png";
+import bootImg from "@/assets/shop-btn-logos/shop-boot.png";
+import accessImg from "@/assets/shop-btn-logos/shop-access.png";
+
+// Category icons mapping (fallback)
 const categoryIcons: Record<string, React.ElementType> = {
   helmets: HardHat,
   jackets: Shirt,
   boots: Footprints,
   accessories: Sparkles,
 };
+
+// Category images mapping
+const categoryImages: Record<string, string> = {
+  helmets: helmetImg,
+  jackets: glovesImg,
+  boots: bootImg,
+  accessories: accessImg,
+};
+
 
 const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -88,18 +103,24 @@ const Header = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       {categories.map((category) => {
-                        const Icon = categoryIcons[category.id] || Sparkles;
+                        const categoryImage = categoryImages[category.id];
                         return (
                           <NavigationMenuLink key={category.id} asChild>
                             <Link
                               to={`/shop/${category.id}`}
-                              className="group flex items-center gap-3 p-3 rounded-lg hover:bg-primary/10 transition-colors border border-transparent hover:border-primary/30"
+                              className="group flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 hover:bg-primary/10 transition-all duration-200 border border-zinc-700/50 hover:border-primary/40 cursor-pointer"
                             >
-                              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                                <Icon className="h-5 w-5 text-primary" />
+                              {/* Category Image */}
+                              <div className="h-11 w-11 rounded-lg bg-zinc-900/80 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                <img
+                                  src={categoryImage}
+                                  alt={category.name}
+                                  className="w-[90%] h-[90%] object-contain"
+                                />
                               </div>
-                              <div>
-                                <p className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                              {/* Category Text */}
+                              <div className="flex flex-col min-w-0">
+                                <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                                   {category.name}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
@@ -111,6 +132,7 @@ const Header = () => {
                         );
                       })}
                     </div>
+
                     <div className="mt-4 pt-4 border-t border-border">
                       <Link
                         to="/shop"
