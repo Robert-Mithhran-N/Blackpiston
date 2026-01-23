@@ -435,7 +435,7 @@ const AdminDashboard = () => {
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Select value={selectedRange} onValueChange={(v) => setSelectedRange(v as any)}>
+              <Select value={selectedRange} onValueChange={(v) => setSelectedRange(v as "weekly" | "monthly" | "yearly")}>
                 <SelectTrigger className="w-28">
                   <SelectValue />
                 </SelectTrigger>
@@ -445,7 +445,7 @@ const AdminDashboard = () => {
                   <SelectItem value="yearly">Yearly</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={chartType} onValueChange={(v) => setChartType(v as any)}>
+              <Select value={chartType} onValueChange={(v) => setChartType(v as "bar" | "line")}>
                 <SelectTrigger className="w-24">
                   <SelectValue />
                 </SelectTrigger>

@@ -177,18 +177,21 @@ const AdminPayments = () => {
     // Sort
     if (sortField) {
       filtered.sort((a, b) => {
-        let aVal: any = a[sortField as keyof Payment];
-        let bVal: any = b[sortField as keyof Payment];
+        let aVal: string | number | null = a[sortField as keyof Payment] as string | number | null;
+        let bVal: string | number | null = b[sortField as keyof Payment] as string | number | null;
 
         if (sortField === "orderDate" || sortField === "amountReceivedDate") {
           aVal = new Date(aVal || 0).getTime();
           bVal = new Date(bVal || 0).getTime();
         }
 
-        if (typeof aVal === "string") {
+        if (typeof aVal === "string" && typeof bVal === "string") {
           aVal = aVal.toLowerCase();
           bVal = bVal.toLowerCase();
         }
+
+        if (aVal === null) aVal = "";
+        if (bVal === null) bVal = "";
 
         if (aVal < bVal) return sortDirection === "asc" ? -1 : 1;
         if (aVal > bVal) return sortDirection === "asc" ? 1 : -1;

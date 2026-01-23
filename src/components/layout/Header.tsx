@@ -115,7 +115,7 @@ const Header = () => {
                                 <img
                                   src={categoryImage}
                                   alt={category.name}
-                                  className="h-9 w-9 object-contain"
+                                  className="w-[90%] h-[90%] object-contain"
                                 />
                               </div>
                               {/* Category Text */}
