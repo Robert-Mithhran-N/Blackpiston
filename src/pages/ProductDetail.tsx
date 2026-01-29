@@ -21,6 +21,8 @@ import {
     Minus,
     Plus,
     Package,
+    ChevronLeft,
+    ChevronRight,
 } from "lucide-react";
 import { getProductById, getProductsByCategory, products } from "@/data/userMockData";
 import { Product } from "@/types/user";
@@ -187,7 +189,7 @@ const ProductDetail = () => {
                             {/* Product Images */}
                             <div className="space-y-4">
                                 {/* Main Image */}
-                                <div className="relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-muted to-muted/50 border-2 border-border group">
+                                <div className="relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-muted to-muted/50 border-2 border-border group max-w-md mx-auto">
                                     {discountPercent > 0 && (
                                         <Badge className="absolute top-4 left-4 z-10 bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 font-bold text-lg px-4 py-1">
                                             {discountPercent}% OFF
@@ -196,16 +198,50 @@ const ProductDetail = () => {
                                     <img
                                         src={images[selectedImage]}
                                         alt={product.name}
-                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                                        className="w-full h-full object-cover transition-all duration-500 ease-in-out group-hover:scale-105"
                                         onError={(e) => {
                                             (e.target as HTMLImageElement).src =
                                                 "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop";
                                         }}
                                     />
+
+                                    {/* Navigation Buttons */}
+                                    {/* Previous Button */}
+                                    <button
+                                        onClick={() => setSelectedImage((prev) => (prev === 0 ? images.length - 1 : prev - 1))}
+                                        aria-label="Previous product image"
+                                        className="absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/70 hover:scale-110 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-transparent"
+                                    >
+                                        <ChevronLeft className="h-6 w-6" />
+                                    </button>
+
+                                    {/* Next Button */}
+                                    <button
+                                        onClick={() => setSelectedImage((prev) => (prev === images.length - 1 ? 0 : prev + 1))}
+                                        aria-label="Next product image"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 flex items-center justify-center rounded-full bg-black/50 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-black/70 hover:scale-110 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-transparent"
+                                    >
+                                        <ChevronRight className="h-6 w-6" />
+                                    </button>
+
+                                    {/* Image Indicator Dots */}
+                                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                        {images.map((_, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => setSelectedImage(i)}
+                                                aria-label={`View image ${i + 1}`}
+                                                className={`w-2 h-2 rounded-full transition-all duration-300 ${selectedImage === i
+                                                    ? "bg-white w-4"
+                                                    : "bg-white/50 hover:bg-white/80"
+                                                    }`}
+                                            />
+                                        ))}
+                                    </div>
                                 </div>
 
                                 {/* Thumbnail Gallery */}
-                                <div className="grid grid-cols-4 gap-2">
+                                <div className="grid grid-cols-4 gap-2 max-w-md mx-auto">
                                     {images.map((img, i) => (
                                         <button
                                             key={i}
@@ -240,8 +276,8 @@ const ProductDetail = () => {
                                             <Star
                                                 key={i}
                                                 className={`h-5 w-5 ${i < Math.floor(product.rating)
-                                                        ? "fill-orange-400 text-orange-400"
-                                                        : "fill-muted text-muted"
+                                                    ? "fill-orange-400 text-orange-400"
+                                                    : "fill-muted text-muted"
                                                     }`}
                                             />
                                         ))}

@@ -27,6 +27,7 @@ import AdminOrderHistory from "./pages/admin/AdminOrderHistory";
 import AdminLowStock from "./pages/admin/AdminLowStock";
 import AdminRequests from "./pages/admin/AdminRequests";
 import AdminTopOffers from "./pages/admin/AdminTopOffers";
+import AdminPayments from "./pages/admin/AdminPayments";
 import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
@@ -58,6 +59,7 @@ const App = () => (
             <Route path="/admin" element={<AdminRoute />}>
               <Route index element={<AdminDashboard />} />
               <Route path="top-offers" element={<AdminTopOffers />} />
+              <Route path="payments" element={<AdminPayments />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="orders/history" element={<AdminOrderHistory />} />
               <Route path="low-stock" element={<AdminLowStock />} />
