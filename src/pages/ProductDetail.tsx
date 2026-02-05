@@ -75,7 +75,7 @@ const ProductDetail = () => {
 
     const product = getProductById(productId || "");
     const relatedProducts = product
-        ? getProductsByCategory(product.category).filter((p) => p.id !== product.id).slice(0, 4)
+        ? getProductsByCategory(product.category).filter((p) => p.id !== product.id).slice(0, 6)
         : [];
 
     // Simulate loading
@@ -450,7 +450,7 @@ const ProductDetail = () => {
                                     <Button variant="outline">View All</Button>
                                 </Link>
                             </div>
-                            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
                                 {relatedProducts.map((p) => (
                                     <ProductCard key={p.id} product={p} />
                                 ))}
