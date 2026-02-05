@@ -35,8 +35,8 @@ const FeaturedProducts = () => {
                 </div>
 
                 {/* Products Grid */}
-                <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                    {featuredProducts.slice(0, 8).map((product) => (
+                <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                    {featuredProducts.slice(0, 12).map((product) => (
                         <ProductCard key={product.id} product={product} />
                     ))}
                 </div>
