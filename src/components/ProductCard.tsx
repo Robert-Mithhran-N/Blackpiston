@@ -28,23 +28,23 @@ const ProductCard = ({ product, variant = "default", onAddToCart }: ProductCardP
     return (
         <Link
             to={`/product/${product.id}`}
-            className="block group"
+            className="block group w-full"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
         >
             <Card
                 className={`relative overflow-hidden transition-all duration-500 ease-out border-2 bg-card
           ${isHovered
-                        ? "border-primary/60 shadow-2xl shadow-primary/20 scale-[1.03]"
-                        : "border-border shadow-lg scale-100"
+                        ? "border-primary/60 shadow-xl shadow-primary/15 scale-[1.02]"
+                        : "border-border shadow-md scale-100"
                     }
           ${variant === "featured" ? "h-full" : ""}
         `}
             >
                 {/* Discount Badge */}
                 {discountPercent > 0 && (
-                    <div className={`absolute top-3 left-3 z-20 transition-all duration-300 ${isHovered ? "scale-110" : "scale-100"}`}>
-                        <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 font-bold shadow-lg">
+                    <div className={`absolute top-2 left-2 z-20 transition-all duration-300 ${isHovered ? "scale-110" : "scale-100"}`}>
+                        <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 font-semibold shadow-lg text-xs px-2 py-0.5">
                             {discountPercent}% OFF
                         </Badge>
                     </div>
@@ -52,13 +52,13 @@ const ProductCard = ({ product, variant = "default", onAddToCart }: ProductCardP
 
                 {/* Out of Stock Badge */}
                 {!product.inStock && (
-                    <div className="absolute top-3 right-3 z-20">
-                        <Badge variant="destructive">Out of Stock</Badge>
+                    <div className="absolute top-2 right-2 z-20">
+                        <Badge variant="destructive" className="text-xs px-2 py-0.5">Out of Stock</Badge>
                     </div>
                 )}
 
                 {/* Product Image Container */}
-                <div className="relative overflow-hidden aspect-square bg-gradient-to-br from-muted to-muted/50">
+                <div className="relative overflow-hidden aspect-[4/3] bg-gradient-to-br from-muted to-muted/50">
                     {/* Product Image */}
                     <img
                         src={product.image}
@@ -133,25 +133,25 @@ const ProductCard = ({ product, variant = "default", onAddToCart }: ProductCardP
                     </div>
                 </div>
 
-                <CardContent className={`p-4 transition-all duration-300 ${variant === "compact" ? "p-3" : ""}`}>
+                <CardContent className={`p-2.5 transition-all duration-300 ${variant === "compact" ? "p-2" : ""}`}>
                     {/* Rating */}
-                    <div className={`flex items-center gap-1 mb-2 transition-all duration-300 ${isHovered ? "translate-x-1" : ""}`}>
+                    <div className={`flex items-center gap-0.5 mb-1 transition-all duration-300 ${isHovered ? "translate-x-1" : ""}`}>
                         {[...Array(5)].map((_, i) => (
                             <Star
                                 key={i}
-                                className={`h-3.5 w-3.5 transition-all duration-300 ${i < Math.floor(product.rating)
-                                        ? "fill-orange-400 text-orange-400"
-                                        : "fill-muted text-muted"
+                                className={`h-3 w-3 transition-all duration-300 ${i < Math.floor(product.rating)
+                                    ? "fill-orange-400 text-orange-400"
+                                    : "fill-muted text-muted"
                                     } ${isHovered && i < Math.floor(product.rating) ? "scale-110" : ""}`}
                             />
                         ))}
-                        <span className="text-xs text-muted-foreground ml-1">({product.rating})</span>
+                        <span className="text-[10px] text-muted-foreground ml-1">({product.rating})</span>
                     </div>
 
                     {/* Product Name */}
                     <h3
-                        className={`font-semibold text-foreground line-clamp-2 transition-all duration-300
-              ${variant === "compact" ? "text-sm" : "text-base"}
+                        className={`font-semibold text-foreground line-clamp-1 transition-all duration-300 text-sm
+              ${variant === "compact" ? "text-xs" : ""}
               ${isHovered ? "text-primary" : ""}
             `}
                     >
@@ -159,25 +159,25 @@ const ProductCard = ({ product, variant = "default", onAddToCart }: ProductCardP
                     </h3>
 
                     {/* Category */}
-                    <p className={`text-xs text-muted-foreground capitalize mt-1 mb-3 transition-all duration-300
+                    <p className={`text-[10px] text-muted-foreground capitalize mt-0.5 mb-1.5 transition-all duration-300
             ${isHovered ? "text-primary/70" : ""}
           `}>
                         {product.category}
                     </p>
 
                     {/* Price */}
-                    <div className={`flex items-baseline gap-2 transition-all duration-300 ${isHovered ? "translate-x-1" : ""}`}>
+                    <div className={`flex items-baseline gap-1.5 transition-all duration-300 ${isHovered ? "translate-x-1" : ""}`}>
                         {product.offerPrice ? (
                             <>
-                                <span className={`text-xl font-bold transition-all duration-300 ${isHovered ? "text-primary scale-105" : "text-primary"}`}>
+                                <span className={`text-base font-bold transition-all duration-300 ${isHovered ? "text-primary scale-105" : "text-primary"}`}>
                                     ₹{product.offerPrice.toLocaleString()}
                                 </span>
-                                <span className="text-sm text-muted-foreground line-through">
+                                <span className="text-[10px] text-muted-foreground line-through">
                                     ₹{product.price.toLocaleString()}
                                 </span>
                             </>
                         ) : (
-                            <span className={`text-xl font-bold transition-all duration-300 ${isHovered ? "scale-105" : ""}`}>
+                            <span className={`text-base font-bold transition-all duration-300 ${isHovered ? "scale-105" : ""}`}>
                                 ₹{product.price.toLocaleString()}
                             </span>
                         )}
