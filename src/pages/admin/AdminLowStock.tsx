@@ -10,7 +10,7 @@ import {
     ArrowLeft,
     AlertTriangle,
 } from "lucide-react";
-import { lowStockProducts } from "@/data/adminMockData";
+import { fetchLowStockProducts } from "@/lib/api";
 
 // ============================================================
 // Product Card Component
@@ -52,8 +52,8 @@ const ProductCard = ({ name, category, stock, loading }: ProductCardProps) => {
 
                         {/* Stock Badge */}
                         <Badge className={`text-sm ${isCritical
-                                ? 'bg-red-500/20 text-red-400 border-red-500/50'
-                                : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
+                            ? 'bg-red-500/20 text-red-400 border-red-500/50'
+                            : 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
                             }`}>
                             {stock} {stock === 1 ? 'unit' : 'units'} left
                         </Badge>
@@ -80,14 +80,16 @@ const ProductCard = ({ name, category, stock, loading }: ProductCardProps) => {
 // ============================================================
 const AdminLowStock = () => {
     const [isLoading, setIsLoading] = useState(true);
+    const [products, setProducts] = useState<{ id: string; name: string; category: string; currentStock: number }[]>([]);
 
-    // Simulate loading
+    // Fetch low stock products from API
     useEffect(() => {
-        const timer = setTimeout(() => setIsLoading(false), 600);
-        return () => clearTimeout(timer);
+        setIsLoading(true);
+        fetchLowStockProducts()
+            .then((data) => setProducts(data || []))
+            .catch((err) => console.error("Failed to load low stock products:", err))
+            .finally(() => setIsLoading(false));
     }, []);
-
-    const products = lowStockProducts;
 
     return (
         <AdminLayout>

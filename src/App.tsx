@@ -24,6 +24,7 @@ import AdminRoute from "./routes/AdminRoute";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { UserAuthProvider } from "./context/UserAuthContext";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminOrderHistory from "./pages/admin/AdminOrderHistory";
 import AdminLowStock from "./pages/admin/AdminLowStock";
@@ -64,6 +65,7 @@ const App = () => (
 
                 <Route path="/admin" element={<AdminRoute />}>
                   <Route index element={<AdminDashboard />} />
+                  <Route path="products" element={<AdminProducts />} />
                   <Route path="top-offers" element={<AdminTopOffers />} />
                   <Route path="payments" element={<AdminPayments />} />
                   <Route path="orders" element={<AdminOrders />} />

@@ -47,7 +47,7 @@ import {
     XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { orders as allOrders } from "@/data/adminMockData";
+import { fetchAdminOrders, updateOrderStatus as apiUpdateOrderStatus } from "@/lib/api";
 import { Order, OrderStatus, PaymentStatus } from "@/types/admin";
 
 // Status color helpers
@@ -80,14 +80,17 @@ const AdminOrders = () => {
 
     // Filter for Pending and Processing orders only (active orders)
     useEffect(() => {
-        const timer = setTimeout(() => {
-            const activeOrders = allOrders.filter(
-                (o) => o.orderStatus === "Pending" || o.orderStatus === "Processing" || o.orderStatus === "Shipped"
-            );
-            setOrders(activeOrders);
-            setIsLoading(false);
-        }, 600);
-        return () => clearTimeout(timer);
+        setIsLoading(true);
+        fetchAdminOrders()
+            .then((data) => {
+                const all = data.orders || [];
+                const activeOrders = all.filter(
+                    (o: Order) => o.orderStatus === "Pending" || o.orderStatus === "Processing" || o.orderStatus === "Shipped"
+                );
+                setOrders(activeOrders);
+            })
+            .catch((err) => console.error("Failed to load orders:", err))
+            .finally(() => setIsLoading(false));
     }, []);
 
     const pendingCount = orders.filter((o) => o.orderStatus === "Pending").length;
@@ -96,15 +99,19 @@ const AdminOrders = () => {
 
     // Update order status
     const handleUpdateStatus = (orderId: string, newStatus: OrderStatus) => {
-        setOrders((prev) =>
-            prev.map((o) =>
-                o.id === orderId ? { ...o, orderStatus: newStatus, updatedAt: new Date().toISOString() } : o
-            )
-        );
-        if (selectedOrder?.id === orderId) {
-            setSelectedOrder((prev) => (prev ? { ...prev, orderStatus: newStatus } : null));
-        }
-        toast.success(`Order status updated to ${newStatus}`);
+        apiUpdateOrderStatus(orderId, { status: newStatus })
+            .then(() => {
+                setOrders((prev) =>
+                    prev.map((o) =>
+                        o.id === orderId ? { ...o, orderStatus: newStatus, updatedAt: new Date().toISOString() } : o
+                    )
+                );
+                if (selectedOrder?.id === orderId) {
+                    setSelectedOrder((prev) => (prev ? { ...prev, orderStatus: newStatus } : null));
+                }
+                toast.success(`Order status updated to ${newStatus}`);
+            })
+            .catch(() => toast.error("Failed to update order status"));
     };
 
     // Format date

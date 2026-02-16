@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent } from "@/components/ui/card";
@@ -58,74 +58,24 @@ import {
     Package,
 } from "lucide-react";
 import { toast } from "sonner";
+import { fetchAdminTopOffers, createTopOffer, updateTopOffer as apiUpdateTopOffer, deleteTopOffer as apiDeleteTopOffer } from "@/lib/api";
 import { TopOffer } from "@/types/admin";
-
-// ============================================================
-// Mock Data - Initial Top Offers
-// ============================================================
-const initialTopOffers: TopOffer[] = [
-    {
-        id: "OFFER-001",
-        productName: "AGV K6 S Helmet - Matte Black",
-        productImage: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=100&h=100&fit=crop",
-        originalPrice: 45999,
-        offerPrice: 38999,
-        discountPercent: 15,
-        status: "Active",
-        createdAt: "2025-01-15T10:00:00",
-        updatedAt: "2025-01-20T14:30:00",
-    },
-    {
-        id: "OFFER-002",
-        productName: "Dainese Racing 4 Leather Jacket",
-        productImage: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=100&h=100&fit=crop",
-        originalPrice: 89999,
-        offerPrice: 71999,
-        discountPercent: 20,
-        status: "Active",
-        createdAt: "2025-01-14T09:00:00",
-        updatedAt: "2025-01-19T11:00:00",
-    },
-    {
-        id: "OFFER-003",
-        productName: "Alpinestars SMX-6 V2 Boots",
-        productImage: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=100&h=100&fit=crop",
-        originalPrice: 28999,
-        offerPrice: 23199,
-        discountPercent: 20,
-        status: "Active",
-        createdAt: "2025-01-13T14:00:00",
-        updatedAt: "2025-01-18T16:00:00",
-    },
-    {
-        id: "OFFER-004",
-        productName: "Shoei RF-1400 Helmet - White",
-        productImage: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=100&h=100&fit=crop",
-        originalPrice: 67999,
-        offerPrice: 54399,
-        discountPercent: 20,
-        status: "Inactive",
-        createdAt: "2025-01-10T08:00:00",
-        updatedAt: "2025-01-15T10:00:00",
-    },
-    {
-        id: "OFFER-005",
-        productName: "Rev'It Striker 3 Gloves",
-        productImage: "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=100&h=100&fit=crop",
-        originalPrice: 15999,
-        offerPrice: 11999,
-        discountPercent: 25,
-        status: "Active",
-        createdAt: "2025-01-12T12:00:00",
-        updatedAt: "2025-01-20T09:00:00",
-    },
-];
 
 // ============================================================
 // Component
 // ============================================================
 const AdminTopOffers = () => {
-    const [offers, setOffers] = useState<TopOffer[]>(initialTopOffers);
+    const [offers, setOffers] = useState<TopOffer[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Fetch offers from API on mount
+    useEffect(() => {
+        setIsLoading(true);
+        fetchAdminTopOffers()
+            .then((data) => setOffers(data || []))
+            .catch((err) => console.error("Failed to load top offers:", err))
+            .finally(() => setIsLoading(false));
+    }, []);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedOffer, setSelectedOffer] = useState<TopOffer | null>(null);
@@ -200,8 +150,12 @@ const AdminTopOffers = () => {
     // Confirm delete
     const handleDeleteConfirm = () => {
         if (selectedOffer) {
-            setOffers(offers.filter((o) => o.id !== selectedOffer.id));
-            toast.success(`"${selectedOffer.productName}" removed from Top Offers`);
+            apiDeleteTopOffer(selectedOffer.id)
+                .then(() => {
+                    setOffers(offers.filter((o) => o.id !== selectedOffer.id));
+                    toast.success(`"${selectedOffer.productName}" removed from Top Offers`);
+                })
+                .catch(() => toast.error("Failed to delete offer"));
         }
         setIsDeleteDialogOpen(false);
         setSelectedOffer(null);
@@ -224,45 +178,48 @@ const AdminTopOffers = () => {
 
         const discountPercent = calculateDiscount(originalPrice, offerPrice);
         const now = new Date().toISOString();
+        const payload = {
+            productName: formData.productName,
+            productImage: formData.productImage || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=100&h=100&fit=crop",
+            originalPrice,
+            offerPrice,
+            discountPercent,
+            status: formData.status,
+        };
 
         if (selectedOffer) {
-            // Edit existing
-            setOffers(
-                offers.map((o) =>
-                    o.id === selectedOffer.id
-                        ? {
-                            ...o,
-                            productName: formData.productName,
-                            productImage: formData.productImage || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=100&h=100&fit=crop",
-                            originalPrice,
-                            offerPrice,
-                            discountPercent,
-                            status: formData.status,
-                            updatedAt: now,
-                        }
-                        : o
-                )
-            );
-            toast.success("Offer updated successfully");
+            // Edit existing via API
+            apiUpdateTopOffer(selectedOffer.id, payload)
+                .then((updated) => {
+                    setOffers(
+                        offers.map((o) =>
+                            o.id === selectedOffer.id
+                                ? { ...o, ...payload, updatedAt: updated.updatedAt || now }
+                                : o
+                        )
+                    );
+                    toast.success("Offer updated successfully");
+                    setIsModalOpen(false);
+                    setSelectedOffer(null);
+                })
+                .catch(() => toast.error("Failed to update offer"));
         } else {
-            // Add new
-            const newOffer: TopOffer = {
-                id: `OFFER-${String(offers.length + 1).padStart(3, "0")}`,
-                productName: formData.productName,
-                productImage: formData.productImage || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=100&h=100&fit=crop",
-                originalPrice,
-                offerPrice,
-                discountPercent,
-                status: formData.status,
-                createdAt: now,
-                updatedAt: now,
-            };
-            setOffers([...offers, newOffer]);
-            toast.success("New offer added successfully");
+            // Add new via API
+            createTopOffer(payload)
+                .then((created) => {
+                    const newOffer: TopOffer = {
+                        id: created.id || `OFFER-${String(offers.length + 1).padStart(3, "0")}`,
+                        ...payload,
+                        createdAt: created.createdAt || now,
+                        updatedAt: created.updatedAt || now,
+                    };
+                    setOffers([...offers, newOffer]);
+                    toast.success("New offer added successfully");
+                    setIsModalOpen(false);
+                    setSelectedOffer(null);
+                })
+                .catch(() => toast.error("Failed to create offer"));
         }
-
-        setIsModalOpen(false);
-        setSelectedOffer(null);
     };
 
     // Calculate discount for form preview
