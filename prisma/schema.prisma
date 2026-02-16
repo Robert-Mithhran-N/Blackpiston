@@ -3,6 +3,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  output   = "../server/node_modules/.prisma/client"
 }
 
 datasource db {
@@ -126,9 +127,11 @@ model User {
   name            String
   email           String         @unique
   phone           String?
-  passwordHash    String
+  passwordHash    String?
   role            UserRole       @default(USER)
   avatar          String?
+  googleId        String?        @unique
+  authProvider    String?        @default("local")
   address         Address?
   savedAddresses  SavedAddress[]
   isActive        Boolean        @default(true)
