@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
-import { Link, NavLink, useLocation } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, ChevronDown, HardHat, Shirt, Footprints, Sparkles, Home } from "lucide-react";
+import { useMemo, useState, useRef, useEffect } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Search, ShoppingCart, User, Menu, ChevronDown, HardHat, Shirt, Footprints, Sparkles, Home, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -12,6 +12,7 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useUserAuth } from "@/context/UserAuthContext";
 import logo from "@/assets/logo.png";
 import { categories } from "@/data/userMockData";
 
@@ -41,9 +42,24 @@ const categoryImages: Record<string, string> = {
 const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const { user, isAuthenticated, logout } = useUserAuth();
+  const navigate = useNavigate();
   // TODO: Fetch cart count from context/state
   const [cartCount] = useState(2);
   const { pathname } = useLocation();
+
+  // Close user menu on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const navState = useMemo(
     () => ({
@@ -194,15 +210,57 @@ const Header = () => {
           </Button>
 
           {/* Account */}
-          <Link to="/login">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-metal-light hover:text-primary hover:bg-transparent"
-            >
-              <User className="h-5 w-5" />
-            </Button>
-          </Link>
+          {isAuthenticated && user ? (
+            <div className="relative" ref={userMenuRef}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-metal-light hover:text-primary hover:bg-transparent"
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+              >
+                {user.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="h-7 w-7 rounded-full object-cover ring-2 ring-primary/50"
+                  />
+                ) : (
+                  <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs font-bold">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </Button>
+              {userMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 rounded-lg border border-border bg-card shadow-xl py-2 z-50">
+                  <div className="px-4 py-2 border-b border-border">
+                    <p className="text-sm font-semibold text-foreground truncate">{user.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setUserMenuOpen(false);
+                      navigate("/login", { replace: true });
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link to="/login">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-metal-light hover:text-primary hover:bg-transparent"
+              >
+                <User className="h-5 w-5" />
+              </Button>
+            </Link>
+          )}
 
           {/* Cart */}
           <Link to="/cart" className="relative">
