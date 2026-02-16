@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Shop from "./pages/Shop";
@@ -21,6 +22,7 @@ import Privacy from "./pages/Privacy";
 import Login from "./pages/Login";
 import AdminRoute from "./routes/AdminRoute";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
+import { UserAuthProvider } from "./context/UserAuthContext";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminOrderHistory from "./pages/admin/AdminOrderHistory";
@@ -32,48 +34,55 @@ import AdminSettings from "./pages/admin/AdminSettings";
 
 const queryClient = new QueryClient();
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AdminAuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/shop" element={<Shop />} />
-            <Route path="/shop/:category" element={<ShopCategory />} />
-            <Route path="/product/:productId" element={<ProductDetail />} />
-            <Route path="/garage" element={<Garage />} />
-            <Route path="/build" element={<Build />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/faq" element={<FAQ />} />
-            <Route path="/shipping" element={<Shipping />} />
-            <Route path="/warranty" element={<Warranty />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/login" element={<Login />} />
+  <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <UserAuthProvider>
+            <AdminAuthProvider>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/shop" element={<Shop />} />
+                <Route path="/shop/:category" element={<ShopCategory />} />
+                <Route path="/product/:productId" element={<ProductDetail />} />
+                <Route path="/garage" element={<Garage />} />
+                <Route path="/build" element={<Build />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/faq" element={<FAQ />} />
+                <Route path="/shipping" element={<Shipping />} />
+                <Route path="/warranty" element={<Warranty />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/login" element={<Login />} />
 
-            <Route path="/admin" element={<AdminRoute />}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="top-offers" element={<AdminTopOffers />} />
-              <Route path="payments" element={<AdminPayments />} />
-              <Route path="orders" element={<AdminOrders />} />
-              <Route path="orders/history" element={<AdminOrderHistory />} />
-              <Route path="low-stock" element={<AdminLowStock />} />
-              <Route path="requests" element={<AdminRequests />} />
-              <Route path="settings" element={<AdminSettings />} />
-            </Route>
+                <Route path="/admin" element={<AdminRoute />}>
+                  <Route index element={<AdminDashboard />} />
+                  <Route path="top-offers" element={<AdminTopOffers />} />
+                  <Route path="payments" element={<AdminPayments />} />
+                  <Route path="orders" element={<AdminOrders />} />
+                  <Route path="orders/history" element={<AdminOrderHistory />} />
+                  <Route path="low-stock" element={<AdminLowStock />} />
+                  <Route path="requests" element={<AdminRequests />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                </Route>
 
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AdminAuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AdminAuthProvider>
+          </UserAuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </GoogleOAuthProvider>
 );
 
 export default App;
+

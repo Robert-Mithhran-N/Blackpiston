@@ -90,7 +90,7 @@ npx prisma db push
 npm run dev
 ```
 
-Frontend will be available at: `http://localhost:8081`
+Frontend will be available at: `http://localhost:5000`
 
 ### Backend Setup
 
