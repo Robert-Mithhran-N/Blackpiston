@@ -1,12 +1,67 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Flame, Percent } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
-import { getTopOffers } from "@/data/userMockData";
+import { fetchTopOffers } from "@/lib/api";
+import { Product } from "@/types/user";
+
+// Map top offer API response to Product type for ProductCard
+function mapOfferToProduct(offer: any): Product {
+    const p = offer.product || offer;
+    return {
+        id: p.id,
+        name: p.name,
+        category: p.categorySlug || "accessories",
+        price: offer.originalPrice || p.price,
+        offerPrice: offer.offerPrice || p.compareAtPrice || undefined,
+        image: p.images?.[0] || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop",
+        rating: p.averageRating || 0,
+        description: p.description || "",
+        inStock: p.isActive !== false,
+        featured: p.isFeatured || false,
+        isTopOffer: true,
+    };
+}
 
 const TopOffers = () => {
-    const topOffers = getTopOffers();
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchTopOffers()
+            .then((data) => setProducts((data.offers || []).map(mapOfferToProduct)))
+            .catch((err) => console.error("Failed to load top offers:", err))
+            .finally(() => setLoading(false));
+    }, []);
+
+    if (loading) {
+        return (
+            <section className="py-16 bg-gradient-to-b from-background to-muted/30">
+                <div className="container">
+                    <div className="mb-10">
+                        <Badge className="mb-3 bg-gradient-to-r from-orange-500 to-red-500 text-white border-0">
+                            <Flame className="h-3 w-3 mr-1" />
+                            Hot Deals
+                        </Badge>
+                        <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                            Top <span className="text-primary">Offers</span>
+                        </h2>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="aspect-[3/4] rounded-lg bg-muted animate-pulse" />
+                        ))}
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
+    if (products.length === 0) {
+        return null;
+    }
 
     return (
         <section className="py-16 bg-gradient-to-b from-background to-muted/30">
@@ -35,7 +90,7 @@ const TopOffers = () => {
 
                 {/* Products Grid */}
                 <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                    {topOffers.slice(0, 8).map((product) => (
+                    {products.slice(0, 8).map((product) => (
                         <ProductCard key={product.id} product={product} />
                     ))}
                 </div>

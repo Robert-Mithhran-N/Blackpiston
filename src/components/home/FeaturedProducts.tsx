@@ -1,11 +1,67 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Star } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
-import { getFeaturedProducts } from "@/data/userMockData";
+import { fetchFeaturedProducts } from "@/lib/api";
+import { Product } from "@/types/user";
+
+// Map API product to the Product type expected by ProductCard
+function mapProduct(p: any): Product {
+    return {
+        id: p.id,
+        name: p.name,
+        category: p.categorySlug || p.category?.slug || "accessories",
+        price: p.price,
+        offerPrice: p.compareAtPrice ? p.price : undefined,
+        image: p.images?.[0] || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop",
+        rating: p.averageRating || 0,
+        description: p.description || "",
+        inStock: p.isActive !== false,
+        featured: p.isFeatured || false,
+        isTopOffer: false,
+    };
+}
 
 const FeaturedProducts = () => {
-    const featuredProducts = getFeaturedProducts();
+    const [products, setProducts] = useState<Product[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchFeaturedProducts()
+            .then((data) => setProducts((data.products || []).map(mapProduct)))
+            .catch((err) => console.error("Failed to load featured products:", err))
+            .finally(() => setLoading(false));
+    }, []);
+
+    if (loading) {
+        return (
+            <section className="py-16 bg-background">
+                <div className="container">
+                    <div className="mb-10">
+                        <div className="flex items-center gap-2 mb-3">
+                            <Star className="h-5 w-5 fill-primary text-primary" />
+                            <span className="text-primary font-medium text-sm uppercase tracking-wider">
+                                Featured Collection
+                            </span>
+                        </div>
+                        <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                            Featured <span className="text-primary">Products</span>
+                        </h2>
+                    </div>
+                    <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                        {[1, 2, 3, 4, 5, 6].map((i) => (
+                            <div key={i} className="aspect-[3/4] rounded-lg bg-muted animate-pulse" />
+                        ))}
+                    </div>
+                </div>
+            </section>
+        );
+    }
+
+    if (products.length === 0) {
+        return null;
+    }
 
     return (
         <section className="py-16 bg-background">
@@ -36,7 +92,7 @@ const FeaturedProducts = () => {
 
                 {/* Products Grid */}
                 <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-                    {featuredProducts.slice(0, 12).map((product) => (
+                    {products.slice(0, 12).map((product) => (
                         <ProductCard key={product.id} product={product} />
                     ))}
                 </div>

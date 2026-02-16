@@ -47,14 +47,11 @@ import {
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, LineChart, Line } from "recharts";
 import {
-  dashboardStats,
-  lowStockProducts,
-  productRequests,
-  paymentSummary as initialPaymentSummary,
-  notifications as initialNotifications,
-  salesData,
-  orders,
-} from "@/data/adminMockData";
+  fetchDashboardStats,
+  fetchLowStockProducts,
+  fetchAdminRequests,
+  fetchAdminPayments,
+} from "@/lib/api";
 import { Notification, CODPayment, SalesDataPoint } from "@/types/admin";
 
 // ============================================================
@@ -160,12 +157,18 @@ const KPICard = ({ title, value, icon: Icon, colorClass, bgColorClass, loading }
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
-  const [paymentSummary, setPaymentSummary] = useState(initialPaymentSummary);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [paymentSummary, setPaymentSummary] = useState({ onlineTotal: 0, codTotal: 0, combinedTotal: 0 });
   const [codPayments, setCodPayments] = useState<CODPayment[]>([]);
   const [isCODModalOpen, setIsCODModalOpen] = useState(false);
   const [selectedRange, setSelectedRange] = useState<"weekly" | "monthly" | "yearly">("weekly");
   const [chartType, setChartType] = useState<"bar" | "line">("bar");
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [lowStockCount, setLowStockCount] = useState(0);
+  const [requestsCount, setRequestsCount] = useState(0);
+  const [salesData, setSalesData] = useState<Record<string, SalesDataPoint[]>>({
+    weekly: [], monthly: [], yearly: [],
+  });
 
   // COD form state
   const [codForm, setCodForm] = useState({
@@ -174,16 +177,55 @@ const AdminDashboard = () => {
     dateReceived: new Date().toISOString().split("T")[0],
   });
 
-  // Simulate loading
+  // Fetch dashboard data from API
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 800);
-    return () => clearTimeout(timer);
+    setIsLoading(true);
+    Promise.all([
+      fetchDashboardStats(),
+      fetchLowStockProducts(),
+      fetchAdminRequests(),
+      fetchAdminPayments(),
+    ])
+      .then(([statsData, lowStockData, requestsData, paymentsData]) => {
+        // Dashboard stats
+        setTotalOrders(statsData.totalOrders || 0);
+        setLowStockCount(lowStockData.length || 0);
+        setRequestsCount(requestsData.requests?.length || requestsData.total || 0);
+
+        // Payment summary
+        const payments = paymentsData.payments || [];
+        const onlineTotal = payments
+          .filter((p: any) => p.paymentMethod !== 'COD')
+          .reduce((sum: number, p: any) => sum + (p.amountReceived || 0), 0);
+        const codTotal = payments
+          .filter((p: any) => p.paymentMethod === 'COD')
+          .reduce((sum: number, p: any) => sum + (p.amountReceived || 0), 0);
+        setPaymentSummary({ onlineTotal, codTotal, combinedTotal: onlineTotal + codTotal });
+
+        // Generate sales data from stats (or use provided)
+        if (statsData.salesData) {
+          setSalesData(statsData.salesData);
+        } else {
+          // Fallback placeholder sales data
+          setSalesData({
+            weekly: [
+              { period: "Mon", unitsSold: statsData.totalOrders ? Math.round(statsData.totalOrders / 7) : 0 },
+              { period: "Tue", unitsSold: 0 }, { period: "Wed", unitsSold: 0 },
+              { period: "Thu", unitsSold: 0 }, { period: "Fri", unitsSold: 0 },
+              { period: "Sat", unitsSold: 0 }, { period: "Sun", unitsSold: 0 },
+            ],
+            monthly: [{ period: "This Month", unitsSold: statsData.totalOrders || 0 }],
+            yearly: [{ period: "This Year", unitsSold: statsData.totalOrders || 0 }],
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load dashboard data:", err);
+        toast.error("Failed to load dashboard data");
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
-  // Calculate counts
-  const totalOrders = dashboardStats.totalOrders;
-  const lowStockCount = lowStockProducts.length;
-  const requestsCount = productRequests.length;
   const unreadNotifications = notifications.filter((n) => !n.isRead).length;
 
   // Format currency

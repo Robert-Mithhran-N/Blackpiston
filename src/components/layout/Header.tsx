@@ -13,8 +13,8 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useUserAuth } from "@/context/UserAuthContext";
+import { fetchCategories } from "@/lib/api";
 import logo from "@/assets/logo.png";
-import { categories } from "@/data/userMockData";
 
 // Import shop category images
 import helmetImg from "@/assets/shop-btn-logos/shop-helmet.png";
@@ -59,6 +59,14 @@ const Header = () => {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Fetch categories from API
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string; productCount?: number }[]>([]);
+  useEffect(() => {
+    fetchCategories()
+      .then((data) => setCategories(data.categories || []))
+      .catch((err) => console.error("Failed to load categories:", err));
   }, []);
 
   const navState = useMemo(
@@ -119,11 +127,11 @@ const Header = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       {categories.map((category) => {
-                        const categoryImage = categoryImages[category.id];
+                        const categoryImage = categoryImages[category.slug];
                         return (
                           <NavigationMenuLink key={category.id} asChild>
                             <Link
-                              to={`/shop/${category.id}`}
+                              to={`/shop/${category.slug}`}
                               className="group flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 hover:bg-primary/10 transition-all duration-200 border border-zinc-700/50 hover:border-primary/40 cursor-pointer"
                             >
                               {/* Category Image */}
