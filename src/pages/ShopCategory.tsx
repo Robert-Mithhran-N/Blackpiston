@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -24,9 +24,10 @@ import {
   Footprints,
   Sparkles,
   Package,
+  Loader2,
 } from "lucide-react";
-import { getProductsByCategory, getCategoryById, categories } from "@/data/userMockData";
-import { ProductCategory } from "@/types/user";
+import { fetchProductsByCategory, fetchCategories } from "@/lib/api";
+import { Product } from "@/types/user";
 
 // Category icons
 const categoryIcons: Record<string, React.ElementType> = {
@@ -36,19 +37,55 @@ const categoryIcons: Record<string, React.ElementType> = {
   accessories: Sparkles,
 };
 
+// Map API product to ProductCard shape
+function mapProduct(p: any): Product {
+  return {
+    id: p.id,
+    name: p.name,
+    category: p.categorySlug || p.category?.slug || "accessories",
+    price: p.price,
+    offerPrice: p.compareAtPrice ? p.price : undefined,
+    image: p.images?.[0] || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop",
+    rating: p.averageRating || 0,
+    description: p.description || "",
+    inStock: p.isActive !== false,
+    featured: p.isFeatured || false,
+    isTopOffer: false,
+  };
+}
+
 const ShopCategory = () => {
   const { category } = useParams<{ category: string }>();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<string>("featured");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // Get category info
-  const categoryInfo = getCategoryById(category || "");
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categoryInfo, setCategoryInfo] = useState<{ name: string; description?: string } | null>(null);
+  const [otherCategories, setOtherCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [loading, setLoading] = useState(true);
   const CategoryIcon = category ? categoryIcons[category] || Package : Package;
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      fetchProductsByCategory(category || ""),
+      fetchCategories(),
+    ])
+      .then(([prodData, catData]) => {
+        setProducts((prodData.products || []).map(mapProduct));
+        const cats = catData.categories || [];
+        const current = cats.find((c: any) => c.slug === category);
+        setCategoryInfo(current || null);
+        setOtherCategories(cats.filter((c: any) => c.slug !== category));
+      })
+      .catch((err) => console.error("Failed to load category data:", err))
+      .finally(() => setLoading(false));
+  }, [category]);
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {
-    let filtered = getProductsByCategory(category || "");
+    let filtered = [...products];
 
     // Search filter
     if (searchQuery) {
@@ -79,7 +116,7 @@ const ShopCategory = () => {
     }
 
     return filtered;
-  }, [category, searchQuery, sortBy]);
+  }, [products, searchQuery, sortBy]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,19 +199,17 @@ const ShopCategory = () => {
 
           {/* Other Categories Quick Links */}
           <div className="flex flex-wrap gap-2 mb-8">
-            {categories
-              .filter((cat) => cat.id !== category)
-              .map((cat) => {
-                const Icon = categoryIcons[cat.id] || Sparkles;
-                return (
-                  <Link key={cat.id} to={`/shop/${cat.id}`}>
-                    <Badge variant="outline" className="cursor-pointer hover:bg-primary/20">
-                      <Icon className="h-3 w-3 mr-1" />
-                      {cat.name}
-                    </Badge>
-                  </Link>
-                );
-              })}
+            {otherCategories.map((cat) => {
+              const Icon = categoryIcons[cat.slug] || Sparkles;
+              return (
+                <Link key={cat.id} to={`/shop/${cat.slug}`}>
+                  <Badge variant="outline" className="cursor-pointer hover:bg-primary/20">
+                    <Icon className="h-3 w-3 mr-1" />
+                    {cat.name}
+                  </Badge>
+                </Link>
+              );
+            })}
           </div>
 
           {/* Results Count */}
@@ -185,8 +220,13 @@ const ShopCategory = () => {
             </p>
           </div>
 
-          {/* Products Grid */}
-          {filteredProducts.length === 0 ? (
+          {/* Loading */}
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-3 text-muted-foreground">Loading products...</span>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="text-center py-16 border border-dashed border-border rounded-lg">
               <CategoryIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">No Products Found</h3>

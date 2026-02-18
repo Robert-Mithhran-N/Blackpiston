@@ -6,18 +6,20 @@
 export interface Product {
     id: string;
     name: string;
-    category: ProductCategory;
+    category: string;
     price: number;
     offerPrice?: number;
     image: string;
+    images?: string[];
     rating: number;
     description?: string;
     inStock: boolean;
     featured?: boolean;
     isTopOffer?: boolean;
+    specifications?: { label: string; value: string }[];
 }
 
-export type ProductCategory = 'helmets' | 'jackets' | 'boots' | 'accessories';
+export type ProductCategory = string;
 
 // ============================================================
 // Category Types

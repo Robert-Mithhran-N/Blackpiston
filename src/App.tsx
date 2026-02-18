@@ -24,6 +24,7 @@ import AdminRoute from "./routes/AdminRoute";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { UserAuthProvider } from "./context/UserAuthContext";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminOrderHistory from "./pages/admin/AdminOrderHistory";
 import AdminLowStock from "./pages/admin/AdminLowStock";
@@ -31,6 +32,7 @@ import AdminRequests from "./pages/admin/AdminRequests";
 import AdminTopOffers from "./pages/admin/AdminTopOffers";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminProductTypes from "./pages/admin/AdminProductTypes";
 
 const queryClient = new QueryClient();
 
@@ -64,6 +66,8 @@ const App = () => (
 
                 <Route path="/admin" element={<AdminRoute />}>
                   <Route index element={<AdminDashboard />} />
+                  <Route path="products" element={<AdminProducts />} />
+                  <Route path="product-types" element={<AdminProductTypes />} />
                   <Route path="top-offers" element={<AdminTopOffers />} />
                   <Route path="payments" element={<AdminPayments />} />
                   <Route path="orders" element={<AdminOrders />} />

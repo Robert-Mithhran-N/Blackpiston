@@ -51,6 +51,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
+import { fetchAdminPayments } from "@/lib/api";
 
 // Types
 type PaymentStatus = "Paid" | "Pending" | "Partial" | "Refunded";
@@ -73,61 +74,19 @@ interface Payment {
   paymentStatus: PaymentStatus;
 }
 
-// Mock data - Replace with API call
-const mockPayments: Payment[] = [
-  {
-    id: "PAY-001",
-    userId: "USR-001",
-    username: "john_doe",
-    contact: "+91 9876543210 | john@example.com",
-    address: "123 Main St, City, State 12345",
-    orderId: "ORD-001",
-    itemsOrdered: "Helmet (1), Jacket (1)",
-    orderDate: "2025-01-15",
-    productReceivedDate: "2025-01-20",
-    amountDue: 15000,
-    amountReceived: 15000,
-    amountReceivedDate: "2025-01-15",
-    paymentMethod: "Online",
-    paymentStatus: "Paid",
-  },
-  {
-    id: "PAY-002",
-    userId: "USR-002",
-    username: "jane_smith",
-    contact: "+91 9876543211 | jane@example.com",
-    address: "456 Oak Ave, City, State 12346",
-    orderId: "ORD-002",
-    itemsOrdered: "Boots (2), Gloves (2)",
-    orderDate: "2025-01-16",
-    productReceivedDate: null,
-    amountDue: 8000,
-    amountReceived: 4000,
-    amountReceivedDate: "2025-01-16",
-    paymentMethod: "COD",
-    paymentStatus: "Partial",
-  },
-  {
-    id: "PAY-003",
-    userId: "USR-003",
-    username: "bob_wilson",
-    contact: "+91 9876543212 | bob@example.com",
-    address: "789 Pine Rd, City, State 12347",
-    orderId: "ORD-003",
-    itemsOrdered: "Lights (1), Mounts (3)",
-    orderDate: "2025-01-17",
-    productReceivedDate: null,
-    amountDue: 5000,
-    amountReceived: 0,
-    amountReceivedDate: null,
-    paymentMethod: "Bank Transfer",
-    paymentStatus: "Pending",
-  },
-];
-
 const AdminPayments = () => {
   const navigate = useNavigate();
-  const [payments, setPayments] = useState<Payment[]>(mockPayments);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch payments from API
+  useEffect(() => {
+    setIsLoading(true);
+    fetchAdminPayments()
+      .then((data) => setPayments(data.payments || []))
+      .catch((err) => console.error("Failed to load payments:", err))
+      .finally(() => setIsLoading(false));
+  }, []);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<PaymentStatus[]>([]);

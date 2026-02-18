@@ -24,7 +24,7 @@ import {
     ChevronLeft,
     ChevronRight,
 } from "lucide-react";
-import { getProductById, getProductsByCategory, products } from "@/data/userMockData";
+import { fetchProductById, fetchProductsByCategory } from "@/lib/api";
 import { Product } from "@/types/user";
 import { toast } from "sonner";
 
@@ -72,23 +72,74 @@ const ProductDetail = () => {
     const [quantity, setQuantity] = useState(1);
     const [selectedImage, setSelectedImage] = useState(0);
     const [isWishlisted, setIsWishlisted] = useState(false);
+    const [product, setProduct] = useState<Product | null>(null);
+    const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
-    const product = getProductById(productId || "");
-    const relatedProducts = product
-        ? getProductsByCategory(product.category).filter((p) => p.id !== product.id).slice(0, 6)
-        : [];
-
-    // Simulate loading
+    // Fetch product from API
     useEffect(() => {
+        if (!productId) return;
         setIsLoading(true);
-        const timer = setTimeout(() => setIsLoading(false), 500);
-        return () => clearTimeout(timer);
+        setSelectedImage(0);
+        setQuantity(1);
+
+        fetchProductById(productId)
+            .then((data) => {
+                const p = data.product || data;
+                const mapped: Product = {
+                    id: p.id,
+                    name: p.name,
+                    category: p.categorySlug || p.category?.slug || "accessories",
+                    price: p.compareAtPrice || p.price,
+                    offerPrice: p.compareAtPrice ? p.price : undefined,
+                    image: p.images?.[0] || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop",
+                    images: p.images || [],
+                    rating: p.averageRating || 0,
+                    description: p.description || "",
+                    inStock: p.isActive !== false,
+                    featured: p.isFeatured || false,
+                    isTopOffer: false,
+                    specifications: p.specifications || [],
+                };
+                setProduct(mapped);
+
+                // Fetch related products
+                if (mapped.category) {
+                    fetchProductsByCategory(mapped.category)
+                        .then((catData) => {
+                            const related = (catData.products || [])
+                                .filter((r: any) => r.id !== p.id)
+                                .slice(0, 6)
+                                .map((r: any): Product => ({
+                                    id: r.id,
+                                    name: r.name,
+                                    category: r.categorySlug || r.category?.slug || "accessories",
+                                    price: r.price,
+                                    offerPrice: r.compareAtPrice ? r.price : undefined,
+                                    image: r.images?.[0] || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop",
+                                    rating: r.averageRating || 0,
+                                    description: r.description || "",
+                                    inStock: r.isActive !== false,
+                                    featured: r.isFeatured || false,
+                                    isTopOffer: false,
+                                }));
+                            setRelatedProducts(related);
+                        })
+                        .catch(() => setRelatedProducts([]));
+                }
+            })
+            .catch((err) => {
+                console.error("Failed to load product:", err);
+                setProduct(null);
+            })
+            .finally(() => setIsLoading(false));
     }, [productId]);
 
-    // Mock image gallery (same image repeated for demo)
-    const images = product
-        ? [product.image, product.image, product.image, product.image]
-        : [];
+    // Build images array from product data
+    const images = product?.images && product.images.length > 0
+        ? product.images
+        : product?.image
+            ? [product.image]
+            : [];
 
     const discountPercent = product?.offerPrice
         ? Math.round(((product.price - product.offerPrice) / product.price) * 100)

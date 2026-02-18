@@ -41,7 +41,7 @@ import {
     Banknote,
     Filter,
 } from "lucide-react";
-import { orders as allOrders } from "@/data/adminMockData";
+import { fetchAdminOrders } from "@/lib/api";
 import { Order, PaymentStatus } from "@/types/admin";
 
 // Status color helpers
@@ -80,14 +80,17 @@ const AdminOrderHistory = () => {
 
     // Filter for Delivered and Completed orders only
     useEffect(() => {
-        const timer = setTimeout(() => {
-            const completedOrders = allOrders.filter(
-                (o) => o.orderStatus === "Delivered" || o.orderStatus === "Cancelled"
-            );
-            setOrders(completedOrders);
-            setIsLoading(false);
-        }, 600);
-        return () => clearTimeout(timer);
+        setIsLoading(true);
+        fetchAdminOrders()
+            .then((data) => {
+                const all = data.orders || [];
+                const completedOrders = all.filter(
+                    (o: Order) => o.orderStatus === "Delivered" || o.orderStatus === "Cancelled"
+                );
+                setOrders(completedOrders);
+            })
+            .catch((err) => console.error("Failed to load order history:", err))
+            .finally(() => setIsLoading(false));
     }, []);
 
     // Filter and sort orders

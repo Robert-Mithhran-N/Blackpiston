@@ -1,14 +1,20 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
 import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
 import orderRoutes from './routes/orders.js';
 import uploadRoutes from './routes/upload.js';
+import adminRoutes from './routes/admin.js';
+import productTypeRoutes from './routes/productTypes.js';
 
-// Load environment variables
-dotenv.config({ path: '../.env' });
+// Load environment variables (resolve path relative to this file, not CWD)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
 const prisma = new PrismaClient();
@@ -16,7 +22,7 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:8081',
+    origin: process.env.FRONTEND_URL || 'http://localhost:5000',
     credentials: true
 }));
 app.use(express.json());
@@ -36,6 +42,9 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/upload', uploadRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/product-types', productTypeRoutes);
+// Search and tag suggestion routes are inside productTypeRoutes
 
 // Database connection check
 async function checkDatabaseConnection() {

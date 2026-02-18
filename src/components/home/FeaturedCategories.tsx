@@ -1,6 +1,7 @@
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, HardHat, Shirt, Footprints, Sparkles } from "lucide-react";
-import { categories } from "@/data/userMockData";
+import { fetchCategories } from "@/lib/api";
 
 // Category icons
 const categoryIcons: Record<string, React.ElementType> = {
@@ -10,7 +11,54 @@ const categoryIcons: Record<string, React.ElementType> = {
   accessories: Sparkles,
 };
 
+interface CategoryData {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  productCount?: number;
+}
+
 const FeaturedCategories = () => {
+  const [categories, setCategories] = useState<CategoryData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCategories()
+      .then((data) => setCategories(data.categories || []))
+      .catch((err) => console.error("Failed to load categories:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <section className="py-20 bg-card">
+        <div className="container">
+          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-12">
+            <div>
+              <p className="text-primary font-ui font-semibold text-sm uppercase tracking-widest mb-2">
+                Browse Categories
+              </p>
+              <h2 className="font-display text-4xl sm:text-5xl text-foreground tracking-wide">
+                SHOP BY CATEGORY
+              </h2>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="aspect-[4/3] rounded-2xl bg-muted animate-pulse" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (categories.length === 0) {
+    return null;
+  }
+
   return (
     <section className="py-20 bg-card">
       <div className="container">
@@ -36,18 +84,18 @@ const FeaturedCategories = () => {
         {/* Categories Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {categories.map((category, index) => {
-            const Icon = categoryIcons[category.id] || Sparkles;
+            const Icon = categoryIcons[category.slug] || Sparkles;
             return (
               <Link
                 key={category.id}
-                to={`/shop/${category.id}`}
+                to={`/shop/${category.slug}`}
                 className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-muted to-muted/50 border-2 border-border hover:border-primary/50 transition-all duration-300"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
                 {/* Image */}
                 <div className="aspect-[4/3] overflow-hidden">
                   <img
-                    src={category.image}
+                    src={category.image || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop"}
                     alt={category.name}
                     className="w-full h-full object-cover opacity-60 group-hover:opacity-80 group-hover:scale-110 transition-all duration-500"
                     onError={(e) => {
@@ -69,14 +117,18 @@ const FeaturedCategories = () => {
                       <p className="font-display text-xl text-foreground tracking-wide group-hover:text-primary transition-colors">
                         {category.name.toUpperCase()}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {category.productCount} products
-                      </p>
+                      {category.productCount !== undefined && (
+                        <p className="text-xs text-muted-foreground">
+                          {category.productCount} products
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {category.description}
-                  </p>
+                  {category.description && (
+                    <p className="text-sm text-muted-foreground line-clamp-2">
+                      {category.description}
+                    </p>
+                  )}
                 </div>
 
                 {/* Hover indicator */}

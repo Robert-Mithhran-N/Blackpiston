@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -24,9 +24,10 @@ import {
   Shirt,
   Footprints,
   Sparkles,
+  Loader2,
 } from "lucide-react";
-import { products, categories } from "@/data/userMockData";
-import { ProductCategory } from "@/types/user";
+import { fetchProducts, fetchCategories } from "@/lib/api";
+import { Product } from "@/types/user";
 
 // Category icons
 const categoryIcons: Record<string, React.ElementType> = {
@@ -36,15 +37,49 @@ const categoryIcons: Record<string, React.ElementType> = {
   accessories: Sparkles,
 };
 
+// Map API product to ProductCard shape
+function mapProduct(p: any): Product {
+  return {
+    id: p.id,
+    name: p.name,
+    category: p.categorySlug || p.category?.slug || "accessories",
+    price: p.price,
+    offerPrice: p.compareAtPrice ? p.price : undefined,
+    image: p.images?.[0] || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop",
+    rating: p.averageRating || 0,
+    description: p.description || "",
+    inStock: p.isActive !== false,
+    featured: p.isFeatured || false,
+    isTopOffer: false,
+  };
+}
+
 const Shop = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("featured");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([
+      fetchProducts({ limit: 200 }),
+      fetchCategories(),
+    ])
+      .then(([prodData, catData]) => {
+        setAllProducts((prodData.products || []).map(mapProduct));
+        setCategories(catData.categories || []);
+      })
+      .catch((err) => console.error("Failed to load shop data:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
   // Filter and sort products
   const filteredProducts = useMemo(() => {
-    let filtered = [...products];
+    let filtered = [...allProducts];
 
     // Search filter
     if (searchQuery) {
@@ -84,7 +119,7 @@ const Shop = () => {
     }
 
     return filtered;
-  }, [searchQuery, selectedCategory, sortBy]);
+  }, [allProducts, searchQuery, selectedCategory, sortBy]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,7 +167,7 @@ const Shop = () => {
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
                     {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
+                      <SelectItem key={cat.id} value={cat.slug}>
                         {cat.name}
                       </SelectItem>
                     ))}
@@ -184,13 +219,13 @@ const Shop = () => {
               All Products
             </Badge>
             {categories.map((cat) => {
-              const Icon = categoryIcons[cat.id] || Sparkles;
+              const Icon = categoryIcons[cat.slug] || Sparkles;
               return (
                 <Badge
                   key={cat.id}
-                  variant={selectedCategory === cat.id ? "default" : "outline"}
+                  variant={selectedCategory === cat.slug ? "default" : "outline"}
                   className="cursor-pointer hover:bg-primary/20"
-                  onClick={() => setSelectedCategory(cat.id)}
+                  onClick={() => setSelectedCategory(cat.slug)}
                 >
                   <Icon className="h-3 w-3 mr-1" />
                   {cat.name}
@@ -206,8 +241,13 @@ const Shop = () => {
             </p>
           </div>
 
-          {/* Products Grid */}
-          {filteredProducts.length === 0 ? (
+          {/* Loading */}
+          {loading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-3 text-muted-foreground">Loading products...</span>
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="text-center py-16">
               <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium mb-2">No Products Found</h3>

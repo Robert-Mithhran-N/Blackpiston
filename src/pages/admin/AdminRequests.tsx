@@ -32,7 +32,7 @@ import {
     AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { productRequests as initialRequests } from "@/data/adminMockData";
+import { fetchAdminRequests, updateRequest } from "@/lib/api";
 import { ProductRequest, RequestStatus } from "@/types/admin";
 
 // ============================================================
@@ -253,13 +253,13 @@ const AdminRequests = () => {
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [requestToDelete, setRequestToDelete] = useState<ProductRequest | null>(null);
 
-    // Simulate loading and initialize state with mock data
+    // Fetch requests from API
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setRequests(initialRequests);
-            setIsLoading(false);
-        }, 600);
-        return () => clearTimeout(timer);
+        setIsLoading(true);
+        fetchAdminRequests()
+            .then((data) => setRequests(data.requests || []))
+            .catch((err) => console.error("Failed to load requests:", err))
+            .finally(() => setIsLoading(false));
     }, []);
 
     // Calculate counts
@@ -268,12 +268,16 @@ const AdminRequests = () => {
 
     // Handle status change
     const handleStatusChange = (id: string, newStatus: RequestStatus) => {
-        setRequests((prev) =>
-            prev.map((request) =>
-                request.id === id ? { ...request, status: newStatus } : request
-            )
-        );
-        toast.success(`Request status updated to ${newStatus}`);
+        updateRequest(id, { status: newStatus })
+            .then(() => {
+                setRequests((prev) =>
+                    prev.map((request) =>
+                        request.id === id ? { ...request, status: newStatus } : request
+                    )
+                );
+                toast.success(`Request status updated to ${newStatus}`);
+            })
+            .catch(() => toast.error("Failed to update request status"));
     };
 
     // Handle delete initiation
