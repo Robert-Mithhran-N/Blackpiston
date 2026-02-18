@@ -138,7 +138,7 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
             name, slug, description, shortDescription, categoryId, categorySlug,
             brand, price, offerPrice, images, tags, sku,
             isFeatured, isActive, weight, dimensions, variants, specifications,
-            stockQuantity, rating, totalReviews
+            stockQuantity, rating, totalReviews, productTypeId
         } = req.body;
 
         // Auto-generate SKU if not provided
@@ -146,12 +146,17 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
 
         const stock = stockQuantity ?? 0;
 
+        // Normalize tags into tagStrings for search
+        const rawTags: string[] = tags || [];
+        const tagStrings = rawTags.map((t: string) => t.replace(/^#/, '').trim().toLowerCase()).filter(Boolean);
+
         const product = await prisma.product.create({
             data: {
                 name,
                 slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
                 description,
                 shortDescription,
+                productTypeId: productTypeId || null,
                 categoryId,
                 categorySlug,
                 brand,
@@ -161,7 +166,8 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
                 stockQuantity: stock,
                 inStock: stock > 0,
                 images: images || [],
-                tags: tags || [],
+                tags: rawTags,
+                tagStrings,
                 isFeatured: isFeatured || false,
                 isActive: isActive !== false,
                 weight,
@@ -171,7 +177,7 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
                 rating: rating ?? 0,
                 totalReviews: totalReviews ?? 0,
             },
-            include: { category: true }
+            include: { category: true, productType: true }
         });
 
         res.status(201).json({ message: 'Product created', product });
@@ -196,10 +202,15 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
             updateData.inStock = updateData.stockQuantity > 0;
         }
 
+        // If tags are being updated, also update tagStrings
+        if (updateData.tags && Array.isArray(updateData.tags)) {
+            updateData.tagStrings = updateData.tags.map((t: string) => t.replace(/^#/, '').trim().toLowerCase()).filter(Boolean);
+        }
+
         const product = await prisma.product.update({
             where: { id },
             data: updateData,
-            include: { category: true }
+            include: { category: true, productType: true }
         });
 
         res.json({ message: 'Product updated', product });
@@ -237,11 +248,17 @@ router.get('/products', authenticateAdmin, async (req: Request, res: Response) =
             where.OR = [
                 { name: { contains: search as string, mode: 'insensitive' } },
                 { brand: { contains: search as string, mode: 'insensitive' } },
+                { tagStrings: { hasSome: [(search as string).replace(/^#/, '').trim().toLowerCase()] } },
             ];
         }
 
         if (category) {
             where.categorySlug = category;
+        }
+
+        const productTypeId = req.query.productTypeId as string | undefined;
+        if (productTypeId) {
+            where.productTypeId = productTypeId;
         }
 
         if (status === 'active') where.isActive = true;
@@ -253,7 +270,7 @@ router.get('/products', authenticateAdmin, async (req: Request, res: Response) =
                 skip,
                 take: limitNum,
                 orderBy: { createdAt: 'desc' },
-                include: { category: true, inventory: true }
+                include: { category: true, productType: true, inventory: true }
             }),
             prisma.product.count({ where })
         ]);
@@ -273,7 +290,7 @@ router.get('/products', authenticateAdmin, async (req: Request, res: Response) =
 // ============================================================
 router.post('/categories', authenticateAdmin, async (req: Request, res: Response) => {
     try {
-        const { name, slug, description, image, icon, sortOrder } = req.body;
+        const { name, slug, description, image, icon, sortOrder, productTypeId } = req.body;
         const category = await prisma.productCategory.create({
             data: {
                 name,
@@ -282,6 +299,7 @@ router.post('/categories', authenticateAdmin, async (req: Request, res: Response
                 image,
                 icon,
                 sortOrder: sortOrder || 0,
+                productTypeId: productTypeId || null,
                 isActive: true,
             }
         });

@@ -47,6 +47,7 @@ type AdminLayoutProps = {
 const navItems = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { to: "/admin/products", label: "Products", icon: Package },
+  { to: "/admin/product-types", label: "Product Types", icon: Tag },
   { to: "/admin/top-offers", label: "Top Offers", icon: Tag },
   { to: "/admin/payments", label: "Payments", icon: CreditCard },
   { to: "/admin/orders", label: "Orders", icon: ShoppingBag },

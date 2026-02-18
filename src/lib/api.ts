@@ -333,3 +333,126 @@ export async function deleteTopOffer(id: string) {
     if (!res.ok) throw new Error("Failed to delete top offer");
     return res.json();
 }
+
+// ============================================================
+// Product Types
+// ============================================================
+
+export async function fetchProductTypes() {
+    const res = await fetch(`${API_BASE}/product-types`, {
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to fetch product types");
+    return res.json();
+}
+
+export async function createProductType(data: {
+    name: string;
+    description?: string;
+}) {
+    const res = await fetch(`${API_BASE}/product-types`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to create product type");
+    }
+    return res.json();
+}
+
+export async function updateProductType(
+    id: string,
+    data: { name?: string; description?: string }
+) {
+    const res = await fetch(`${API_BASE}/product-types/${id}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update product type");
+    }
+    return res.json();
+}
+
+export async function deleteProductType(id: string) {
+    const res = await fetch(`${API_BASE}/product-types/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete product type");
+    }
+    return res.json();
+}
+
+// ============================================================
+// Categories (filtered by product type)
+// ============================================================
+
+export async function fetchCategoriesByType(productTypeId?: string) {
+    const params = new URLSearchParams();
+    if (productTypeId) params.set("productTypeId", productTypeId);
+    const res = await fetch(
+        `${API_BASE}/products/categories/all?${params.toString()}`
+    );
+    if (!res.ok) throw new Error("Failed to fetch categories");
+    return res.json();
+}
+
+// ============================================================
+// Search & Tags
+// ============================================================
+
+export async function searchProducts(params: {
+    q?: string;
+    tags?: string;
+    page?: number;
+    limit?: number;
+}) {
+    const searchParams = new URLSearchParams();
+    if (params.q) searchParams.set("q", params.q);
+    if (params.tags) searchParams.set("tags", params.tags);
+    if (params.page) searchParams.set("page", String(params.page));
+    if (params.limit) searchParams.set("limit", String(params.limit));
+
+    const res = await fetch(
+        `${API_BASE}/product-types/search?${searchParams.toString()}`
+    );
+    if (!res.ok) throw new Error("Search failed");
+    return res.json();
+}
+
+export async function fetchTagSuggestions(prefix: string) {
+    const params = new URLSearchParams({ prefix });
+    const res = await fetch(
+        `${API_BASE}/product-types/tags/suggestions?${params.toString()}`
+    );
+    if (!res.ok) throw new Error("Failed to fetch tag suggestions");
+    return res.json();
+}
+
+// ============================================================
+// Admin Categories (CRUD)
+// ============================================================
+
+export async function createCategory(data: {
+    name: string;
+    productTypeId?: string;
+    description?: string;
+}) {
+    const res = await fetch(`${API_BASE}/admin/categories`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to create category");
+    }
+    return res.json();
+}

@@ -48,7 +48,7 @@ export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
             }
         }
 
-        // Validate token with backend
+        // Validate token with backend (gracefully handle offline backend)
         fetch(`${API_BASE}/auth/me`, {
             headers: { Authorization: `Bearer ${storedToken}` },
         })
@@ -61,12 +61,18 @@ export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
                 setToken(storedToken);
                 localStorage.setItem(USER_KEY, JSON.stringify(data.user));
             })
-            .catch(() => {
-                // Token is invalid — clear everything
-                setUser(null);
-                setToken(null);
-                localStorage.removeItem(TOKEN_KEY);
-                localStorage.removeItem(USER_KEY);
+            .catch((err) => {
+                // If it's a network error (backend offline), keep the cached user
+                // so the app doesn't force logout when the server is temporarily down.
+                // If it's an auth error (401/403), clear everything.
+                const isNetworkError = err instanceof TypeError && err.message === "Failed to fetch";
+                if (!isNetworkError) {
+                    setUser(null);
+                    setToken(null);
+                    localStorage.removeItem(TOKEN_KEY);
+                    localStorage.removeItem(USER_KEY);
+                }
+                // If network error, we keep the optimistically-set user from localStorage
             })
             .finally(() => {
                 setLoading(false);

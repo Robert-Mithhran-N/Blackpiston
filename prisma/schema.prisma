@@ -181,6 +181,8 @@ model Product {
   slug             String                 @unique
   description      String?
   shortDescription String?
+  productTypeId    String?                @db.ObjectId
+  productType      ProductType?           @relation(fields: [productTypeId], references: [id])
   categoryId       String?                @db.ObjectId
   category         ProductCategory?       @relation(fields: [categoryId], references: [id])
   categorySlug     String?
@@ -195,6 +197,7 @@ model Product {
   rating           Float                  @default(0)
   totalReviews     Int                    @default(0)
   tags             String[]
+  tagStrings       String[]
   isFeatured       Boolean                @default(false)
   isActive         Boolean                @default(true)
   inStock          Boolean                @default(true)
@@ -212,24 +215,41 @@ model Product {
 }
 
 model ProductCategory {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
   name          String
-  slug          String    @unique
+  slug          String       @unique
   description   String?
   image         String?
   icon          String?
-  parentId      String?   @db.ObjectId
-  level         Int       @default(0)
-  totalProducts Int       @default(0)
-  sortOrder     Int       @default(0)
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  parentId      String?      @db.ObjectId
+  productTypeId String?      @db.ObjectId
+  productType   ProductType? @relation(fields: [productTypeId], references: [id])
+  level         Int          @default(0)
+  totalProducts Int          @default(0)
+  sortOrder     Int          @default(0)
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   // Relations
   products Product[]
 
   @@map("product_categories")
+}
+
+model ProductType {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String    @unique
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  categories ProductCategory[]
+  products   Product[]
+
+  @@map("product_types")
 }
 
 type OrderProduct {

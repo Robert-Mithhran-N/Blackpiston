@@ -71,6 +71,11 @@ import {
   updateProduct,
   deleteProduct,
   uploadImages,
+  fetchProductTypes,
+  createProductType as apiCreateProductType,
+  fetchCategoriesByType,
+  fetchTagSuggestions,
+  createCategory as apiCreateCategory,
 } from "@/lib/api";
 
 // ============================================================
@@ -95,6 +100,15 @@ interface ProductCategory {
   id: string;
   name: string;
   slug: string;
+  productTypeId?: string | null;
+}
+
+interface ProductTypeT {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  _count?: { categories: number; products: number };
 }
 
 interface Product {
@@ -103,6 +117,8 @@ interface Product {
   slug: string;
   description?: string;
   shortDescription?: string;
+  productTypeId?: string;
+  productType?: { id: string; name: string; slug: string };
   categoryId?: string;
   categorySlug?: string;
   category?: ProductCategory;
@@ -115,6 +131,7 @@ interface Product {
   stockQuantity: number;
   sku: string;
   tags: string[];
+  tagStrings?: string[];
   isFeatured: boolean;
   isActive: boolean;
   inStock: boolean;
@@ -128,9 +145,11 @@ interface FormData {
   shortDescription: string;
   brand: string;
   sku: string;
+  productTypeId: string;
   categoryId: string;
   categorySlug: string;
-  tags: string;
+  tagChips: string[];
+  tagInput: string;
   price: string;
   offerPrice: string;
   costPrice: string;
@@ -147,9 +166,11 @@ const emptyForm: FormData = {
   shortDescription: "",
   brand: "",
   sku: "",
+  productTypeId: "",
   categoryId: "",
   categorySlug: "",
-  tags: "",
+  tagChips: [],
+  tagInput: "",
   price: "",
   offerPrice: "",
   costPrice: "",
@@ -168,6 +189,8 @@ const AdminProducts = () => {
   // Data state
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [allCategories, setAllCategories] = useState<ProductCategory[]>([]);
+  const [productTypes, setProductTypes] = useState<ProductTypeT[]>([]);
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 1 });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -175,6 +198,7 @@ const AdminProducts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   // Dialog state
@@ -184,6 +208,17 @@ const AdminProducts = () => {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+
+  // Tag suggestions
+  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
+  const [showTagSuggestions, setShowTagSuggestions] = useState(false);
+  const tagInputRef = useRef<HTMLInputElement>(null);
+
+  // Add new type/category inline
+  const [showNewTypeInput, setShowNewTypeInput] = useState(false);
+  const [newTypeName, setNewTypeName] = useState("");
+  const [showNewCatInput, setShowNewCatInput] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
 
   // Form state
   const [formData, setFormData] = useState<FormData>({ ...emptyForm });
@@ -202,6 +237,7 @@ const AdminProducts = () => {
       if (searchQuery.trim()) params.search = searchQuery.trim();
       if (categoryFilter !== "all") params.category = categoryFilter;
       if (statusFilter !== "all") params.status = statusFilter;
+      if (typeFilter !== "all") params.productTypeId = typeFilter;
 
       const data = await fetchAdminProducts(params as any);
       setProducts(data.products || []);
@@ -212,21 +248,40 @@ const AdminProducts = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, searchQuery, categoryFilter, statusFilter]);
+  }, [currentPage, searchQuery, categoryFilter, statusFilter, typeFilter]);
 
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
 
-  // Fetch categories once
+  // Fetch categories + product types once
   useEffect(() => {
     fetchCategories()
       .then((data) => {
         const cats = data.categories || data || [];
-        setCategories(Array.isArray(cats) ? cats : []);
+        const catArr = Array.isArray(cats) ? cats : [];
+        setCategories(catArr);
+        setAllCategories(catArr);
       })
       .catch(() => { });
+
+    fetchProductTypes()
+      .then((data) => setProductTypes(data.productTypes || []))
+      .catch(() => { });
   }, []);
+
+  // Reload categories when form type changes
+  const loadFormCategories = useCallback(async (typeId: string) => {
+    try {
+      const data = typeId
+        ? await fetchCategoriesByType(typeId)
+        : await fetchCategories();
+      const cats = data.categories || data || [];
+      setCategories(Array.isArray(cats) ? cats : []);
+    } catch {
+      setCategories(allCategories);
+    }
+  }, [allCategories]);
 
   // --------------------------------
   // Search debounce
@@ -246,20 +301,24 @@ const AdminProducts = () => {
   const openAddForm = () => {
     setEditingProduct(null);
     setFormData({ ...emptyForm });
+    setCategories(allCategories);
     setIsFormOpen(true);
   };
 
   const openEditForm = (product: Product) => {
     setEditingProduct(product);
+    const typeId = product.productTypeId || "";
     setFormData({
       name: product.name,
       description: product.description || "",
       shortDescription: product.shortDescription || "",
       brand: product.brand || "",
       sku: product.sku || "",
+      productTypeId: typeId,
       categoryId: product.categoryId || "",
       categorySlug: product.categorySlug || "",
-      tags: (product.tags || []).join(", "),
+      tagChips: product.tags || [],
+      tagInput: "",
       price: String(product.price),
       offerPrice: product.offerPrice ? String(product.offerPrice) : "",
       costPrice: product.costPrice ? String(product.costPrice) : "",
@@ -269,6 +328,8 @@ const AdminProducts = () => {
       images: product.images || [],
       variants: product.variants || [],
     });
+    if (typeId) loadFormCategories(typeId);
+    else setCategories(allCategories);
     setIsFormOpen(true);
   };
 
@@ -291,10 +352,6 @@ const AdminProducts = () => {
       toast.error("Stock cannot be negative");
       return;
     }
-    if (!formData.categoryId) {
-      toast.error("Category is required");
-      return;
-    }
     if (formData.images.length === 0) {
       toast.error("At least one image is required");
       return;
@@ -314,15 +371,13 @@ const AdminProducts = () => {
         shortDescription: formData.shortDescription.trim() || null,
         brand: formData.brand.trim() || null,
         sku: formData.sku.trim() || undefined,
-        categoryId: formData.categoryId,
-        categorySlug: formData.categorySlug,
+        productTypeId: formData.productTypeId || null,
+        categoryId: formData.categoryId || null,
+        categorySlug: formData.categorySlug || null,
         price,
         offerPrice,
         stockQuantity: stock,
-        tags: formData.tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
+        tags: formData.tagChips,
         isFeatured: formData.isFeatured,
         isActive: formData.isActive,
         images: formData.images,
@@ -340,6 +395,10 @@ const AdminProducts = () => {
       setIsFormOpen(false);
       setEditingProduct(null);
       loadProducts();
+      // Refresh product types counts
+      fetchProductTypes()
+        .then((data) => setProductTypes(data.productTypes || []))
+        .catch(() => { });
     } catch (err: any) {
       toast.error(err?.message || "Failed to save product");
     } finally {
@@ -461,6 +520,99 @@ const AdminProducts = () => {
     }));
   };
 
+  const handleProductTypeChange = (typeId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      productTypeId: typeId,
+      categoryId: "",
+      categorySlug: "",
+    }));
+    loadFormCategories(typeId);
+  };
+
+  // ---- Tag chip helpers ----
+  const normalizeTagForChip = (raw: string) => raw.replace(/^#/, "").trim();
+
+  const addTagChip = (raw: string) => {
+    const tag = normalizeTagForChip(raw);
+    if (!tag) return;
+    setFormData((prev) => {
+      if (prev.tagChips.includes(tag)) return prev;
+      return { ...prev, tagChips: [...prev.tagChips, tag], tagInput: "" };
+    });
+    setShowTagSuggestions(false);
+  };
+
+  const removeTagChip = (tag: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tagChips: prev.tagChips.filter((t) => t !== tag),
+    }));
+  };
+
+  const handleTagInputChange = async (value: string) => {
+    setFormData((prev) => ({ ...prev, tagInput: value }));
+    const normalized = normalizeTagForChip(value);
+    if (normalized.length >= 2) {
+      try {
+        const data = await fetchTagSuggestions(normalized);
+        setTagSuggestions((data.tags || []).map((s: any) => s.tag));
+        setShowTagSuggestions(true);
+      } catch {
+        setTagSuggestions([]);
+      }
+    } else {
+      setTagSuggestions([]);
+      setShowTagSuggestions(false);
+    }
+  };
+
+  const handleTagInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (["Enter", ",", " "].includes(e.key)) {
+      e.preventDefault();
+      addTagChip(formData.tagInput);
+    }
+    if (e.key === "Backspace" && !formData.tagInput && formData.tagChips.length > 0) {
+      removeTagChip(formData.tagChips[formData.tagChips.length - 1]);
+    }
+  };
+
+  // ---- Inline create helpers ----
+  const handleCreateTypeInline = async () => {
+    if (!newTypeName.trim()) return;
+    try {
+      const data = await apiCreateProductType({ name: newTypeName.trim() });
+      const newType = data.productType;
+      setProductTypes((prev) => [...prev, newType]);
+      setFormData((prev) => ({ ...prev, productTypeId: newType.id, categoryId: "", categorySlug: "" }));
+      loadFormCategories(newType.id);
+      setNewTypeName("");
+      setShowNewTypeInput(false);
+      toast.success(`Type "${newType.name}" created`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create type");
+    }
+  };
+
+  const handleCreateCategoryInline = async () => {
+    if (!newCatName.trim()) return;
+    try {
+      const data = await apiCreateCategory({
+        name: newCatName.trim(),
+        productTypeId: formData.productTypeId || undefined,
+      });
+      const newCat = data.category;
+      setCategories((prev) => [...prev, newCat]);
+      setAllCategories((prev) => [...prev, newCat]);
+      setFormData((prev) => ({ ...prev, categoryId: newCat.id, categorySlug: newCat.slug }));
+      setNewCatName("");
+      setShowNewCatInput(false);
+      toast.success(`Category "${newCat.name}" created`);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to create category");
+    }
+  };
+
   // ============================================================
   // RENDER
   // ============================================================
@@ -495,13 +647,26 @@ const AdminProducts = () => {
                   className="pl-9"
                 />
               </div>
+              <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setCurrentPage(1); }}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {productTypes.map((pt) => (
+                    <SelectItem key={pt.id} value={pt.id}>
+                      {pt.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setCurrentPage(1); }}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((cat) => (
+                  {allCategories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.slug}>
                       {cat.name}
                     </SelectItem>
@@ -552,6 +717,7 @@ const AdminProducts = () => {
                         <TableHead className="w-16">Image</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>SKU</TableHead>
+                        <TableHead>Type</TableHead>
                         <TableHead>Category</TableHead>
                         <TableHead className="text-right">Price</TableHead>
                         <TableHead className="text-right">Offer</TableHead>
@@ -587,6 +753,9 @@ const AdminProducts = () => {
                           </TableCell>
                           <TableCell className="font-mono text-xs text-muted-foreground">
                             {p.sku}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {p.productType?.name || "—"}
                           </TableCell>
                           <TableCell className="text-sm">
                             {p.category?.name || "—"}
@@ -775,32 +944,141 @@ const AdminProducts = () => {
                     />
                   </div>
                 </div>
+                {/* Product Type */}
                 <div className="space-y-2">
-                  <Label>Category *</Label>
-                  <Select
-                    value={formData.categoryId}
-                    onValueChange={handleCategoryChange}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>Product Type</Label>
+                  {showNewTypeInput ? (
+                    <div className="flex gap-2">
+                      <Input
+                        value={newTypeName}
+                        onChange={(e) => setNewTypeName(e.target.value)}
+                        placeholder="New type name…"
+                        onKeyDown={(e) => e.key === "Enter" && handleCreateTypeInline()}
+                      />
+                      <Button size="sm" onClick={handleCreateTypeInline} className="shrink-0">Add</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setShowNewTypeInput(false)} className="shrink-0">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Select
+                        value={formData.productTypeId || "__none__"}
+                        onValueChange={(v) => handleProductTypeChange(v === "__none__" ? "" : v)}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select a type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">— No type —</SelectItem>
+                          {productTypes.map((pt) => (
+                            <SelectItem key={pt.id} value={pt.id}>
+                              {pt.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="shrink-0"
+                        title="Add new type"
+                        onClick={() => setShowNewTypeInput(true)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
+                {/* Category (optional, filtered by type) */}
                 <div className="space-y-2">
-                  <Label htmlFor="tags">Tags (comma separated)</Label>
-                  <Input
-                    id="tags"
-                    value={formData.tags}
-                    onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                    placeholder="e.g. helmet, racing, full-face"
-                  />
+                  <Label>Category</Label>
+                  {showNewCatInput ? (
+                    <div className="flex gap-2">
+                      <Input
+                        value={newCatName}
+                        onChange={(e) => setNewCatName(e.target.value)}
+                        placeholder="New category name…"
+                        onKeyDown={(e) => e.key === "Enter" && handleCreateCategoryInline()}
+                      />
+                      <Button size="sm" onClick={handleCreateCategoryInline} className="shrink-0">Add</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setShowNewCatInput(false)} className="shrink-0">
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Select
+                        value={formData.categoryId || "__none__"}
+                        onValueChange={(v) => handleCategoryChange(v === "__none__" ? "" : v)}
+                      >
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">— No category —</SelectItem>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        className="shrink-0"
+                        title="Add new category"
+                        onClick={() => setShowNewCatInput(true)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+                {/* Tags — chip editor */}
+                <div className="space-y-2">
+                  <Label>Tags</Label>
+                  <div className="flex flex-wrap gap-1.5 p-2 border border-border rounded-md bg-background min-h-[42px] cursor-text"
+                    onClick={() => tagInputRef.current?.focus()}
+                  >
+                    {formData.tagChips.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="flex items-center gap-1 px-2 py-0.5 text-xs">
+                        #{tag}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removeTagChip(tag); }}
+                          className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                    <input
+                      ref={tagInputRef}
+                      value={formData.tagInput}
+                      onChange={(e) => handleTagInputChange(e.target.value)}
+                      onKeyDown={handleTagInputKeyDown}
+                      onBlur={() => { addTagChip(formData.tagInput); setTimeout(() => setShowTagSuggestions(false), 200); }}
+                      placeholder={formData.tagChips.length === 0 ? "Type a tag and press comma or enter…" : ""}
+                      className="flex-1 min-w-[120px] bg-transparent outline-none text-sm placeholder:text-muted-foreground"
+                    />
+                  </div>
+                  {/* Suggestions dropdown */}
+                  {showTagSuggestions && tagSuggestions.length > 0 && (
+                    <div className="border border-border rounded-md bg-popover shadow-md p-1 max-h-32 overflow-y-auto">
+                      {tagSuggestions.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          className="w-full text-left px-2 py-1 text-sm rounded hover:bg-accent"
+                          onMouseDown={(e) => { e.preventDefault(); addTagChip(s); }}
+                        >
+                          #{s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 
