@@ -43,10 +43,11 @@ router.get('/', async (req: Request, res: Response) => {
         }
 
         if (search) {
+            const normalizedSearch = (search as string).replace(/^#/, '').trim().toLowerCase();
             where.OR = [
                 { name: { contains: search as string, mode: 'insensitive' } },
                 { description: { contains: search as string, mode: 'insensitive' } },
-                { tags: { hasSome: [search as string] } }
+                { tagStrings: { hasSome: [normalizedSearch] } }
             ];
         }
 
@@ -67,6 +68,13 @@ router.get('/', async (req: Request, res: Response) => {
                 take: limitNum,
                 include: {
                     category: {
+                        select: {
+                            id: true,
+                            name: true,
+                            slug: true
+                        }
+                    },
+                    productType: {
                         select: {
                             id: true,
                             name: true,
@@ -142,12 +150,21 @@ router.get('/:idOrSlug', async (req: Request, res: Response) => {
     }
 });
 
-// Get all categories
+// Get all categories (optionally filtered by productTypeId)
 router.get('/categories/all', async (req: Request, res: Response) => {
     try {
+        const { productTypeId } = req.query;
+        const where: any = { isActive: true };
+        if (productTypeId) {
+            where.productTypeId = productTypeId as string;
+        }
+
         const categories = await prisma.productCategory.findMany({
-            where: { isActive: true },
-            orderBy: { sortOrder: 'asc' }
+            where,
+            orderBy: { sortOrder: 'asc' },
+            include: {
+                productType: { select: { id: true, name: true, slug: true } }
+            }
         });
 
         res.json({ categories });

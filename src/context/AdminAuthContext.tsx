@@ -5,7 +5,7 @@ type AdminUser = {
   id: string;
   name: string;
   email: string;
-  role: "admin" | "super-admin";
+  role: string;
 };
 
 type AdminAuthContextValue = {
@@ -14,6 +14,7 @@ type AdminAuthContextValue = {
   isAuthenticated: boolean;
   isAdmin: boolean;
   login: (opts?: { redirectTo?: string }) => void;
+  loginWithData: (token: string, userData: AdminUser, opts?: { redirectTo?: string }) => void;
   logout: () => void;
 };
 
@@ -70,6 +71,17 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     navigate(redirect, { replace: true });
   };
 
+  const loginWithData = (newToken: string, userData: AdminUser, opts?: { redirectTo?: string }) => {
+    setUser(userData);
+    setToken(newToken);
+
+    const redirect =
+      opts?.redirectTo ||
+      (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
+      "/admin";
+    navigate(redirect, { replace: true });
+  };
+
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -81,8 +93,9 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     token,
     isAuthenticated: Boolean(user && token),
-    isAdmin: Boolean(user && token && (user.role === "admin" || user.role === "super-admin")),
+    isAdmin: Boolean(user && token && ["admin", "super-admin", "ADMIN", "STAFF"].includes(user.role)),
     login,
+    loginWithData,
     logout,
   };
 
