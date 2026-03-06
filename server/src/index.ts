@@ -37,6 +37,25 @@ app.get('/api/health', (req, res) => {
     });
 });
 
+// Database health check endpoint
+app.get('/api/health/db', async (req, res) => {
+    try {
+        await prisma.$runCommandRaw({ ping: 1 });
+        res.json({
+            status: 'connected',
+            database: 'MongoDB',
+            timestamp: new Date().toISOString()
+        });
+    } catch (error: any) {
+        res.status(503).json({
+            status: 'disconnected',
+            database: 'MongoDB',
+            error: error?.message || 'Connection failed',
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);

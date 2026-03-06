@@ -14,6 +14,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useUserAuth } from "@/context/UserAuthContext";
 import { fetchCategories } from "@/lib/api";
+import { useCart } from "@/context/CartContext";
 import logo from "@/assets/logo.png";
 
 // Import shop category images
@@ -43,18 +44,22 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const shopRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, logout } = useUserAuth();
   const navigate = useNavigate();
-  // TODO: Fetch cart count from context/state
-  const [cartCount] = useState(2);
+  const { cartCount } = useCart();
   const { pathname } = useLocation();
 
-  // Close user menu on outside click
+  // Close user menu and shop dropdown on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
+      }
+      if (shopRef.current && !shopRef.current.contains(e.target as Node)) {
+        setShopOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -106,70 +111,68 @@ const Header = () => {
             Home
           </NavLink>
 
-          {/* Shop Mega Menu */}
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger
-                  className={`${navClass(navState.shop)} bg-transparent hover:bg-transparent data-[state=open]:bg-transparent px-0`}
-                >
-                  Shop
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="w-[400px] p-4 bg-card border border-border">
-                    <div className="mb-4">
-                      <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">
-                        Shop by Category
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Premium motorcycle gear & accessories
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      {categories.map((category) => {
-                        const categoryImage = categoryImages[category.slug];
-                        return (
-                          <NavigationMenuLink key={category.id} asChild>
-                            <Link
-                              to={`/shop/${category.slug}`}
-                              className="group flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 hover:bg-primary/10 transition-all duration-200 border border-zinc-700/50 hover:border-primary/40 cursor-pointer"
-                            >
-                              {/* Category Image */}
-                              <div className="h-11 w-11 rounded-lg bg-zinc-900/80 flex items-center justify-center overflow-hidden flex-shrink-0">
-                                <img
-                                  src={categoryImage}
-                                  alt={category.name}
-                                  className="w-[90%] h-[90%] object-contain"
-                                />
-                              </div>
-                              {/* Category Text */}
-                              <div className="flex flex-col min-w-0">
-                                <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                                  {category.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {category.productCount} products
-                                </p>
-                              </div>
-                            </Link>
-                          </NavigationMenuLink>
-                        );
-                      })}
-                    </div>
+          {/* Shop Dropdown — click only */}
+          <div className="relative" ref={shopRef}>
+            <button
+              onClick={() => setShopOpen((prev) => !prev)}
+              className={`${navClass(navState.shop)} flex items-center gap-1 bg-transparent border-none cursor-pointer`}
+            >
+              Shop
+              <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${shopOpen ? "rotate-180" : ""}`} />
+            </button>
 
-                    <div className="mt-4 pt-4 border-t border-border">
+            {shopOpen && (
+              <div className="absolute left-0 top-full mt-2 w-[400px] p-4 bg-card border border-border rounded-lg shadow-xl z-50">
+                <div className="mb-4">
+                  <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">
+                    Shop by Category
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Premium motorcycle gear & accessories
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {categories.map((category) => {
+                    const categoryImage = categoryImages[category.slug];
+                    return (
                       <Link
-                        to="/shop"
-                        className="text-sm text-primary hover:underline font-medium"
+                        key={category.id}
+                        to={`/shop/${category.slug}`}
+                        onClick={() => setShopOpen(false)}
+                        className="group flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 hover:bg-primary/10 transition-all duration-200 border border-zinc-700/50 hover:border-primary/40 cursor-pointer"
                       >
-                        View All Products →
+                        <div className="h-11 w-11 rounded-lg bg-zinc-900/80 flex items-center justify-center overflow-hidden flex-shrink-0">
+                          <img
+                            src={categoryImage}
+                            alt={category.name}
+                            className="w-[90%] h-[90%] object-contain"
+                          />
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
+                            {category.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {category.productCount} products
+                          </p>
+                        </div>
                       </Link>
-                    </div>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-border">
+                  <Link
+                    to="/shop"
+                    onClick={() => setShopOpen(false)}
+                    className="text-sm text-primary hover:underline font-medium"
+                  >
+                    View All Products →
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
 
           <NavLink
             to="/garage"

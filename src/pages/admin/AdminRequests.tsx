@@ -40,13 +40,13 @@ import { ProductRequest, RequestStatus } from "@/types/admin";
 // ============================================================
 const getStatusColor = (status: RequestStatus) => {
     switch (status) {
-        case "Pending":
+        case "PENDING":
             return "bg-yellow-500/20 text-yellow-400 border-yellow-500/50";
-        case "Approved":
+        case "IN_PROGRESS":
             return "bg-blue-500/20 text-blue-400 border-blue-500/50";
-        case "Completed":
+        case "COMPLETED":
             return "bg-green-500/20 text-green-400 border-green-500/50";
-        case "Rejected":
+        case "CLOSED":
             return "bg-red-500/20 text-red-400 border-red-500/50";
         default:
             return "bg-gray-500/20 text-gray-400 border-gray-500/50";
@@ -55,9 +55,9 @@ const getStatusColor = (status: RequestStatus) => {
 
 const getStatusIcon = (status: RequestStatus) => {
     switch (status) {
-        case "Pending":
+        case "PENDING":
             return <Clock className="h-3.5 w-3.5" />;
-        case "Completed":
+        case "COMPLETED":
             return <CheckCircle className="h-3.5 w-3.5" />;
         default:
             return null;
@@ -153,16 +153,28 @@ const RequestCard = ({
                                         <SelectValue placeholder="Update Status" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="Pending">
+                                        <SelectItem value="PENDING">
                                             <div className="flex items-center gap-2">
                                                 <Clock className="h-3.5 w-3.5 text-yellow-500" />
                                                 <span>Pending</span>
                                             </div>
                                         </SelectItem>
-                                        <SelectItem value="Completed">
+                                        <SelectItem value="IN_PROGRESS">
+                                            <div className="flex items-center gap-2">
+                                                <AlertTriangle className="h-3.5 w-3.5 text-blue-500" />
+                                                <span>In Progress</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="COMPLETED">
                                             <div className="flex items-center gap-2">
                                                 <CheckCircle className="h-3.5 w-3.5 text-green-500" />
                                                 <span>Completed</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="CLOSED">
+                                            <div className="flex items-center gap-2">
+                                                <CheckCircle className="h-3.5 w-3.5 text-red-500" />
+                                                <span>Closed</span>
                                             </div>
                                         </SelectItem>
                                     </SelectContent>
@@ -263,8 +275,8 @@ const AdminRequests = () => {
     }, []);
 
     // Calculate counts
-    const pendingCount = requests.filter((r) => r.status === "Pending").length;
-    const completedCount = requests.filter((r) => r.status === "Completed").length;
+    const pendingCount = requests.filter((r) => r.status === "PENDING").length;
+    const completedCount = requests.filter((r) => r.status === "COMPLETED").length;
 
     // Handle status change
     const handleStatusChange = (id: string, newStatus: RequestStatus) => {
@@ -384,7 +396,7 @@ const AdminRequests = () => {
                                         userEmail: "",
                                         userPhone: "",
                                         requestDate: "",
-                                        status: "Pending",
+                                        status: "PENDING",
                                     }}
                                     onStatusChange={() => { }}
                                     onDelete={() => { }}

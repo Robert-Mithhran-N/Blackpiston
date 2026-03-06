@@ -1,10 +1,24 @@
 // Centralized API client for BlackPiston Garage
 // All frontend API calls go through here
 
-const API_BASE = "http://localhost:3001/api";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+
+function getAuthToken(): string | null {
+    // Check admin auth first (stored as JSON { user, token })
+    try {
+        const adminRaw = localStorage.getItem("blackpiston_admin_auth");
+        if (adminRaw) {
+            const parsed = JSON.parse(adminRaw);
+            if (parsed?.token) return parsed.token;
+        }
+    } catch { /* ignore */ }
+
+    // Fallback to user token
+    return localStorage.getItem("blackpiston_user_token");
+}
 
 function getAuthHeaders(): Record<string, string> {
-    const token = localStorage.getItem("blackpiston_user_token");
+    const token = getAuthToken();
     const headers: Record<string, string> = {
         "Content-Type": "application/json",
     };
@@ -87,11 +101,11 @@ export async function fetchTopOffers() {
 // Image Upload
 // ============================================================
 
-export async function uploadImages(files: File[]): Promise<{ url: string; filename: string }[]> {
+export async function uploadImages(files: File[]): Promise<{ url: string; public_id: string; filename: string }[]> {
     const formData = new FormData();
     files.forEach((file) => formData.append("images", file));
 
-    const token = localStorage.getItem("blackpiston_user_token");
+    const token = getAuthToken();
     const headers: Record<string, string> = {};
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -100,7 +114,10 @@ export async function uploadImages(files: File[]): Promise<{ url: string; filena
         headers,
         body: formData,
     });
-    if (!res.ok) throw new Error("Failed to upload images");
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to upload images");
+    }
     const data = await res.json();
     return data.files;
 }
@@ -146,7 +163,10 @@ export async function createProduct(data: Record<string, unknown>) {
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Failed to create product");
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to create product");
+    }
     return res.json();
 }
 
@@ -159,7 +179,10 @@ export async function updateProduct(
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Failed to update product");
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update product");
+    }
     return res.json();
 }
 

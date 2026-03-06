@@ -6,6 +6,9 @@ import prisma from '../config/database.js';
 
 const router = Router();
 
+// JWT signing helper — cast expiresIn to satisfy newer @types/jsonwebtoken
+const jwtSignOptions = { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any };
+
 // Google OAuth client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -50,7 +53,7 @@ router.post('/register', async (req: Request, res: Response) => {
         const token = jwt.sign(
             { userId: user.id, role: user.role },
             process.env.JWT_SECRET || 'default-secret',
-            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+            jwtSignOptions
         );
 
         res.status(201).json({
@@ -102,7 +105,7 @@ router.post('/login', async (req: Request, res: Response) => {
         const token = jwt.sign(
             { userId: user.id, role: user.role },
             process.env.JWT_SECRET || 'default-secret',
-            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+            jwtSignOptions
         );
 
         res.json({
@@ -223,7 +226,7 @@ router.post('/google', async (req: Request, res: Response) => {
         const token = jwt.sign(
             { userId: user.id, role: user.role },
             process.env.JWT_SECRET || 'default-secret',
-            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+            jwtSignOptions
         );
 
         res.json({
@@ -281,7 +284,7 @@ router.post('/admin/login', async (req: Request, res: Response) => {
         const token = jwt.sign(
             { userId: user.id, role: user.role },
             process.env.JWT_SECRET || 'default-secret',
-            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+            jwtSignOptions
         );
 
         res.json({
