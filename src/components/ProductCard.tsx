@@ -167,20 +167,45 @@ const ProductCard = ({ product, variant = "default", onAddToCart }: ProductCardP
 
                     {/* Price */}
                     <div className={`flex items-baseline gap-1.5 transition-all duration-300 ${isHovered ? "translate-x-1" : ""}`}>
-                        {product.offerPrice ? (
-                            <>
-                                <span className={`text-base font-bold transition-all duration-300 ${isHovered ? "text-primary scale-105" : "text-primary"}`}>
-                                    ₹{product.offerPrice.toLocaleString()}
-                                </span>
-                                <span className="text-[10px] text-muted-foreground line-through">
+                        {(() => {
+                            // Compute min variant price if variants exist
+                            const variantPrices = (product.variants || [])
+                                .map(v => v.price)
+                                .filter((p): p is number => p != null && p > 0);
+                            const hasVariantPricing = variantPrices.length > 0;
+                            const minVariantPrice = hasVariantPricing ? Math.min(...variantPrices) : null;
+                            const displayPrice = product.offerPrice || product.price;
+
+                            if (hasVariantPricing && minVariantPrice && minVariantPrice !== displayPrice) {
+                                return (
+                                    <>
+                                        <span className="text-[10px] text-muted-foreground">From</span>
+                                        <span className={`text-base font-bold transition-all duration-300 ${isHovered ? "text-primary scale-105" : "text-primary"}`}>
+                                            ₹{Math.min(minVariantPrice, displayPrice).toLocaleString()}
+                                        </span>
+                                    </>
+                                );
+                            }
+
+                            if (product.offerPrice) {
+                                return (
+                                    <>
+                                        <span className={`text-base font-bold transition-all duration-300 ${isHovered ? "text-primary scale-105" : "text-primary"}`}>
+                                            ₹{product.offerPrice.toLocaleString()}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground line-through">
+                                            ₹{product.price.toLocaleString()}
+                                        </span>
+                                    </>
+                                );
+                            }
+
+                            return (
+                                <span className={`text-base font-bold transition-all duration-300 ${isHovered ? "scale-105" : ""}`}>
                                     ₹{product.price.toLocaleString()}
                                 </span>
-                            </>
-                        ) : (
-                            <span className={`text-base font-bold transition-all duration-300 ${isHovered ? "scale-105" : ""}`}>
-                                ₹{product.price.toLocaleString()}
-                            </span>
-                        )}
+                            );
+                        })()}
                     </div>
                 </CardContent>
 

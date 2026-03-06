@@ -1,6 +1,9 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { z } from 'zod';
+import { randomUUID } from 'crypto';
 import prisma from '../config/database.js';
+import { deleteFromCloudinary } from '../config/cloudinary.js';
 
 const router = Router();
 
@@ -45,7 +48,7 @@ router.get('/dashboard/stats', authenticateAdmin, async (req: Request, res: Resp
             totalProducts,
         ] = await Promise.all([
             prisma.order.count(),
-            prisma.order.count({ where: { orderStatus: 'PENDING' } }),
+            prisma.order.count({ where: { orderStatus: 'NEW' } }),
             prisma.order.count({ where: { orderStatus: 'DELIVERED' } }),
             prisma.user.count(),
             prisma.product.count({ where: { isActive: true } }),
@@ -60,23 +63,23 @@ router.get('/dashboard/stats', authenticateAdmin, async (req: Request, res: Resp
 
         // Payment stats
         const [paidPayments, pendingPayments, failedPayments] = await Promise.all([
-            prisma.payment.count({ where: { paymentStatus: 'COMPLETED' } }),
+            prisma.payment.count({ where: { paymentStatus: 'PAID' } }),
             prisma.payment.count({ where: { paymentStatus: 'PENDING' } }),
             prisma.payment.count({ where: { paymentStatus: 'FAILED' } }),
         ]);
 
         // Payment totals by method
         const onlinePayments = await prisma.payment.aggregate({
-            _sum: { amount: true },
-            where: { paymentStatus: 'COMPLETED', paymentMethod: { not: 'COD' } }
+            _sum: { amountReceived: true },
+            where: { paymentStatus: 'PAID', paymentMethod: { not: 'COD' } }
         });
         const codPaymentsTotal = await prisma.payment.aggregate({
-            _sum: { amount: true },
-            where: { paymentStatus: 'COMPLETED', paymentMethod: 'COD' }
+            _sum: { amountReceived: true },
+            where: { paymentStatus: 'PAID', paymentMethod: 'COD' }
         });
 
-        const onlineTotal = onlinePayments._sum.amount || 0;
-        const codTotal = codPaymentsTotal._sum.amount || 0;
+        const onlineTotal = onlinePayments._sum?.amountReceived || 0;
+        const codTotal = codPaymentsTotal._sum?.amountReceived || 0;
 
         // Users who have placed orders
         const purchasingUsers = await prisma.order.groupBy({
@@ -128,62 +131,144 @@ router.get('/dashboard/stats', authenticateAdmin, async (req: Request, res: Resp
 });
 
 // ============================================================
+// Zod Validation Schemas
+// ============================================================
+
+const productImageSchema = z.object({
+    url: z.string().url(),
+    public_id: z.string().optional(),
+    alt: z.string().optional(),
+    isPrimary: z.boolean().optional().default(false),
+});
+
+const createProductSchema = z.object({
+    name: z.string().min(1, 'Product name is required').trim(),
+    slug: z.string().optional().nullable(),
+    description: z.string().optional().nullable(),
+    shortDescription: z.string().optional().nullable(),
+    categoryId: z.string().optional().nullable(),
+    categorySlug: z.string().optional().nullable(),
+    brand: z.string().optional().nullable(),
+    price: z.coerce.number().positive('Price must be greater than 0'),
+    offerPrice: z.coerce.number().positive().optional().nullable(),
+    costPrice: z.coerce.number().optional().nullable(),     // frontend sends this
+    images: z.array(productImageSchema).optional().default([]),
+    tags: z.array(z.string()).optional().default([]),
+    sku: z.string().optional().nullable(),
+    isFeatured: z.boolean().optional().default(false),
+    isActive: z.boolean().optional().default(true),
+    weight: z.coerce.number().optional().nullable(),
+    dimensions: z.object({
+        length: z.number().optional().nullable(),
+        width: z.number().optional().nullable(),
+        height: z.number().optional().nullable(),
+    }).optional().nullable(),
+    variants: z.array(z.object({
+        id: z.string().optional().nullable(),
+        size: z.string().optional().nullable(),
+        color: z.string().optional().nullable(),
+        model: z.string().optional().nullable(),
+        sku: z.string().optional().nullable(),
+        stockQuantity: z.coerce.number().optional().default(0),
+        price: z.coerce.number().positive().optional().nullable(),
+        priceModifier: z.number().optional().default(0),
+        images: z.array(productImageSchema).optional().default([]),
+    })).optional().default([]),
+    specifications: z.array(z.object({
+        label: z.string(),
+        value: z.string(),
+    })).optional().default([]),
+    stockQuantity: z.coerce.number().int().min(0).optional().default(0),
+    rating: z.number().optional().default(0),
+    totalReviews: z.number().optional().default(0),
+    productTypeId: z.string().optional().nullable(),
+});
+
+// ============================================================
 // Products CRUD
 // ============================================================
 
 // Create product
 router.post('/products', authenticateAdmin, async (req: Request, res: Response) => {
     try {
-        const {
-            name, slug, description, shortDescription, categoryId, categorySlug,
-            brand, price, offerPrice, images, tags, sku,
-            isFeatured, isActive, weight, dimensions, variants, specifications,
-            stockQuantity, rating, totalReviews, productTypeId
-        } = req.body;
+        console.log('📦 [POST /products] Request received from user:', (req as any).userId);
+        console.log('📦 [POST /products] Body keys:', Object.keys(req.body));
+
+        // Validate with Zod
+        const parseResult = createProductSchema.safeParse(req.body);
+        if (!parseResult.success) {
+            const errors = parseResult.error.issues.map(i => `${i.path.join('.')}: ${i.message} `);
+            console.log('📦 [POST /products] Validation failed:', errors);
+            return res.status(400).json({ error: 'Validation failed', details: errors });
+        }
+
+        const data = parseResult.data;
+
+        // Sanitize ObjectId fields — empty strings and non-24-hex values become null
+        const isValidObjectId = (v: any) => typeof v === 'string' && /^[a-fA-F0-9]{24}$/.test(v);
+        const safeCategoryId = isValidObjectId(data.categoryId) ? data.categoryId : null;
+        const safeProductTypeId = isValidObjectId(data.productTypeId) ? data.productTypeId : null;
 
         // Auto-generate SKU if not provided
-        const finalSku = sku || `BP-${Date.now().toString(36).toUpperCase()}`;
-
-        const stock = stockQuantity ?? 0;
+        const finalSku = data.sku || `BP - ${Date.now().toString(36).toUpperCase()} `;
 
         // Normalize tags into tagStrings for search
-        const rawTags: string[] = tags || [];
-        const tagStrings = rawTags.map((t: string) => t.replace(/^#/, '').trim().toLowerCase()).filter(Boolean);
+        const tagStrings = data.tags.map((t: string) => t.replace(/^#/, '').trim().toLowerCase()).filter(Boolean);
+
+        // Sanitize variants — ensure each has all required fields + generate IDs
+        const safeVariants = data.variants.map((v: any, i: number) => ({
+            id: v.id || randomUUID(),
+            size: v.size || null,
+            color: v.color || null,
+            model: v.model || null,
+            sku: v.sku || `${finalSku} -V${i + 1} `,
+            stockQuantity: v.stockQuantity ?? 0,
+            price: v.price ?? null,
+            priceModifier: v.priceModifier ?? 0,
+            images: v.images || [],
+        }));
+
+        // Strip undefined values that Prisma can't handle
+        const safeWeight = data.weight != null ? Number(data.weight) : undefined;
+        const safeDimensions = data.dimensions && typeof data.dimensions === 'object' ? data.dimensions : undefined;
+
+        console.log('📦 [POST /products] Creating product:', data.name, 'with', data.images.length, 'images');
 
         const product = await prisma.product.create({
             data: {
-                name,
-                slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-                description,
-                shortDescription,
-                productTypeId: productTypeId || null,
-                categoryId,
-                categorySlug,
-                brand,
-                price,
-                offerPrice: offerPrice ?? null,
+                name: data.name,
+                slug: data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                description: data.description,
+                shortDescription: data.shortDescription,
+                productTypeId: safeProductTypeId,
+                categoryId: safeCategoryId,
+                categorySlug: data.categorySlug || null,
+                brand: data.brand,
+                price: data.price,
+                offerPrice: data.offerPrice ?? null,
                 sku: finalSku,
-                stockQuantity: stock,
-                inStock: stock > 0,
-                images: images || [],
-                tags: rawTags,
+                stockQuantity: data.stockQuantity,
+                inStock: data.stockQuantity > 0,
+                images: data.images,
+                tags: data.tags,
                 tagStrings,
-                isFeatured: isFeatured || false,
-                isActive: isActive !== false,
-                weight,
-                dimensions,
-                variants: variants || [],
-                specifications: specifications || [],
-                rating: rating ?? 0,
-                totalReviews: totalReviews ?? 0,
+                isFeatured: data.isFeatured,
+                isActive: data.isActive,
+                ...(safeWeight !== undefined && { weight: safeWeight }),
+                ...(safeDimensions !== undefined && { dimensions: safeDimensions }),
+                variants: safeVariants,
+                specifications: data.specifications,
+                rating: data.rating,
+                totalReviews: data.totalReviews,
             },
             include: { category: true, productType: true }
         });
 
+        console.log('✅ [POST /products] Product created:', product.id, product.name);
         res.status(201).json({ message: 'Product created', product });
-    } catch (error) {
-        console.error('Create product error:', error);
-        res.status(500).json({ error: 'Failed to create product' });
+    } catch (error: any) {
+        console.error('❌ [POST /products] Create product error:', error);
+        res.status(500).json({ error: error?.message || 'Failed to create product' });
     }
 });
 
@@ -191,11 +276,20 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
 router.put('/products/:id', authenticateAdmin, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const updateData = req.body;
+        const updateData = { ...req.body };
 
         // Remove fields that shouldn't be updated directly
         delete updateData.id;
         delete updateData.createdAt;
+
+        // Sanitize ObjectId fields
+        const isValidObjectId = (v: any) => typeof v === 'string' && /^[a-fA-F0-9]{24}$/.test(v);
+        if ('categoryId' in updateData) {
+            updateData.categoryId = isValidObjectId(updateData.categoryId) ? updateData.categoryId : null;
+        }
+        if ('productTypeId' in updateData) {
+            updateData.productTypeId = isValidObjectId(updateData.productTypeId) ? updateData.productTypeId : null;
+        }
 
         // Auto-compute inStock when stockQuantity changes
         if (updateData.stockQuantity !== undefined) {
@@ -207,6 +301,26 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
             updateData.tagStrings = updateData.tags.map((t: string) => t.replace(/^#/, '').trim().toLowerCase()).filter(Boolean);
         }
 
+        // Sanitize variants — ensure each has all required fields
+        if (updateData.variants && Array.isArray(updateData.variants)) {
+            const baseSku = updateData.sku || id;
+            updateData.variants = updateData.variants.map((v: any, i: number) => ({
+                id: v.id || randomUUID(),
+                size: v.size || null,
+                color: v.color || null,
+                model: v.model || null,
+                sku: v.sku || `${baseSku}-V${i + 1}`,
+                stockQuantity: v.stockQuantity ?? 0,
+                price: v.price ?? null,
+                priceModifier: v.priceModifier ?? 0,
+                images: v.images || [],
+            }));
+        }
+
+        // Strip undefined values that Prisma can't handle
+        if (updateData.weight === undefined || updateData.weight === null) delete updateData.weight;
+        if (updateData.dimensions === undefined || updateData.dimensions === null) delete updateData.dimensions;
+
         const product = await prisma.product.update({
             where: { id },
             data: updateData,
@@ -214,19 +328,36 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
         });
 
         res.json({ message: 'Product updated', product });
-    } catch (error) {
+    } catch (error: any) {
         console.error('Update product error:', error);
-        res.status(500).json({ error: 'Failed to update product' });
+        res.status(500).json({ error: error?.message || 'Failed to update product' });
     }
 });
 
-// Delete product
+// Delete product (also cleans up Cloudinary images)
 router.delete('/products/:id', authenticateAdmin, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
 
+        // Fetch product to get image public_ids before deletion
+        const product = await prisma.product.findUnique({ where: { id }, select: { images: true, name: true } });
+
+        if (!product) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        // Delete images from Cloudinary
+        const imageCleanups = (product.images || []).map(async (img: any) => {
+            if (img.public_id) {
+                console.log(`🗑️  Cleaning Cloudinary image: ${img.public_id} for product: ${product.name} `);
+                await deleteFromCloudinary(img.public_id);
+            }
+        });
+        await Promise.allSettled(imageCleanups);
+
         await prisma.product.delete({ where: { id } });
 
+        console.log(`✅ Product deleted: ${id} (${product.name})`);
         res.json({ message: 'Product deleted' });
     } catch (error) {
         console.error('Delete product error:', error);
@@ -382,7 +513,7 @@ router.get('/requests', authenticateAdmin, async (req: Request, res: Response) =
         const skip = (pageNum - 1) * limitNum;
 
         const where: any = {};
-        if (status) where.status = status;
+        if (status) where.requestStatus = status;
 
         const [requests, total] = await Promise.all([
             prisma.request.findMany({
@@ -410,7 +541,7 @@ router.patch('/requests/:id', authenticateAdmin, async (req: Request, res: Respo
         const { status, adminNotes } = req.body;
 
         const updateData: any = {};
-        if (status) updateData.status = status;
+        if (status) updateData.requestStatus = status;
         if (adminNotes) updateData.adminNotes = adminNotes;
         if (status === 'CLOSED') updateData.closedAt = new Date();
 
@@ -439,12 +570,11 @@ router.get('/inventory/low-stock', authenticateAdmin, async (req: Request, res: 
                     select: { id: true, name: true, categorySlug: true, images: true }
                 }
             },
-            orderBy: { currentStock: 'asc' }
+            orderBy: { availableStock: 'asc' }
         });
 
         const lowStock = allInventory.filter(
-            (item: { currentStock: number; reorderPoint: number }) =>
-                item.currentStock <= item.reorderPoint
+            (item) => item.availableStock <= item.reorderLevel
         );
 
         res.json({ lowStockProducts: lowStock });
@@ -521,10 +651,10 @@ router.post('/top-offers', authenticateAdmin, async (req: Request, res: Response
                 productId,
                 title,
                 description,
-                discountPercent,
+                discountPercentage: discountPercent,
                 offerPrice,
                 originalPrice,
-                badgeText,
+                badge: badgeText,
                 priority: priority || 0,
                 validFrom: validFrom ? new Date(validFrom) : null,
                 validUntil: validUntil ? new Date(validUntil) : null,

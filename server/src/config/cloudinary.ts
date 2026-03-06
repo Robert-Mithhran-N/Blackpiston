@@ -1,9 +1,21 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
-dotenv.config({ path: '../.env' });
+// Resolve .env path relative to this file (not CWD)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
+// Validate required env keys on startup
+const requiredKeys = ['CLOUDINARY_CLOUD_NAME', 'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET'];
+const missingKeys = requiredKeys.filter(k => !process.env[k]);
+if (missingKeys.length > 0) {
+    console.warn(`⚠️  Cloudinary: Missing env keys: ${missingKeys.join(', ')}. Image uploads will fail.`);
+}
 
 // Configure Cloudinary
 cloudinary.config({
@@ -46,32 +58,40 @@ export const upload = multer({
     }
 });
 
-// Helper function to upload image to Cloudinary
+// Helper function to upload image to Cloudinary (from file path or buffer)
 export async function uploadToCloudinary(
     filePath: string,
     folder: string = 'blackpiston/general'
-): Promise<{ url: string; publicId: string }> {
-    const result = await cloudinary.uploader.upload(filePath, {
-        folder: folder,
-        transformation: [
-            { width: 1200, height: 1200, crop: 'limit' },
-            { quality: 'auto:good' }
-        ]
-    });
+): Promise<{ url: string; public_id: string; width: number; height: number }> {
+    try {
+        const result = await cloudinary.uploader.upload(filePath, {
+            folder: folder,
+            transformation: [
+                { width: 1200, height: 1200, crop: 'limit' },
+                { quality: 'auto:good' }
+            ]
+        });
 
-    return {
-        url: result.secure_url,
-        publicId: result.public_id
-    };
+        return {
+            url: result.secure_url,
+            public_id: result.public_id,
+            width: result.width,
+            height: result.height
+        };
+    } catch (error: any) {
+        console.error('❌ Cloudinary upload failed:', error?.message || error);
+        throw new Error(`Cloudinary upload failed: ${error?.message || 'Unknown error'}`);
+    }
 }
 
 // Helper function to delete image from Cloudinary
 export async function deleteFromCloudinary(publicId: string): Promise<boolean> {
     try {
-        await cloudinary.uploader.destroy(publicId);
-        return true;
+        const result = await cloudinary.uploader.destroy(publicId);
+        console.log(`🗑️  Cloudinary delete [${publicId}]:`, result.result);
+        return result.result === 'ok';
     } catch (error) {
-        console.error('Failed to delete from Cloudinary:', error);
+        console.error('❌ Failed to delete from Cloudinary:', error);
         return false;
     }
 }

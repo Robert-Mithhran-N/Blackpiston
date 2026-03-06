@@ -89,11 +89,14 @@ interface ProductImage {
 }
 
 interface ProductVariant {
+  id?: string;
   size?: string;
   color?: string;
+  model?: string;
   sku: string;
-  stockQuantity: number;
-  priceModifier: number;
+  price?: number | string;
+  stockQuantity?: number | string;
+  images?: ProductImage[];
 }
 
 interface ProductCategory {
@@ -479,7 +482,7 @@ const AdminProducts = () => {
       ...prev,
       variants: [
         ...prev.variants,
-        { size: "", color: "", sku: "", stockQuantity: 0, priceModifier: 0 },
+        { size: "", color: "", model: "", sku: "", price: "", stockQuantity: "0", images: [] },
       ],
     }));
   };
@@ -721,6 +724,7 @@ const AdminProducts = () => {
                         <TableHead>Category</TableHead>
                         <TableHead className="text-right">Price</TableHead>
                         <TableHead className="text-right">Offer</TableHead>
+                        <TableHead className="text-center">Variants</TableHead>
                         <TableHead className="text-center">Stock</TableHead>
                         <TableHead className="text-center">Status</TableHead>
                         <TableHead className="text-center">Flags</TableHead>
@@ -771,17 +775,33 @@ const AdminProducts = () => {
                             )}
                           </TableCell>
                           <TableCell className="text-center">
+                            {(p.variants?.length || 0) > 0 ? (
+                              <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/40">
+                                {p.variants.length}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
                             <Badge
                               variant="outline"
                               className={
-                                p.stockQuantity === 0
-                                  ? "bg-red-500/10 text-red-400 border-red-500/40"
-                                  : p.stockQuantity <= 10
-                                    ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/40"
-                                    : "bg-green-500/10 text-green-400 border-green-500/40"
+                                (() => {
+                                  const totalStock = (p.variants?.length || 0) > 0
+                                    ? p.variants.reduce((sum: number, v: any) => sum + (v.stockQuantity || 0), 0)
+                                    : p.stockQuantity;
+                                  return totalStock === 0
+                                    ? "bg-red-500/10 text-red-400 border-red-500/40"
+                                    : totalStock <= 10
+                                      ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/40"
+                                      : "bg-green-500/10 text-green-400 border-green-500/40";
+                                })()
                               }
                             >
-                              {p.stockQuantity}
+                              {(p.variants?.length || 0) > 0
+                                ? p.variants.reduce((sum: number, v: any) => sum + (v.stockQuantity || 0), 0)
+                                : p.stockQuantity}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-center">
@@ -1233,7 +1253,7 @@ const AdminProducts = () => {
                   <div>
                     <Label>Product Variants</Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Add size, color, or model variations.
+                      Add size, color, model, price &amp; stock variations.
                     </p>
                   </div>
                   <Button size="sm" variant="outline" onClick={addVariant}>
@@ -1243,7 +1263,7 @@ const AdminProducts = () => {
                 </div>
                 {formData.variants.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground text-sm border border-dashed border-border rounded-lg">
-                    No variants added yet. Click "Add Variant" to create one.
+                    No variants added yet. Click &quot;Add Variant&quot; to create one.
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1265,9 +1285,9 @@ const AdminProducts = () => {
                             <X className="h-3.5 w-3.5" />
                           </Button>
                         </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                        <div className="grid grid-cols-4 gap-2">
                           <Input
-                            placeholder="Size"
+                            placeholder="Size (e.g. M, L)"
                             value={variant.size || ""}
                             onChange={(e) => updateVariant(i, "size", e.target.value)}
                           />
@@ -1277,27 +1297,35 @@ const AdminProducts = () => {
                             onChange={(e) => updateVariant(i, "color", e.target.value)}
                           />
                           <Input
-                            placeholder="SKU"
+                            placeholder="Model"
+                            value={variant.model || ""}
+                            onChange={(e) => updateVariant(i, "model", e.target.value)}
+                          />
+                          <Input
+                            placeholder="SKU (auto)"
                             value={variant.sku}
                             onChange={(e) => updateVariant(i, "sku", e.target.value)}
                           />
-                          <Input
-                            placeholder="Stock"
-                            type="number"
-                            min="0"
-                            value={variant.stockQuantity}
-                            onChange={(e) =>
-                              updateVariant(i, "stockQuantity", parseInt(e.target.value) || 0)
-                            }
-                          />
-                          <Input
-                            placeholder="Price ±"
-                            type="number"
-                            value={variant.priceModifier}
-                            onChange={(e) =>
-                              updateVariant(i, "priceModifier", parseFloat(e.target.value) || 0)
-                            }
-                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Variant Price (₹)</Label>
+                            <Input
+                              type="number"
+                              placeholder="Leave blank to use product price"
+                              value={variant.price ?? ""}
+                              onChange={(e) => updateVariant(i, "price", e.target.value ? Number(e.target.value) : "")}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Stock Quantity</Label>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={variant.stockQuantity ?? 0}
+                              onChange={(e) => updateVariant(i, "stockQuantity", Number(e.target.value) || 0)}
+                            />
+                          </div>
                         </div>
                       </div>
                     ))}

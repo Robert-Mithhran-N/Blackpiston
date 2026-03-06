@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 
-const API_BASE = "http://localhost:3001/api";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
 const TOKEN_KEY = "blackpiston_user_token";
 const USER_KEY = "blackpiston_user";
 

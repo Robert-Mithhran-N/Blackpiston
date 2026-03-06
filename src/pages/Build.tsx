@@ -14,7 +14,7 @@ import {
   Truck,
   Headphones,
 } from "lucide-react";
-import { buildKits, getProductById } from "@/data/userMockData";
+import { buildKits } from "@/config/services";
 
 const Build = () => {
   return (
@@ -116,7 +116,6 @@ const Build = () => {
                 const discountPercent = Math.round(
                   ((kit.totalPrice - kit.discountedPrice) / kit.totalPrice) * 100
                 );
-                const kitProducts = kit.products.map(getProductById).filter(Boolean);
 
                 return (
                   <Card
@@ -150,19 +149,15 @@ const Build = () => {
                       </h3>
                       <p className="text-muted-foreground text-sm mb-4">{kit.description}</p>
 
-                      {/* Included Products */}
+                      {/* Included Items Count */}
                       <div className="mb-6">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
                           Includes:
                         </p>
-                        <ul className="space-y-1">
-                          {kitProducts.slice(0, 4).map((product) => (
-                            <li key={product!.id} className="flex items-center gap-2 text-sm">
-                              <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                              <span className="truncate">{product!.name}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <div className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="h-3.5 w-3.5 text-green-500" />
+                          <span>{kit.products.length} premium items included</span>
+                        </div>
                       </div>
 
                       {/* Pricing */}

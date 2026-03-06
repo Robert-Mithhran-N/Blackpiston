@@ -117,6 +117,7 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
 });
 
 // Get user's orders
+// IMPORTANT: This must come BEFORE the /:orderId catch-all route
 router.get('/my-orders', authenticateToken, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).userId;
@@ -151,87 +152,8 @@ router.get('/my-orders', authenticateToken, async (req: Request, res: Response) 
     }
 });
 
-// Get single order by ID
-router.get('/:orderId', authenticateToken, async (req: Request, res: Response) => {
-    try {
-        const userId = (req as any).userId;
-        const userRole = (req as any).userRole;
-        const { orderId } = req.params;
-
-        const order = await prisma.order.findUnique({
-            where: { id: orderId },
-            include: {
-                payment: true
-            }
-        });
-
-        if (!order) {
-            return res.status(404).json({ error: 'Order not found' });
-        }
-
-        // Only allow user to view their own orders unless admin
-        if (order.userId !== userId && !['ADMIN', 'STAFF'].includes(userRole)) {
-            return res.status(403).json({ error: 'Access denied' });
-        }
-
-        res.json({ order });
-    } catch (error) {
-        console.error('Get order error:', error);
-        res.status(500).json({ error: 'Failed to fetch order' });
-    }
-});
-
-// Cancel order
-router.post('/:orderId/cancel', authenticateToken, async (req: Request, res: Response) => {
-    try {
-        const userId = (req as any).userId;
-        const { orderId } = req.params;
-        const { reason } = req.body;
-
-        const order = await prisma.order.findUnique({
-            where: { id: orderId }
-        });
-
-        if (!order) {
-            return res.status(404).json({ error: 'Order not found' });
-        }
-
-        if (order.userId !== userId) {
-            return res.status(403).json({ error: 'Access denied' });
-        }
-
-        // Only allow cancellation for certain statuses
-        if (!['NEW', 'CONFIRMED', 'PROCESSING'].includes(order.orderStatus)) {
-            return res.status(400).json({ error: 'Order cannot be cancelled at this stage' });
-        }
-
-        const updatedOrder = await prisma.order.update({
-            where: { id: orderId },
-            data: {
-                orderStatus: 'CANCELLED',
-                cancelledAt: new Date(),
-                cancellationReason: reason || 'Cancelled by customer',
-                statusHistory: {
-                    push: {
-                        status: 'CANCELLED',
-                        timestamp: new Date(),
-                        note: reason || 'Cancelled by customer'
-                    }
-                }
-            }
-        });
-
-        res.json({
-            message: 'Order cancelled successfully',
-            order: updatedOrder
-        });
-    } catch (error) {
-        console.error('Cancel order error:', error);
-        res.status(500).json({ error: 'Failed to cancel order' });
-    }
-});
-
 // Admin: Get all orders
+// IMPORTANT: This must come BEFORE the /:orderId catch-all route
 router.get('/admin/all', authenticateToken, async (req: Request, res: Response) => {
     try {
         const userRole = (req as any).userRole;
@@ -288,6 +210,7 @@ router.get('/admin/all', authenticateToken, async (req: Request, res: Response) 
 });
 
 // Admin: Update order status
+// IMPORTANT: This must come BEFORE the /:orderId catch-all route
 router.patch('/admin/:orderId/status', authenticateToken, async (req: Request, res: Response) => {
     try {
         const userRole = (req as any).userRole;
@@ -338,6 +261,87 @@ router.patch('/admin/:orderId/status', authenticateToken, async (req: Request, r
     } catch (error) {
         console.error('Update order status error:', error);
         res.status(500).json({ error: 'Failed to update order status' });
+    }
+});
+
+// Cancel order
+router.post('/:orderId/cancel', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).userId;
+        const { orderId } = req.params;
+        const { reason } = req.body;
+
+        const order = await prisma.order.findUnique({
+            where: { id: orderId }
+        });
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        if (order.userId !== userId) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        // Only allow cancellation for certain statuses
+        if (!['NEW', 'CONFIRMED', 'PROCESSING'].includes(order.orderStatus)) {
+            return res.status(400).json({ error: 'Order cannot be cancelled at this stage' });
+        }
+
+        const updatedOrder = await prisma.order.update({
+            where: { id: orderId },
+            data: {
+                orderStatus: 'CANCELLED',
+                cancelledAt: new Date(),
+                cancellationReason: reason || 'Cancelled by customer',
+                statusHistory: {
+                    push: {
+                        status: 'CANCELLED',
+                        timestamp: new Date(),
+                        note: reason || 'Cancelled by customer'
+                    }
+                }
+            }
+        });
+
+        res.json({
+            message: 'Order cancelled successfully',
+            order: updatedOrder
+        });
+    } catch (error) {
+        console.error('Cancel order error:', error);
+        res.status(500).json({ error: 'Failed to cancel order' });
+    }
+});
+
+// Get single order by ID
+// IMPORTANT: This catch-all route MUST be defined LAST among the order routes
+router.get('/:orderId', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).userId;
+        const userRole = (req as any).userRole;
+        const { orderId } = req.params;
+
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+                payment: true
+            }
+        });
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        // Only allow user to view their own orders unless admin
+        if (order.userId !== userId && !['ADMIN', 'STAFF'].includes(userRole)) {
+            return res.status(403).json({ error: 'Access denied' });
+        }
+
+        res.json({ order });
+    } catch (error) {
+        console.error('Get order error:', error);
+        res.status(500).json({ error: 'Failed to fetch order' });
     }
 });
 

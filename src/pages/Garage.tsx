@@ -15,7 +15,7 @@ import {
   MapPin,
   Star,
 } from "lucide-react";
-import { services } from "@/data/userMockData";
+import { services } from "@/config/services";
 import { contactConfig } from "@/config/contact";
 
 const Garage = () => {

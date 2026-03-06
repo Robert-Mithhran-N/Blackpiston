@@ -152,6 +152,7 @@ model User {
 
 type ProductImage {
   url       String
+  public_id String?
   alt       String?
   isPrimary Boolean @default(false)
 }
@@ -162,11 +163,15 @@ type ProductSpecification {
 }
 
 type ProductVariant {
+  id            String?
   size          String?
   color         String?
+  model         String?
   sku           String
   stockQuantity Int
-  priceModifier Float @default(0)
+  price         Float?
+  priceModifier Float          @default(0)
+  images        ProductImage[]
 }
 
 type ProductDimensions {
