@@ -190,7 +190,7 @@ const createProductSchema = z.object({
     stockQuantity: z.coerce.number().int().min(0).optional().default(0),
     rating: z.number().optional().default(0),
     totalReviews: z.number().optional().default(0),
-    productTypeId: z.string().optional().nullable(),
+    productType: z.string().optional().nullable(),
 });
 
 // ============================================================
@@ -336,6 +336,7 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
                 shortDescription: data.shortDescription,
                 categoryId: safeCategoryId,
                 categorySlug: data.categorySlug || null,
+                productType: data.productType || null,
                 brand: data.brand,
                 price: data.price,
                 offerPrice: data.offerPrice ?? null,
@@ -399,6 +400,7 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
         if ('brand' in body) updateData.brand = body.brand || null;
         if ('sku' in body) updateData.sku = body.sku || undefined;
         if ('categorySlug' in body) updateData.categorySlug = body.categorySlug || null;
+        if ('productType' in body) updateData.productType = body.productType || null;
 
         // ObjectId fields
         if ('categoryId' in body) {

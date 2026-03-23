@@ -1,6 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, ChevronDown, HardHat, Shirt, Footprints, Sparkles, Home, LogOut, Settings, MapPin, Package as PackageIcon } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, ChevronDown, HardHat, Shirt, Footprints, Sparkles, Home, LogOut, Settings, MapPin, Package as PackageIcon, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useUserAuth } from "@/context/UserAuthContext";
-import { fetchCategories } from "@/lib/api";
+import { fetchCategoryTree } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import logo from "@/assets/logo.png";
 
@@ -39,6 +39,9 @@ const categoryImages: Record<string, string> = {
   jackets: glovesImg,
   boots: bootImg,
   accessories: accessImg,
+  pants: glovesImg,
+  'rain-gear': bootImg,
+  luggage: accessImg,
 };
 
 const Header = () => {
@@ -67,12 +70,12 @@ const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch categories from API
-  const [categories, setCategories] = useState<{ id: string; name: string; slug: string; productCount?: number }[]>([]);
+  // Fetch categories as tree from API
+  const [categories, setCategories] = useState<{ id: string; name: string; slug: string; children?: any[] }[]>([]);
   useEffect(() => {
-    fetchCategories()
-      .then((data) => setCategories(data.categories || []))
-      .catch((err) => console.error("Failed to load categories:", err));
+    fetchCategoryTree()
+      .then((data) => setCategories(data.tree || []))
+      .catch((err) => console.error("Failed to load category tree:", err));
   }, []);
 
   const navState = useMemo(
@@ -123,8 +126,8 @@ const Header = () => {
             </button>
 
             {shopOpen && (
-              <div className="absolute left-0 top-full mt-2 w-[400px] p-4 bg-card border border-border rounded-lg shadow-xl z-50">
-                <div className="mb-4">
+              <div className="absolute left-0 top-full mt-2 w-[800px] max-w-[90vw] p-6 bg-card border border-border rounded-xl shadow-2xl z-50 hidden lg:block">
+                <div className="mb-6">
                   <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">
                     Shop by Category
                   </h3>
@@ -132,31 +135,32 @@ const Header = () => {
                     Premium motorcycle gear & accessories
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {categories.map((category) => {
-                    const categoryImage = categoryImages[category.slug] || categoryImages.helmets;
-                    return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
+                  {categories.map((type) => (
+                    <div key={type.id} className="space-y-3">
                       <Link
-                        key={category.id}
-                        to={`/shop/${category.slug}`}
+                        to={`/shop/${type.slug}`}
                         onClick={() => setShopOpen(false)}
-                        className="group flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 hover:bg-primary/10 transition-all duration-200 border border-zinc-700/50 hover:border-primary/40 cursor-pointer"
+                        className="text-sm font-semibold text-primary uppercase tracking-wider hover:underline flex items-center gap-2 group w-fit"
                       >
-                        <div className="h-11 w-11 rounded-lg bg-zinc-900/80 flex items-center justify-center overflow-hidden flex-shrink-0">
-                          <img
-                            src={categoryImage}
-                            alt={category.name}
-                            className="w-[90%] h-[90%] object-contain"
-                          />
-                        </div>
-                        <div className="flex flex-col min-w-0">
-                          <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                            {category.name}
-                          </p>
-                        </div>
+                        {type.name}
+                        <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </Link>
-                    );
-                  })}
+                      <div className="flex flex-col space-y-2">
+                        {type.children?.map((child) => (
+                          <Link
+                            key={child.id}
+                            to={`/shop/${child.slug}`}
+                            onClick={() => setShopOpen(false)}
+                            className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center"
+                          >
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary/40 mr-2 flex-shrink-0"></span>
+                            {child.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-border">
@@ -351,18 +355,35 @@ const Header = () => {
                   <p className="text-sm font-ui font-semibold text-primary uppercase tracking-wider">
                     Shop
                   </p>
-                  {categories.map((category) => {
-                    const Icon = categoryIcons[category.slug] || Sparkles;
+                  {categories.map((type) => {
+                    const Icon = categoryIcons[type.slug] || Sparkles;
                     return (
-                      <Link
-                        key={category.id}
-                        to={`/shop/${category.slug}`}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-3 py-2 text-metal-light hover:text-primary transition-colors"
-                      >
-                        <Icon className="h-4 w-4" />
-                        {category.name}
-                      </Link>
+                      <div key={type.id} className="flex flex-col mb-4 bg-zinc-900/40 p-3 rounded-lg border border-border">
+                        <Link
+                          to={`/shop/${type.slug}`}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className="flex items-center justify-between py-2 text-foreground font-semibold hover:text-primary transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Icon className="h-4 w-4 text-primary" />
+                            {type.name}
+                          </div>
+                        </Link>
+                        {type.children && type.children.length > 0 && (
+                          <div className="pl-7 mt-2 space-y-2 border-l border-zinc-700/50">
+                            {type.children.map((child) => (
+                              <Link
+                                key={child.id}
+                                to={`/shop/${child.slug}`}
+                                onClick={() => setMobileMenuOpen(false)}
+                                className="block py-1 text-sm text-muted-foreground hover:text-primary transition-colors"
+                              >
+                                - {child.name}
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>

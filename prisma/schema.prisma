@@ -196,6 +196,7 @@ model Product {
   categoryId       String?                @db.ObjectId
   category         ProductCategory?       @relation(fields: [categoryId], references: [id])
   categorySlug     String?
+  productType      String?
   brand            String?
   price            Float
   offerPrice       Float?
