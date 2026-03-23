@@ -15,11 +15,23 @@ import About from "./pages/About";
 import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
 import Cart from "./pages/Cart";
+import Checkout from "./pages/Checkout";
+import OrderSuccess from "./pages/OrderSuccess";
 import FAQ from "./pages/FAQ";
 import Shipping from "./pages/Shipping";
 import Warranty from "./pages/Warranty";
 import Privacy from "./pages/Privacy";
 import Login from "./pages/Login";
+import Onboarding from "./pages/Onboarding";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+
+import ProfileLayout from "./pages/user/ProfileLayout";
+import ProfileDetails from "./pages/user/ProfileDetails";
+import ProfileOrders from "./pages/user/ProfileOrders";
+import ProfileAddresses from "./pages/user/ProfileAddresses";
+import ProfileSettings from "./pages/user/ProfileSettings";
+
 import AdminRoute from "./routes/AdminRoute";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { UserAuthProvider } from "./context/UserAuthContext";
@@ -33,7 +45,7 @@ import AdminRequests from "./pages/admin/AdminRequests";
 import AdminTopOffers from "./pages/admin/AdminTopOffers";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminSettings from "./pages/admin/AdminSettings";
-import AdminProductTypes from "./pages/admin/AdminProductTypes";
+import AdminUsers from "./pages/admin/AdminUsers";
 
 const queryClient = new QueryClient();
 
@@ -60,22 +72,35 @@ const App = () => (
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/cart" element={<Cart />} />
+                  <Route path="/checkout" element={<Checkout />} />
+                  <Route path="/order-success" element={<OrderSuccess />} />
                   <Route path="/faq" element={<FAQ />} />
                   <Route path="/shipping" element={<Shipping />} />
                   <Route path="/warranty" element={<Warranty />} />
                   <Route path="/privacy" element={<Privacy />} />
                   <Route path="/login" element={<Login />} />
+                  <Route path="/onboarding" element={<Onboarding />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+
+                  {/* Protected User Dashboard Routes */}
+                  <Route path="/profile" element={<ProfileLayout />}>
+                    <Route index element={<ProfileDetails />} />
+                    <Route path="orders" element={<ProfileOrders />} />
+                    <Route path="addresses" element={<ProfileAddresses />} />
+                    <Route path="settings" element={<ProfileSettings />} />
+                  </Route>
 
                   <Route path="/admin" element={<AdminRoute />}>
                     <Route index element={<AdminDashboard />} />
                     <Route path="products" element={<AdminProducts />} />
-                    <Route path="product-types" element={<AdminProductTypes />} />
                     <Route path="top-offers" element={<AdminTopOffers />} />
                     <Route path="payments" element={<AdminPayments />} />
                     <Route path="orders" element={<AdminOrders />} />
                     <Route path="orders/history" element={<AdminOrderHistory />} />
                     <Route path="low-stock" element={<AdminLowStock />} />
                     <Route path="requests" element={<AdminRequests />} />
+                    <Route path="users" element={<AdminUsers />} />
                     <Route path="settings" element={<AdminSettings />} />
                   </Route>
 

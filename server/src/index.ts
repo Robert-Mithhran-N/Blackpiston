@@ -1,4 +1,5 @@
 import express from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -9,7 +10,13 @@ import productRoutes from './routes/products.js';
 import orderRoutes from './routes/orders.js';
 import uploadRoutes from './routes/upload.js';
 import adminRoutes from './routes/admin.js';
-import productTypeRoutes from './routes/productTypes.js';
+import userRoutes from './routes/users.js';
+import blogRoutes from './routes/blog.js';
+import serviceRoutes from './routes/services.js';
+import buildRoutes from './routes/builds.js';
+import couponRoutes from './routes/coupons.js';
+import wishlistRoutes from './routes/wishlist.js';
+import { initSocketServer } from './socketManager.js';
 
 // Load environment variables (resolve path relative to this file, not CWD)
 const __filename = fileURLToPath(import.meta.url);
@@ -17,16 +24,35 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const app = express();
+const httpServer = createServer(app);
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
+const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:5000',
+    'http://localhost:5000',
+    'http://localhost:5173',
+    'http://localhost:3000',
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5000',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (server-to-server, Postman, curl, etc.)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        // In development, allow all origins
+        if (process.env.NODE_ENV === 'development') {
+            return callback(null, true);
+        }
+        callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -62,8 +88,13 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/product-types', productTypeRoutes);
-// Search and tag suggestion routes are inside productTypeRoutes
+app.use('/api/admin/blog', blogRoutes);
+app.use('/api/admin/services', serviceRoutes);
+app.use('/api/admin/builds', buildRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/coupons', couponRoutes);
+app.use('/api/wishlist', wishlistRoutes);
+// Search and tag suggestion routes are inside products router
 
 // Database connection check
 async function checkDatabaseConnection() {
@@ -94,13 +125,17 @@ app.use((req, res) => {
 async function startServer() {
     await checkDatabaseConnection();
 
-    app.listen(PORT, () => {
+    // Initialize Socket.IO before listening
+    initSocketServer(httpServer);
+
+    httpServer.listen(PORT, () => {
         console.log(`
 🏍️  BlackPiston Garage API Server
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 📡 Server running on: http://localhost:${PORT}
 🔗 API Base URL: http://localhost:${PORT}/api
 🏥 Health Check: http://localhost:${PORT}/api/health
+🔌 Socket.IO: Enabled
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     `);
     });

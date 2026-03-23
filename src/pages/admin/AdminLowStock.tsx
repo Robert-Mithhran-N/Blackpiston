@@ -86,7 +86,15 @@ const AdminLowStock = () => {
     useEffect(() => {
         setIsLoading(true);
         fetchLowStockProducts()
-            .then((data) => setProducts(data || []))
+            .then((data) => {
+                const mapped = (data?.lowStockProducts || []).map((item: any) => ({
+                    id: item.product?.id || Math.random().toString(),
+                    name: item.product?.name || 'Unknown',
+                    category: item.product?.categorySlug || 'Uncategorized',
+                    currentStock: item.availableStock || 0,
+                }));
+                setProducts(mapped);
+            })
             .catch((err) => console.error("Failed to load low stock products:", err))
             .finally(() => setIsLoading(false));
     }, []);

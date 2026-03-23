@@ -53,21 +53,28 @@ import { Order, OrderStatus, PaymentStatus } from "@/types/admin";
 // Status color helpers
 const getOrderStatusColor = (status: OrderStatus) => {
     switch (status) {
-        case "Pending": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/50";
-        case "Processing": return "bg-blue-500/20 text-blue-400 border-blue-500/50";
-        case "Shipped": return "bg-purple-500/20 text-purple-400 border-purple-500/50";
-        case "Delivered": return "bg-green-500/20 text-green-400 border-green-500/50";
-        case "Cancelled": return "bg-red-500/20 text-red-400 border-red-500/50";
+        case "NEW":
+        case "CONFIRMED": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/50";
+        case "PROCESSING":
+        case "PACKED": return "bg-blue-500/20 text-blue-400 border-blue-500/50";
+        case "SHIPPED":
+        case "OUT_FOR_DELIVERY": return "bg-purple-500/20 text-purple-400 border-purple-500/50";
+        case "DELIVERED":
+        case "COMPLETED": return "bg-green-500/20 text-green-400 border-green-500/50";
+        case "CANCELLED":
+        case "RETURNED": return "bg-red-500/20 text-red-400 border-red-500/50";
         default: return "bg-gray-500/20 text-gray-400 border-gray-500/50";
     }
 };
 
 const getPaymentStatusColor = (status: PaymentStatus) => {
     switch (status) {
-        case "Paid": return "bg-green-500/20 text-green-400 border-green-500/50";
-        case "Pending": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/50";
-        case "Failed": return "bg-red-500/20 text-red-400 border-red-500/50";
-        case "Refunded": return "bg-gray-500/20 text-gray-400 border-gray-500/50";
+        case "PAID": return "bg-green-500/20 text-green-400 border-green-500/50";
+        case "PENDING":
+        case "PROCESSING": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/50";
+        case "FAILED": return "bg-red-500/20 text-red-400 border-red-500/50";
+        case "REFUNDED":
+        case "PARTIALLY_REFUNDED": return "bg-gray-500/20 text-gray-400 border-gray-500/50";
         default: return "bg-gray-500/20 text-gray-400 border-gray-500/50";
     }
 };
@@ -85,7 +92,7 @@ const AdminOrders = () => {
             .then((data) => {
                 const all = data.orders || [];
                 const activeOrders = all.filter(
-                    (o: Order) => o.orderStatus === "Pending" || o.orderStatus === "Processing" || o.orderStatus === "Shipped"
+                    (o: Order) => !["DELIVERED", "COMPLETED", "CANCELLED", "RETURNED"].includes(o.orderStatus)
                 );
                 setOrders(activeOrders);
             })
@@ -93,9 +100,9 @@ const AdminOrders = () => {
             .finally(() => setIsLoading(false));
     }, []);
 
-    const pendingCount = orders.filter((o) => o.orderStatus === "Pending").length;
-    const processingCount = orders.filter((o) => o.orderStatus === "Processing").length;
-    const shippedCount = orders.filter((o) => o.orderStatus === "Shipped").length;
+    const pendingCount = orders.filter((o) => ["NEW", "CONFIRMED"].includes(o.orderStatus)).length;
+    const processingCount = orders.filter((o) => ["PROCESSING", "PACKED"].includes(o.orderStatus)).length;
+    const shippedCount = orders.filter((o) => ["SHIPPED", "OUT_FOR_DELIVERY"].includes(o.orderStatus)).length;
 
     // Update order status
     const handleUpdateStatus = (orderId: string, newStatus: OrderStatus) => {
@@ -279,20 +286,20 @@ const AdminOrders = () => {
                                                                 <Eye className="mr-2 h-4 w-4" />
                                                                 View Details
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, "Processing")}>
+                                                            <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, "PROCESSING")}>
                                                                 <Package className="mr-2 h-4 w-4" />
                                                                 Mark Processing
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, "Shipped")}>
+                                                            <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, "SHIPPED")}>
                                                                 <Truck className="mr-2 h-4 w-4" />
                                                                 Mark Shipped
                                                             </DropdownMenuItem>
-                                                            <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, "Delivered")}>
+                                                            <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, "DELIVERED")}>
                                                                 <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
                                                                 Mark Delivered
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
-                                                                onClick={() => handleUpdateStatus(order.id, "Cancelled")}
+                                                                onClick={() => handleUpdateStatus(order.id, "CANCELLED")}
                                                                 className="text-red-500"
                                                             >
                                                                 <XCircle className="mr-2 h-4 w-4" />
@@ -383,11 +390,16 @@ const AdminOrders = () => {
                                             <SelectValue placeholder="Update Status" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="Pending">Pending</SelectItem>
-                                            <SelectItem value="Processing">Processing</SelectItem>
-                                            <SelectItem value="Shipped">Shipped</SelectItem>
-                                            <SelectItem value="Delivered">Delivered</SelectItem>
-                                            <SelectItem value="Cancelled">Cancelled</SelectItem>
+                                            <SelectItem value="NEW">New</SelectItem>
+                                            <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                                            <SelectItem value="PROCESSING">Processing</SelectItem>
+                                            <SelectItem value="PACKED">Packed</SelectItem>
+                                            <SelectItem value="SHIPPED">Shipped</SelectItem>
+                                            <SelectItem value="OUT_FOR_DELIVERY">Out for Delivery</SelectItem>
+                                            <SelectItem value="DELIVERED">Delivered</SelectItem>
+                                            <SelectItem value="COMPLETED">Completed</SelectItem>
+                                            <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                                            <SelectItem value="RETURNED">Returned</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </DialogFooter>

@@ -130,7 +130,7 @@ model User {
   passwordHash    String?
   role            UserRole       @default(USER)
   avatar          String?
-  googleId        String?        @unique
+  googleId        String?
   authProvider    String?        @default("local")
   address         Address?
   savedAddresses  SavedAddress[]
@@ -139,6 +139,8 @@ model User {
   lastLogin       DateTime?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+  resetToken      String?
+  resetTokenExpiry DateTime?
 
   // Relations
   orders          Order[]
@@ -146,6 +148,10 @@ model User {
   requests        Request[]
   reviews         Review[]
   serviceBookings ServiceBooking[]
+  blogs           Blog[]
+  wishlist        Wishlist?
+  couponUsages    CouponUsage[]
+  returnRequests  ReturnRequest[]
 
   @@map("users")
 }
@@ -186,8 +192,7 @@ model Product {
   slug             String                 @unique
   description      String?
   shortDescription String?
-  productTypeId    String?                @db.ObjectId
-  productType      ProductType?           @relation(fields: [productTypeId], references: [id])
+
   categoryId       String?                @db.ObjectId
   category         ProductCategory?       @relation(fields: [categoryId], references: [id])
   categorySlug     String?
@@ -227,8 +232,7 @@ model ProductCategory {
   image         String?
   icon          String?
   parentId      String?      @db.ObjectId
-  productTypeId String?      @db.ObjectId
-  productType   ProductType? @relation(fields: [productTypeId], references: [id])
+
   level         Int          @default(0)
   totalProducts Int          @default(0)
   sortOrder     Int          @default(0)
@@ -242,20 +246,7 @@ model ProductCategory {
   @@map("product_categories")
 }
 
-model ProductType {
-  id          String    @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  slug        String    @unique
-  description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
 
-  // Relations
-  categories ProductCategory[]
-  products   Product[]
-
-  @@map("product_types")
-}
 
 type OrderProduct {
   productId   String
@@ -323,7 +314,9 @@ model Order {
   updatedAt          DateTime             @updatedAt
 
   // Relations
-  payment Payment?
+  payment       Payment?
+  couponUsages  CouponUsage[]
+  returnRequest ReturnRequest?
 
   @@map("orders")
 }
@@ -706,4 +699,136 @@ model Settings {
   updatedBy          String?                 @db.ObjectId
 
   @@map("settings")
+}
+
+model Blog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  slug        String   @unique
+  content     String
+  category    String
+  image       String?
+  tags        String[]
+  isPublished Boolean  @default(false)
+  authorId    String?  @db.ObjectId
+  author      User?    @relation(fields: [authorId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("blogs")
+}
+
+model Service {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String   @unique
+  description String
+  price       Float
+  duration    String
+  category    String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("services")
+}
+
+model Build {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String   @unique
+  description String?
+  components  String[]
+  price       Float
+  images      ProductImage[]
+  isFeatured  Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("builds")
+}
+
+// ==================== NEW FEATURES ==================== //
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+model Coupon {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  code            String        @unique
+  description     String?
+  discountType    DiscountType  @default(PERCENTAGE)
+  value           Float
+  minOrderAmount  Float         @default(0)
+  expiryDate      DateTime?
+  isActive        Boolean       @default(true)
+  usageLimit      Int?          // max number of times it can be used total
+  usedCount       Int           @default(0)
+  userUsageLimit  Int           @default(1) // how many times one user can use it
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Relations
+  usages          CouponUsage[]
+
+  @@map("coupons")
+}
+
+model CouponUsage {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  couponId  String   @db.ObjectId
+  coupon    Coupon   @relation(fields: [couponId], references: [id])
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  orderId   String   @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id])
+  discount  Float    // Actual amount discounted
+  usedAt    DateTime @default(now())
+
+  @@map("coupon_usages")
+}
+
+type WishlistItem {
+  productId   String   @db.ObjectId
+  addedAt     DateTime @default(now())
+}
+
+model Wishlist {
+  id        String         @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String         @unique @db.ObjectId
+  user      User           @relation(fields: [userId], references: [id])
+  items     WishlistItem[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  @@map("wishlists")
+}
+
+enum ReturnStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REFUNDED
+}
+
+model ReturnRequest {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  orderId       String       @unique @db.ObjectId
+  order         Order        @relation(fields: [orderId], references: [id])
+  userId        String       @db.ObjectId
+  user          User         @relation(fields: [userId], references: [id])
+  reason        String
+  details       String?
+  images        String[]
+  status        ReturnStatus @default(PENDING)
+  adminNotes    String?
+  refundAmount  Float?
+  requestedAt   DateTime     @default(now())
+  processedAt   DateTime?
+  updatedAt     DateTime     @updatedAt
+
+  @@map("return_requests")
 }

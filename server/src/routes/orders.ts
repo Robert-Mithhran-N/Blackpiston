@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../config/database.js';
 import jwt from 'jsonwebtoken';
+import { emitStockUpdate } from '../socketManager.js';
+import { sendOrderConfirmation, sendOrderStatusUpdate } from '../utils/emailService.js';
 
 const router = Router();
 
@@ -30,7 +32,78 @@ function generateOrderNumber(): string {
     return `BP-${year}-${random}`;
 }
 
-// Create new order
+// ============================================================
+// Verify Stock — used by frontend before checkout
+// ============================================================
+router.post('/verify-stock', async (req: Request, res: Response) => {
+    try {
+        const { items } = req.body;
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: 'No items to verify' });
+        }
+
+        const results: {
+            productId: string;
+            variantId?: string;
+            requested: number;
+            currentStock: number;
+            available: boolean;
+            productName?: string;
+        }[] = [];
+
+        for (const item of items) {
+            const product = await prisma.product.findUnique({
+                where: { id: item.productId },
+                select: { id: true, name: true, stockQuantity: true, variants: true, inStock: true }
+            });
+
+            if (!product) {
+                results.push({
+                    productId: item.productId,
+                    variantId: item.variantId,
+                    requested: item.quantity,
+                    currentStock: 0,
+                    available: false,
+                    productName: 'Unknown product',
+                });
+                continue;
+            }
+
+            // Check variant-level stock if variantId provided
+            if (item.variantId && product.variants && product.variants.length > 0) {
+                const variant = product.variants.find((v: any) => v.id === item.variantId);
+                const variantStock = variant ? variant.stockQuantity : 0;
+                results.push({
+                    productId: item.productId,
+                    variantId: item.variantId,
+                    requested: item.quantity,
+                    currentStock: variantStock,
+                    available: variantStock >= item.quantity,
+                    productName: product.name,
+                });
+            } else {
+                // Product-level stock
+                results.push({
+                    productId: item.productId,
+                    requested: item.quantity,
+                    currentStock: product.stockQuantity,
+                    available: product.stockQuantity >= item.quantity,
+                    productName: product.name,
+                });
+            }
+        }
+
+        const allAvailable = results.every(r => r.available);
+        res.json({ available: allAvailable, items: results });
+    } catch (error) {
+        console.error('Verify stock error:', error);
+        res.status(500).json({ error: 'Failed to verify stock' });
+    }
+});
+
+// ============================================================
+// Create new order — with atomic stock validation & decrement
+// ============================================================
 router.post('/', authenticateToken, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).userId;
@@ -46,7 +119,92 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'No products in order' });
         }
 
-        // Calculate totals
+        // ── Step 1: Validate stock for every item ──
+        const stockErrors: string[] = [];
+        const stockUpdates: {
+            productId: string;
+            variantId?: string;
+            newProductStock: number;
+            updatedVariants?: any[];
+        }[] = [];
+
+        for (const item of products) {
+            const product = await prisma.product.findUnique({
+                where: { id: item.productId },
+                select: { id: true, name: true, stockQuantity: true, variants: true }
+            });
+
+            if (!product) {
+                stockErrors.push(`Product "${item.name || item.productId}" not found`);
+                continue;
+            }
+
+            // Determine if this is a variant or product-level purchase
+            const variantId = item.variantId || null;
+            if (variantId && product.variants && product.variants.length > 0) {
+                const variant = product.variants.find((v: any) => v.id === variantId);
+                if (!variant) {
+                    stockErrors.push(`Variant not found for "${product.name}"`);
+                    continue;
+                }
+                if (variant.stockQuantity < item.quantity) {
+                    stockErrors.push(
+                        `Insufficient stock for "${product.name}" (variant). Available: ${variant.stockQuantity}, Requested: ${item.quantity}`
+                    );
+                    continue;
+                }
+                // Prepare variant-level update
+                const updatedVariants = product.variants.map((v: any) => {
+                    if (v.id === variantId) {
+                        return { ...v, stockQuantity: v.stockQuantity - item.quantity };
+                    }
+                    return v;
+                });
+                const totalVariantStock = updatedVariants.reduce((sum: number, v: any) => sum + v.stockQuantity, 0);
+                stockUpdates.push({
+                    productId: product.id,
+                    variantId,
+                    newProductStock: totalVariantStock,
+                    updatedVariants,
+                });
+            } else {
+                // Product-level stock
+                if (product.stockQuantity < item.quantity) {
+                    stockErrors.push(
+                        `Insufficient stock for "${product.name}". Available: ${product.stockQuantity}, Requested: ${item.quantity}`
+                    );
+                    continue;
+                }
+                stockUpdates.push({
+                    productId: product.id,
+                    newProductStock: product.stockQuantity - item.quantity,
+                });
+            }
+        }
+
+        if (stockErrors.length > 0) {
+            return res.status(400).json({
+                error: 'Insufficient stock',
+                details: stockErrors,
+            });
+        }
+
+        // ── Step 2: Atomically decrement stock ──
+        for (const update of stockUpdates) {
+            const updateData: any = {
+                stockQuantity: update.newProductStock,
+                inStock: update.newProductStock > 0,
+            };
+            if (update.updatedVariants) {
+                updateData.variants = update.updatedVariants;
+            }
+            await prisma.product.update({
+                where: { id: update.productId },
+                data: updateData,
+            });
+        }
+
+        // ── Step 3: Create order ──
         let subtotal = 0;
         const orderProducts = products.map((item: any) => {
             const itemTotal = item.unitPrice * item.quantity;
@@ -68,7 +226,6 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
         const taxAmount = Math.round(subtotal * 0.18 * 100) / 100; // 18% GST
         const totalAmount = subtotal + shippingCost + taxAmount;
 
-        // Create order
         const order = await prisma.order.create({
             data: {
                 orderNumber: generateOrderNumber(),
@@ -105,6 +262,28 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
                 currency: 'INR'
             }
         });
+
+        // ── Step 4: Emit real-time stock updates ──
+        for (const update of stockUpdates) {
+            emitStockUpdate({
+                productId: update.productId,
+                variantId: update.variantId || null,
+                newStock: update.newProductStock,
+                inStock: update.newProductStock > 0,
+                variants: update.updatedVariants
+                    ? update.updatedVariants.map((v: any) => ({ id: v.id, stockQuantity: v.stockQuantity }))
+                    : undefined,
+            });
+        }
+
+        // ── Step 5: Send Order Confirmation Email ──
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (user && user.email) {
+            // Attach user data for the template
+            const orderWithUser = { ...order, user: { name: user.name } };
+            // Fire and forget email
+            sendOrderConfirmation(user.email, orderWithUser).catch(err => console.error("Email failed", err));
+        }
 
         res.status(201).json({
             message: 'Order placed successfully',
@@ -251,8 +430,17 @@ router.patch('/admin/:orderId/status', authenticateToken, async (req: Request, r
 
         const updatedOrder = await prisma.order.update({
             where: { id: orderId },
-            data: updateData
+            data: updateData,
+            include: {
+                user: true
+            }
         });
+
+        // ── Send Order Status Update Email ──
+        if (updatedOrder.user?.email && order.orderStatus !== status) {
+            sendOrderStatusUpdate(updatedOrder.user.email, updatedOrder.orderNumber, status)
+                .catch(err => console.error("Status Update Email failed", err));
+        }
 
         res.json({
             message: 'Order status updated',
@@ -264,7 +452,7 @@ router.patch('/admin/:orderId/status', authenticateToken, async (req: Request, r
     }
 });
 
-// Cancel order
+// Cancel order — restore stock and emit updates
 router.post('/:orderId/cancel', authenticateToken, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).userId;
@@ -286,6 +474,45 @@ router.post('/:orderId/cancel', authenticateToken, async (req: Request, res: Res
         // Only allow cancellation for certain statuses
         if (!['NEW', 'CONFIRMED', 'PROCESSING'].includes(order.orderStatus)) {
             return res.status(400).json({ error: 'Order cannot be cancelled at this stage' });
+        }
+
+        // Restore stock for each product in the cancelled order
+        for (const item of order.products) {
+            const product = await prisma.product.findUnique({
+                where: { id: item.productId },
+                select: { id: true, stockQuantity: true, variants: true }
+            });
+            if (!product) continue;
+
+            const restoredStock = product.stockQuantity + item.quantity;
+            const updateData: any = {
+                stockQuantity: restoredStock,
+                inStock: true,
+            };
+
+            // If this was a variant purchase, restore variant stock too
+            if ((item as any).variantId && product.variants && product.variants.length > 0) {
+                updateData.variants = product.variants.map((v: any) => {
+                    if (v.id === (item as any).variantId) {
+                        return { ...v, stockQuantity: v.stockQuantity + item.quantity };
+                    }
+                    return v;
+                });
+            }
+
+            await prisma.product.update({
+                where: { id: item.productId },
+                data: updateData,
+            });
+
+            emitStockUpdate({
+                productId: item.productId,
+                newStock: restoredStock,
+                inStock: true,
+                variants: updateData.variants
+                    ? updateData.variants.map((v: any) => ({ id: v.id, stockQuantity: v.stockQuantity }))
+                    : undefined,
+            });
         }
 
         const updatedOrder = await prisma.order.update({

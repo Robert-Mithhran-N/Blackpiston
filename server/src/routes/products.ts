@@ -73,13 +73,6 @@ router.get('/', async (req: Request, res: Response) => {
                             name: true,
                             slug: true
                         }
-                    },
-                    productType: {
-                        select: {
-                            id: true,
-                            name: true,
-                            slug: true
-                        }
                     }
                 }
             }),
@@ -101,22 +94,15 @@ router.get('/', async (req: Request, res: Response) => {
     }
 });
 
-// Get all categories (optionally filtered by productTypeId)
+// Get all categories
 // IMPORTANT: This must come BEFORE the /:idOrSlug catch-all route
 router.get('/categories/all', async (req: Request, res: Response) => {
     try {
-        const { productTypeId } = req.query;
         const where: any = { isActive: true };
-        if (productTypeId) {
-            where.productTypeId = productTypeId as string;
-        }
 
         const categories = await prisma.productCategory.findMany({
             where,
             orderBy: { sortOrder: 'asc' },
-            include: {
-                productType: { select: { id: true, name: true, slug: true } }
-            }
         });
 
         res.json({ categories });
@@ -213,6 +199,124 @@ router.get('/offers/top', async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Get top offers error:', error);
         res.status(500).json({ error: 'Failed to fetch offers' });
+    }
+});
+
+// ============================================================
+// Search — unified tag + text search
+// ============================================================
+function normalizeTag(raw: string): string {
+    return raw.replace(/^#/, '').trim().toLowerCase().replace(/\s+/g, '-');
+}
+
+router.get('/search', async (req: Request, res: Response) => {
+    try {
+        const { q, tags, page = '1', limit = '20' } = req.query;
+        const pageNum = parseInt(page as string);
+        const limitNum = parseInt(limit as string);
+        const skip = (pageNum - 1) * limitNum;
+
+        const where: any = { isActive: true };
+        const orderBy: any = { createdAt: 'desc' };
+
+        // Tag search
+        if (tags) {
+            const tagList = (tags as string)
+                .split(',')
+                .map(t => normalizeTag(t))
+                .filter(Boolean);
+            if (tagList.length > 0) {
+                where.tagStrings = { hasSome: tagList };
+            }
+        }
+
+        // Text search
+        if (q) {
+            const query = (q as string).replace(/^#/, '').trim();
+            if (query) {
+                const textConditions = [
+                    { name: { contains: query, mode: 'insensitive' as const } },
+                    { description: { contains: query, mode: 'insensitive' as const } },
+                    { brand: { contains: query, mode: 'insensitive' as const } },
+                    { tagStrings: { hasSome: [normalizeTag(query)] } },
+                ];
+
+                if (where.tagStrings) {
+                    where.AND = [
+                        { tagStrings: where.tagStrings },
+                        { OR: textConditions }
+                    ];
+                    delete where.tagStrings;
+                } else {
+                    where.OR = textConditions;
+                }
+            }
+        }
+
+        const [products, total] = await Promise.all([
+            prisma.product.findMany({
+                where,
+                skip,
+                take: limitNum,
+                orderBy,
+                include: {
+                    category: { select: { id: true, name: true, slug: true } },
+                }
+            }),
+            prisma.product.count({ where })
+        ]);
+
+        res.json({
+            products,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages: Math.ceil(total / limitNum)
+            }
+        });
+    } catch (error) {
+        console.error('Search error:', error);
+        res.status(500).json({ error: 'Search failed' });
+    }
+});
+
+// ============================================================
+// Tag Suggestions
+// ============================================================
+router.get('/tags/suggestions', async (req: Request, res: Response) => {
+    try {
+        const { prefix } = req.query;
+        const normalized = normalizeTag((prefix as string) || '');
+
+        if (!normalized) {
+            return res.json({ tags: [] });
+        }
+
+        const allProducts = await prisma.product.findMany({
+            where: { isActive: true },
+            select: { tagStrings: true },
+            take: 500,
+        });
+
+        const tagCounts = new Map<string, number>();
+        for (const p of allProducts) {
+            for (const tag of p.tagStrings) {
+                if (tag.startsWith(normalized)) {
+                    tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+                }
+            }
+        }
+
+        const suggestions = Array.from(tagCounts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 15)
+            .map(([tag, count]) => ({ tag, count }));
+
+        res.json({ tags: suggestions });
+    } catch (error) {
+        console.error('Tag suggestions error:', error);
+        res.status(500).json({ error: 'Failed to fetch tag suggestions' });
     }
 });
 

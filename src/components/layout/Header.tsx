@@ -1,6 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, ChevronDown, HardHat, Shirt, Footprints, Sparkles, Home, LogOut } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, ChevronDown, HardHat, Shirt, Footprints, Sparkles, Home, LogOut, Settings, MapPin, Package as PackageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -26,6 +26,7 @@ import accessImg from "@/assets/shop-btn-logos/shop-access.png";
 // Category icons mapping (fallback)
 const categoryIcons: Record<string, React.ElementType> = {
   helmets: HardHat,
+  gloves: Shirt,
   jackets: Shirt,
   boots: Footprints,
   accessories: Sparkles,
@@ -34,11 +35,11 @@ const categoryIcons: Record<string, React.ElementType> = {
 // Category images mapping
 const categoryImages: Record<string, string> = {
   helmets: helmetImg,
+  gloves: glovesImg,
   jackets: glovesImg,
   boots: bootImg,
   accessories: accessImg,
 };
-
 
 const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -133,7 +134,7 @@ const Header = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {categories.map((category) => {
-                    const categoryImage = categoryImages[category.slug];
+                    const categoryImage = categoryImages[category.slug] || categoryImages.helmets;
                     return (
                       <Link
                         key={category.id}
@@ -151,9 +152,6 @@ const Header = () => {
                         <div className="flex flex-col min-w-0">
                           <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                             {category.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {category.productCount} products
                           </p>
                         </div>
                       </Link>
@@ -247,17 +245,53 @@ const Header = () => {
                     <p className="text-sm font-semibold text-foreground truncate">{user.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                   </div>
-                  <button
-                    onClick={() => {
-                      logout();
-                      setUserMenuOpen(false);
-                      navigate("/login", { replace: true });
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign out
-                  </button>
+                  <div className="py-2 flex flex-col gap-1 px-2">
+                    <Link
+                      to="/profile"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted/50 rounded-md transition-colors"
+                    >
+                      <User className="h-4 w-4" />
+                      My Profile
+                    </Link>
+                    <Link
+                      to="/profile/orders"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted/50 rounded-md transition-colors"
+                    >
+                      <PackageIcon className="h-4 w-4" />
+                      My Orders
+                    </Link>
+                    <Link
+                      to="/profile/addresses"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted/50 rounded-md transition-colors"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Addresses
+                    </Link>
+                    <Link
+                      to="/profile/settings"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted/50 rounded-md transition-colors"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Settings
+                    </Link>
+                  </div>
+                  <div className="pt-2 border-t border-border px-2">
+                    <button
+                      onClick={() => {
+                        logout();
+                        setUserMenuOpen(false);
+                        navigate("/login", { replace: true });
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign out
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -318,11 +352,11 @@ const Header = () => {
                     Shop
                   </p>
                   {categories.map((category) => {
-                    const Icon = categoryIcons[category.id] || Sparkles;
+                    const Icon = categoryIcons[category.slug] || Sparkles;
                     return (
                       <Link
                         key={category.id}
-                        to={`/shop/${category.id}`}
+                        to={`/shop/${category.slug}`}
                         onClick={() => setMobileMenuOpen(false)}
                         className="flex items-center gap-3 py-2 text-metal-light hover:text-primary transition-colors"
                       >

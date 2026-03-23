@@ -1,5 +1,5 @@
 import { FormEvent, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useUserAuth } from "@/context/UserAuthContext";
 import Header from "@/components/layout/Header";
@@ -107,8 +107,14 @@ const Login = () => {
         throw new Error(data.error || "Login failed");
       }
 
+      if (data.isNewUser) {
+        console.log("New user detected, redirecting to onboarding...");
+        navigate("/onboarding", { state: { email: userEmail, password: userPassword } });
+        return;
+      }
+
       userAuth.login(data.token, data.user);
-      console.log("✅ User login successful:", data.user.email);
+      console.log("✅ User login successful:", data.user?.email);
       navigate("/", { replace: true });
     } catch (error) {
       console.error("User login error:", error);
@@ -274,9 +280,9 @@ const Login = () => {
                     <Button type="submit" className="w-full sm:w-auto" disabled={userLoading}>
                       {userLoading ? "Signing in..." : "Continue to user portal"}
                     </Button>
-                    <button type="button" className="text-sm text-primary hover:text-primary/80">
+                    <Link to="/forgot-password" className="text-sm text-primary hover:text-primary/80">
                       Forgot password?
-                    </button>
+                    </Link>
                   </CardFooter>
                 </form>
               </Card>

@@ -47,10 +47,12 @@ import { Order, PaymentStatus } from "@/types/admin";
 // Status color helpers
 const getPaymentStatusColor = (status: PaymentStatus) => {
     switch (status) {
-        case "Paid": return "bg-green-500/20 text-green-400 border-green-500/50";
-        case "Pending": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/50";
-        case "Failed": return "bg-red-500/20 text-red-400 border-red-500/50";
-        case "Refunded": return "bg-gray-500/20 text-gray-400 border-gray-500/50";
+        case "PAID": return "bg-green-500/20 text-green-400 border-green-500/50";
+        case "PENDING":
+        case "PROCESSING": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/50";
+        case "FAILED": return "bg-red-500/20 text-red-400 border-red-500/50";
+        case "REFUNDED":
+        case "PARTIALLY_REFUNDED": return "bg-gray-500/20 text-gray-400 border-gray-500/50";
         default: return "bg-gray-500/20 text-gray-400 border-gray-500/50";
     }
 };
@@ -85,7 +87,7 @@ const AdminOrderHistory = () => {
             .then((data) => {
                 const all = data.orders || [];
                 const completedOrders = all.filter(
-                    (o: Order) => o.orderStatus === "Delivered" || o.orderStatus === "Cancelled"
+                    (o: Order) => ["DELIVERED", "COMPLETED", "CANCELLED", "RETURNED"].includes(o.orderStatus)
                 );
                 setOrders(completedOrders);
             })
@@ -149,10 +151,10 @@ const AdminOrderHistory = () => {
         });
     };
 
-    const deliveredCount = orders.filter((o) => o.orderStatus === "Delivered").length;
-    const cancelledCount = orders.filter((o) => o.orderStatus === "Cancelled").length;
+    const deliveredCount = orders.filter((o) => ["DELIVERED", "COMPLETED"].includes(o.orderStatus)).length;
+    const cancelledCount = orders.filter((o) => ["CANCELLED", "RETURNED"].includes(o.orderStatus)).length;
     const totalRevenue = orders
-        .filter((o) => o.orderStatus === "Delivered" && o.paymentStatus === "Paid")
+        .filter((o) => ["DELIVERED", "COMPLETED"].includes(o.orderStatus) && o.paymentStatus === "PAID")
         .reduce((sum, o) => sum + o.totalAmount, 0);
 
     return (
@@ -392,7 +394,7 @@ const AdminOrderHistory = () => {
                                                     <TableCell>
                                                         <Badge
                                                             className={
-                                                                order.orderStatus === "Delivered"
+                                                                ["DELIVERED", "COMPLETED"].includes(order.orderStatus)
                                                                     ? "bg-green-500/20 text-green-400 border-green-500/50"
                                                                     : "bg-red-500/20 text-red-400 border-red-500/50"
                                                             }
@@ -436,7 +438,7 @@ const AdminOrderHistory = () => {
                                         Order {selectedOrder.id}
                                         <Badge
                                             className={
-                                                selectedOrder.orderStatus === "Delivered"
+                                                ["DELIVERED", "COMPLETED"].includes(selectedOrder.orderStatus)
                                                     ? "bg-green-500/20 text-green-400 border-green-500/50"
                                                     : "bg-red-500/20 text-red-400 border-red-500/50"
                                             }
@@ -445,7 +447,7 @@ const AdminOrderHistory = () => {
                                         </Badge>
                                     </DialogTitle>
                                     <DialogDescription>
-                                        {selectedOrder.orderStatus === "Delivered" ? "Delivered" : "Cancelled"} on{" "}
+                                        {["DELIVERED", "COMPLETED"].includes(selectedOrder.orderStatus) ? "Delivered" : "Cancelled/Returned"} on{" "}
                                         {formatDate(selectedOrder.updatedAt)}
                                     </DialogDescription>
                                 </DialogHeader>

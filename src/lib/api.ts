@@ -195,6 +195,45 @@ export async function deleteProduct(id: string) {
     return res.json();
 }
 
+// ============================================================
+// Categories Admin
+// ============================================================
+
+export async function createCategory(data: Record<string, unknown>) {
+    const res = await fetch(`${API_BASE}/admin/categories`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to create category");
+    }
+    return res.json();
+}
+
+export async function updateCategory(id: string, data: Record<string, unknown>) {
+    const res = await fetch(`${API_BASE}/admin/categories/${id}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update category");
+    }
+    return res.json();
+}
+
+export async function deleteCategory(id: string) {
+    const res = await fetch(`${API_BASE}/admin/categories/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to delete category");
+    return res.json();
+}
+
 export async function fetchAdminOrders(params?: {
     page?: number;
     limit?: number;
@@ -358,70 +397,12 @@ export async function deleteTopOffer(id: string) {
 }
 
 // ============================================================
-// Product Types
+// Categories
 // ============================================================
 
-export async function fetchProductTypes() {
-    const res = await fetch(`${API_BASE}/product-types`, {
-        headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to fetch product types");
-    return res.json();
-}
-
-export async function createProductType(data: {
-    name: string;
-    description?: string;
-}) {
-    const res = await fetch(`${API_BASE}/product-types`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to create product type");
-    }
-    return res.json();
-}
-
-export async function updateProductType(
-    id: string,
-    data: { name?: string; description?: string }
-) {
-    const res = await fetch(`${API_BASE}/product-types/${id}`, {
-        method: "PUT",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to update product type");
-    }
-    return res.json();
-}
-
-export async function deleteProductType(id: string) {
-    const res = await fetch(`${API_BASE}/product-types/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-    });
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to delete product type");
-    }
-    return res.json();
-}
-
-// ============================================================
-// Categories (filtered by product type)
-// ============================================================
-
-export async function fetchCategoriesByType(productTypeId?: string) {
-    const params = new URLSearchParams();
-    if (productTypeId) params.set("productTypeId", productTypeId);
+export async function fetchCategoriesByType() {
     const res = await fetch(
-        `${API_BASE}/products/categories/all?${params.toString()}`
+        `${API_BASE}/products/categories/all`
     );
     if (!res.ok) throw new Error("Failed to fetch categories");
     return res.json();
@@ -444,7 +425,7 @@ export async function searchProducts(params: {
     if (params.limit) searchParams.set("limit", String(params.limit));
 
     const res = await fetch(
-        `${API_BASE}/product-types/search?${searchParams.toString()}`
+        `${API_BASE}/products/search?${searchParams.toString()}`
     );
     if (!res.ok) throw new Error("Search failed");
     return res.json();
@@ -453,29 +434,446 @@ export async function searchProducts(params: {
 export async function fetchTagSuggestions(prefix: string) {
     const params = new URLSearchParams({ prefix });
     const res = await fetch(
-        `${API_BASE}/product-types/tags/suggestions?${params.toString()}`
+        `${API_BASE}/products/tags/suggestions?${params.toString()}`
     );
     if (!res.ok) throw new Error("Failed to fetch tag suggestions");
     return res.json();
 }
 
 // ============================================================
-// Admin Categories (CRUD)
+// Admin Categories (CRUD) - Removed duplicate functions
 // ============================================================
 
-export async function createCategory(data: {
-    name: string;
-    productTypeId?: string;
-    description?: string;
-}) {
-    const res = await fetch(`${API_BASE}/admin/categories`, {
+// ============================================================
+// User Profile & Addresses
+// ============================================================
+
+export async function updateProfile(data: { name?: string; phone?: string }) {
+    const res = await fetch(`${API_BASE}/users/update`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update profile");
+    }
+    return res.json();
+}
+
+export async function updatePassword(data: { currentPassword?: string; newPassword?: string }) {
+    const res = await fetch(`${API_BASE}/users/password`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update password");
+    }
+    return res.json();
+}
+
+export async function addSavedAddress(data: Record<string, any>) {
+    const res = await fetch(`${API_BASE}/users/addresses`, {
         method: "POST",
         headers: getAuthHeaders(),
         body: JSON.stringify(data),
     });
     if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to create category");
+        throw new Error(err.error || "Failed to add address");
     }
     return res.json();
 }
+
+export async function updateSavedAddress(id: string, data: Record<string, any>) {
+    const res = await fetch(`${API_BASE}/users/addresses/${id}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update address");
+    }
+    return res.json();
+}
+
+export async function deleteSavedAddress(id: string) {
+    const res = await fetch(`${API_BASE}/users/addresses/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to delete address");
+    }
+    return res.json();
+}
+
+// ============================================================
+// User Orders
+// ============================================================
+
+export async function fetchMyOrders(params?: {
+    page?: number;
+    limit?: number;
+}) {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set("page", String(params.page));
+    if (params?.limit) searchParams.set("limit", String(params.limit));
+
+    const res = await fetch(
+        `${API_BASE}/orders/my-orders?${searchParams.toString()}`,
+        { headers: getAuthHeaders() }
+    );
+    if (!res.ok) throw new Error("Failed to fetch orders");
+    return res.json();
+}
+
+export async function placeOrder(data: {
+    products: {
+        productId: string;
+        name: string;
+        sku?: string;
+        image?: string;
+        quantity: number;
+        unitPrice: number;
+        variantSize?: string;
+        variantColor?: string;
+    }[];
+    shippingAddress: Record<string, string>;
+    billingAddress?: Record<string, string>;
+    paymentMethod?: string;
+    couponCode?: string;
+}) {
+    const res = await fetch(`${API_BASE}/orders`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to place order");
+    }
+    return res.json();
+}
+
+export async function cancelOrder(orderId: string, reason?: string) {
+    const res = await fetch(`${API_BASE}/orders/${orderId}/cancel`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ reason }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to cancel order");
+    }
+    return res.json();
+}
+
+// ============================================================
+// Stock Verification (pre-checkout)
+// ============================================================
+
+export async function verifyStock(items: {
+    productId: string;
+    variantId?: string;
+    quantity: number;
+}[]): Promise<{
+    available: boolean;
+    items: {
+        productId: string;
+        variantId?: string;
+        requested: number;
+        currentStock: number;
+        available: boolean;
+        productName?: string;
+    }[];
+}> {
+    const res = await fetch(`${API_BASE}/orders/verify-stock`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to verify stock");
+    }
+    return res.json();
+    return res.json();
+}
+
+// ============================================================
+// Admin - Blog
+// ============================================================
+
+export async function fetchAdminBlog(params?: { page?: number; limit?: number; search?: string; status?: string }) {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set("page", String(params.page));
+    if (params?.limit) searchParams.set("limit", String(params.limit));
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.status) searchParams.set("status", params.status);
+
+    const res = await fetch(`${API_BASE}/admin/blog?${searchParams.toString()}`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch blogs");
+    return res.json();
+}
+
+export async function createBlogPost(data: any) {
+    const res = await fetch(`${API_BASE}/admin/blog`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to create blog post");
+    return res.json();
+}
+
+export async function updateBlogPost(id: string, data: any) {
+    const res = await fetch(`${API_BASE}/admin/blog/${id}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to update blog post");
+    return res.json();
+}
+
+export async function deleteBlogPost(id: string) {
+    const res = await fetch(`${API_BASE}/admin/blog/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to delete blog post");
+    return res.json();
+}
+
+// ============================================================
+// Admin - Services
+// ============================================================
+
+export async function fetchAdminServices(params?: { page?: number; limit?: number; search?: string; status?: string }) {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set("page", String(params.page));
+    if (params?.limit) searchParams.set("limit", String(params.limit));
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.status) searchParams.set("status", params.status);
+
+    const res = await fetch(`${API_BASE}/admin/services?${searchParams.toString()}`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch services");
+    return res.json();
+}
+
+export async function createService(data: any) {
+    const res = await fetch(`${API_BASE}/admin/services`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to create service");
+    return res.json();
+}
+
+export async function updateService(id: string, data: any) {
+    const res = await fetch(`${API_BASE}/admin/services/${id}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to update service");
+    return res.json();
+}
+
+export async function deleteService(id: string) {
+    const res = await fetch(`${API_BASE}/admin/services/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to delete service");
+    return res.json();
+}
+
+// ============================================================
+// Admin - Builds
+// ============================================================
+
+export async function fetchAdminBuilds(params?: { page?: number; limit?: number; search?: string; status?: string }) {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set("page", String(params.page));
+    if (params?.limit) searchParams.set("limit", String(params.limit));
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.status) searchParams.set("status", params.status);
+
+    const res = await fetch(`${API_BASE}/admin/builds?${searchParams.toString()}`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch builds");
+    return res.json();
+}
+
+export async function createBuild(data: any) {
+    const res = await fetch(`${API_BASE}/admin/builds`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to create build");
+    return res.json();
+}
+
+export async function updateBuild(id: string, data: any) {
+    const res = await fetch(`${API_BASE}/admin/builds/${id}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to update build");
+    return res.json();
+}
+
+export async function deleteBuild(id: string) {
+    const res = await fetch(`${API_BASE}/admin/builds/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to delete build");
+    return res.json();
+}
+
+// ============================================================
+// Admin - Requests (Messages) & Payments & Appointments
+// ============================================================
+
+export async function deleteRequest(id: string) {
+    const res = await fetch(`${API_BASE}/admin/requests/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to delete request");
+    return res.json();
+}
+
+export async function updatePayment(id: string, data: { paymentStatus?: string; amountReceived?: number; receivedDate?: Date }) {
+    const res = await fetch(`${API_BASE}/admin/payments/${id}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to update payment");
+    return res.json();
+}
+
+export async function fetchAdminAppointments(params?: { page?: number; limit?: number; status?: string }) {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set("page", String(params.page));
+    if (params?.limit) searchParams.set("limit", String(params.limit));
+    if (params?.status) searchParams.set("status", params.status);
+
+    const res = await fetch(`${API_BASE}/admin/appointments?${searchParams.toString()}`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch appointments");
+    return res.json();
+}
+
+export async function updateAppointment(id: string, data: any) {
+    const res = await fetch(`${API_BASE}/admin/appointments/${id}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to update appointment");
+    return res.json();
+}
+
+// ============================================================
+// Coupons
+// ============================================================
+
+export async function applyCoupon(code: string, cartTotal: number) {
+    const res = await fetch(`${API_BASE}/coupons/apply`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ code, cartTotal }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to apply coupon");
+    }
+    return res.json();
+}
+
+export async function fetchAdminCoupons() {
+    const res = await fetch(`${API_BASE}/coupons/admin`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch coupons");
+    return res.json();
+}
+
+export async function createCoupon(data: any) {
+    const res = await fetch(`${API_BASE}/coupons/admin`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to create coupon");
+    }
+    return res.json();
+}
+
+export async function updateCoupon(id: string, data: any) {
+    const res = await fetch(`${API_BASE}/coupons/admin/${id}`, {
+        method: "PUT",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to update coupon");
+    }
+    return res.json();
+}
+
+export async function deleteCoupon(id: string) {
+    const res = await fetch(`${API_BASE}/coupons/admin/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to delete coupon");
+    return res.json();
+}
+
+// ============================================================
+// Wishlist
+// ============================================================
+
+export async function fetchWishlist() {
+    const res = await fetch(`${API_BASE}/wishlist`, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error("Failed to fetch wishlist");
+    return res.json();
+}
+
+export async function addToWishlist(productId: string) {
+    const res = await fetch(`${API_BASE}/wishlist/add`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ productId }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to add to wishlist");
+    }
+    return res.json();
+}
+
+export async function removeFromWishlist(productId: string) {
+    const res = await fetch(`${API_BASE}/wishlist/${productId}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to remove from wishlist");
+    }
+    return res.json();
+}
+
