@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import prisma from '../config/database.js';
 import { deleteFromCloudinary } from '../config/cloudinary.js';
+import { emitStockUpdate } from '../socketManager.js';
 
 const router = Router();
 
@@ -141,6 +142,14 @@ const productImageSchema = z.object({
     isPrimary: z.boolean().optional().default(false),
 });
 
+const createCategorySchema = z.object({
+    name: z.string().min(1, 'Category name is required').trim(),
+    slug: z.string().min(1, 'Slug is required').trim(),
+    description: z.string().optional().nullable(),
+    image: z.string().optional().nullable(),
+    icon: z.string().optional().nullable(),
+});
+
 const createProductSchema = z.object({
     name: z.string().min(1, 'Product name is required').trim(),
     slug: z.string().optional().nullable(),
@@ -185,6 +194,92 @@ const createProductSchema = z.object({
 });
 
 // ============================================================
+// Categories Management
+// ============================================================
+
+// Create Category
+router.post('/categories', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const validatedData = createCategorySchema.parse(req.body);
+
+        const existingCategory = await prisma.productCategory.findUnique({
+            where: { slug: validatedData.slug }
+        });
+
+        if (existingCategory) {
+            return res.status(400).json({ error: 'A category with this slug already exists' });
+        }
+
+        const category = await prisma.productCategory.create({
+            data: validatedData
+        });
+
+        res.status(201).json({ message: 'Category created successfully', category });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Validation failed', details: error.errors });
+        }
+        res.status(500).json({ error: 'Failed to create category' });
+    }
+});
+
+// Update Category
+router.put('/categories/:id', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const validatedData = createCategorySchema.partial().parse(req.body);
+
+        if (validatedData.slug) {
+            const existingCategory = await prisma.productCategory.findUnique({
+                where: { slug: validatedData.slug }
+            });
+            if (existingCategory && existingCategory.id !== id) {
+                return res.status(400).json({ error: 'A category with this slug already exists' });
+            }
+        }
+
+        const category = await prisma.productCategory.update({
+            where: { id },
+            data: validatedData
+        });
+
+        res.json({ message: 'Category updated successfully', category });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            return res.status(400).json({ error: 'Validation failed', details: error.errors });
+        }
+        res.status(500).json({ error: 'Failed to update category' });
+    }
+});
+
+// Delete Category
+router.delete('/categories/:id', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+
+        // Check if category has products
+        const productsCount = await prisma.product.count({
+            where: { categoryId: id }
+        });
+
+        if (productsCount > 0) {
+            return res.status(400).json({ 
+                error: `Cannot delete category: contains ${productsCount} products. Reassign or delete the products first.` 
+            });
+        }
+
+        await prisma.productCategory.delete({
+            where: { id }
+        });
+
+        res.json({ message: 'Category deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete category' });
+    }
+});
+
+
+// ============================================================
 // Products CRUD
 // ============================================================
 
@@ -207,7 +302,6 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
         // Sanitize ObjectId fields — empty strings and non-24-hex values become null
         const isValidObjectId = (v: any) => typeof v === 'string' && /^[a-fA-F0-9]{24}$/.test(v);
         const safeCategoryId = isValidObjectId(data.categoryId) ? data.categoryId : null;
-        const safeProductTypeId = isValidObjectId(data.productTypeId) ? data.productTypeId : null;
 
         // Auto-generate SKU if not provided
         const finalSku = data.sku || `BP - ${Date.now().toString(36).toUpperCase()} `;
@@ -240,7 +334,6 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
                 slug: data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
                 description: data.description,
                 shortDescription: data.shortDescription,
-                productTypeId: safeProductTypeId,
                 categoryId: safeCategoryId,
                 categorySlug: data.categorySlug || null,
                 brand: data.brand,
@@ -261,7 +354,7 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
                 rating: data.rating,
                 totalReviews: data.totalReviews,
             },
-            include: { category: true, productType: true }
+            include: { category: true }
         });
 
         console.log('✅ [POST /products] Product created:', product.id, product.name);
@@ -276,60 +369,115 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
 router.put('/products/:id', authenticateAdmin, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const updateData = { ...req.body };
+        const body = req.body;
 
-        // Remove fields that shouldn't be updated directly
-        delete updateData.id;
-        delete updateData.createdAt;
+        console.log('📦 [PUT /products/:id] Update request for:', id);
+
+        // Helper: convert to number or null
+        const toFloatOrNull = (v: any): number | null => {
+            if (v === null || v === undefined || v === '') return null;
+            const n = Number(v);
+            return isNaN(n) ? null : n;
+        };
+        const toIntOrZero = (v: any): number => {
+            if (v === null || v === undefined || v === '') return 0;
+            const n = parseInt(String(v), 10);
+            return isNaN(n) ? 0 : n;
+        };
 
         // Sanitize ObjectId fields
         const isValidObjectId = (v: any) => typeof v === 'string' && /^[a-fA-F0-9]{24}$/.test(v);
-        if ('categoryId' in updateData) {
-            updateData.categoryId = isValidObjectId(updateData.categoryId) ? updateData.categoryId : null;
-        }
-        if ('productTypeId' in updateData) {
-            updateData.productTypeId = isValidObjectId(updateData.productTypeId) ? updateData.productTypeId : null;
+
+        // Build explicit update object — only known Prisma fields
+        const updateData: Record<string, any> = {};
+
+        // String fields
+        if ('name' in body && body.name) updateData.name = String(body.name).trim();
+        if ('slug' in body) updateData.slug = body.slug || undefined;
+        if ('description' in body) updateData.description = body.description || null;
+        if ('shortDescription' in body) updateData.shortDescription = body.shortDescription || null;
+        if ('brand' in body) updateData.brand = body.brand || null;
+        if ('sku' in body) updateData.sku = body.sku || undefined;
+        if ('categorySlug' in body) updateData.categorySlug = body.categorySlug || null;
+
+        // ObjectId fields
+        if ('categoryId' in body) {
+            updateData.categoryId = isValidObjectId(body.categoryId) ? body.categoryId : null;
         }
 
-        // Auto-compute inStock when stockQuantity changes
-        if (updateData.stockQuantity !== undefined) {
+        // Numeric fields — coerce from string
+        if ('price' in body) {
+            const p = toFloatOrNull(body.price);
+            if (p !== null && p > 0) updateData.price = p;
+        }
+        if ('offerPrice' in body) updateData.offerPrice = toFloatOrNull(body.offerPrice);
+        if ('stockQuantity' in body) {
+            updateData.stockQuantity = toIntOrZero(body.stockQuantity);
             updateData.inStock = updateData.stockQuantity > 0;
         }
-
-        // If tags are being updated, also update tagStrings
-        if (updateData.tags && Array.isArray(updateData.tags)) {
-            updateData.tagStrings = updateData.tags.map((t: string) => t.replace(/^#/, '').trim().toLowerCase()).filter(Boolean);
+        if ('weight' in body) {
+            const w = toFloatOrNull(body.weight);
+            if (w !== null) updateData.weight = w;
         }
 
-        // Sanitize variants — ensure each has all required fields
-        if (updateData.variants && Array.isArray(updateData.variants)) {
-            const baseSku = updateData.sku || id;
-            updateData.variants = updateData.variants.map((v: any, i: number) => ({
+        // Boolean fields
+        if ('isFeatured' in body) updateData.isFeatured = Boolean(body.isFeatured);
+        if ('isActive' in body) updateData.isActive = Boolean(body.isActive);
+
+        // Array fields
+        if ('images' in body && Array.isArray(body.images)) updateData.images = body.images;
+        if ('tags' in body && Array.isArray(body.tags)) {
+            updateData.tags = body.tags;
+            updateData.tagStrings = body.tags.map((t: string) => t.replace(/^#/, '').trim().toLowerCase()).filter(Boolean);
+        }
+        if ('specifications' in body && Array.isArray(body.specifications)) updateData.specifications = body.specifications;
+
+        // Dimensions
+        if ('dimensions' in body && body.dimensions && typeof body.dimensions === 'object') {
+            updateData.dimensions = body.dimensions;
+        }
+
+        // Variants — critical: coerce price and stockQuantity to proper types
+        if ('variants' in body && Array.isArray(body.variants)) {
+            const baseSku = updateData.sku || body.sku || id;
+            updateData.variants = body.variants.map((v: any, i: number) => ({
                 id: v.id || randomUUID(),
                 size: v.size || null,
                 color: v.color || null,
                 model: v.model || null,
                 sku: v.sku || `${baseSku}-V${i + 1}`,
-                stockQuantity: v.stockQuantity ?? 0,
-                price: v.price ?? null,
-                priceModifier: v.priceModifier ?? 0,
-                images: v.images || [],
+                stockQuantity: toIntOrZero(v.stockQuantity),
+                price: toFloatOrNull(v.price),
+                priceModifier: toFloatOrNull(v.priceModifier) ?? 0,
+                images: Array.isArray(v.images) ? v.images : [],
             }));
         }
 
-        // Strip undefined values that Prisma can't handle
-        if (updateData.weight === undefined || updateData.weight === null) delete updateData.weight;
-        if (updateData.dimensions === undefined || updateData.dimensions === null) delete updateData.dimensions;
+        console.log('📦 [PUT /products/:id] Sanitized update keys:', Object.keys(updateData));
 
         const product = await prisma.product.update({
             where: { id },
             data: updateData,
-            include: { category: true, productType: true }
+            include: { category: true }
         });
+
+        console.log('✅ [PUT /products/:id] Product updated:', product.id, product.name);
+
+        // Emit real-time stock update if stock-related fields changed
+        if ('stockQuantity' in body || 'variants' in body || 'inStock' in body) {
+            emitStockUpdate({
+                productId: product.id,
+                newStock: product.stockQuantity,
+                inStock: product.inStock,
+                variants: product.variants
+                    ? product.variants.map((v: any) => ({ id: v.id, stockQuantity: v.stockQuantity }))
+                    : undefined,
+            });
+        }
 
         res.json({ message: 'Product updated', product });
     } catch (error: any) {
-        console.error('Update product error:', error);
+        console.error('❌ [PUT /products/:id] Update error:', error?.message || error);
         res.status(500).json({ error: error?.message || 'Failed to update product' });
     }
 });
@@ -400,8 +548,7 @@ router.get('/products', authenticateAdmin, async (req: Request, res: Response) =
                 where,
                 skip,
                 take: limitNum,
-                orderBy: { createdAt: 'desc' },
-                include: { category: true, productType: true, inventory: true }
+                include: { category: true, inventory: true }
             }),
             prisma.product.count({ where })
         ]);
@@ -421,7 +568,7 @@ router.get('/products', authenticateAdmin, async (req: Request, res: Response) =
 // ============================================================
 router.post('/categories', authenticateAdmin, async (req: Request, res: Response) => {
     try {
-        const { name, slug, description, image, icon, sortOrder, productTypeId } = req.body;
+        const { name, slug, description, image, icon, sortOrder } = req.body;
         const category = await prisma.productCategory.create({
             data: {
                 name,
@@ -430,7 +577,6 @@ router.post('/categories', authenticateAdmin, async (req: Request, res: Response
                 image,
                 icon,
                 sortOrder: sortOrder || 0,
-                productTypeId: productTypeId || null,
                 isActive: true,
             }
         });
@@ -502,6 +648,29 @@ router.get('/payments', authenticateAdmin, async (req: Request, res: Response) =
     }
 });
 
+router.put('/payments/:id', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { paymentStatus, amountReceived, receivedDate } = req.body;
+
+        const updateData: any = {};
+        if (paymentStatus) updateData.paymentStatus = paymentStatus;
+        if (amountReceived !== undefined) updateData.amountReceived = Number(amountReceived);
+        if (receivedDate) updateData.receivedDate = new Date(receivedDate);
+
+        const payment = await prisma.payment.update({
+            where: { id },
+            data: updateData,
+        });
+
+        res.json({ message: 'Payment updated', payment });
+    } catch (error: any) {
+        if (error.code === 'P2025') return res.status(404).json({ error: 'Payment not found' });
+        console.error('Update payment error:', error);
+        res.status(500).json({ error: 'Failed to update payment' });
+    }
+});
+
 // ============================================================
 // Product Requests
 // ============================================================
@@ -557,6 +726,18 @@ router.patch('/requests/:id', authenticateAdmin, async (req: Request, res: Respo
     }
 });
 
+router.delete('/requests/:id', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        await prisma.request.delete({ where: { id } });
+        res.json({ message: 'Request deleted successfully' });
+    } catch (error: any) {
+        if (error.code === 'P2025') return res.status(404).json({ error: 'Request not found' });
+        console.error('Delete request error:', error);
+        res.status(500).json({ error: 'Failed to delete request' });
+    }
+});
+
 // ============================================================
 // Inventory / Low Stock
 // ============================================================
@@ -581,6 +762,71 @@ router.get('/inventory/low-stock', authenticateAdmin, async (req: Request, res: 
     } catch (error) {
         console.error('Get low stock error:', error);
         res.status(500).json({ error: 'Failed to fetch low stock products' });
+    }
+});
+
+// ============================================================
+// Appointments / Service Bookings
+// ============================================================
+router.get('/appointments', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const { page = '1', limit = '20', status } = req.query;
+        const pageNum = parseInt(page as string);
+        const limitNum = parseInt(limit as string);
+        const skip = (pageNum - 1) * limitNum;
+
+        const where: any = {};
+        if (status) where.status = status;
+
+        const [appointments, total] = await Promise.all([
+            prisma.serviceBooking.findMany({
+                where,
+                skip,
+                take: limitNum,
+                orderBy: { appointmentDate: 'desc' },
+                include: { user: { select: { id: true, name: true, email: true } } }
+            }),
+            prisma.serviceBooking.count({ where })
+        ]);
+
+        res.json({
+            appointments,
+            pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
+        });
+    } catch (error) {
+        console.error('Get appointments error:', error);
+        res.status(500).json({ error: 'Failed to fetch appointments' });
+    }
+});
+
+router.put('/appointments/:id', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { status, appointmentDate, appointmentTime, estimatedCost, actualCost, assignedMechanic, notes } = req.body;
+
+        const updateData: any = {};
+        if (status) {
+            updateData.status = status;
+            if (status === 'COMPLETED') updateData.completedAt = new Date();
+        }
+        if (appointmentDate) updateData.appointmentDate = new Date(appointmentDate);
+        if (appointmentTime !== undefined) updateData.appointmentTime = appointmentTime;
+        if (estimatedCost !== undefined) updateData.estimatedCost = Number(estimatedCost);
+        if (actualCost !== undefined) updateData.actualCost = Number(actualCost);
+        if (assignedMechanic !== undefined) updateData.assignedMechanic = assignedMechanic;
+        if (notes !== undefined) updateData.notes = notes;
+
+        const appointment = await prisma.serviceBooking.update({
+            where: { id },
+            data: updateData,
+            include: { user: { select: { name: true, email: true } } }
+        });
+
+        res.json({ message: 'Appointment updated', appointment });
+    } catch (error: any) {
+        if (error.code === 'P2025') return res.status(404).json({ error: 'Appointment not found' });
+        console.error('Update appointment error:', error);
+        res.status(500).json({ error: 'Failed to update appointment' });
     }
 });
 

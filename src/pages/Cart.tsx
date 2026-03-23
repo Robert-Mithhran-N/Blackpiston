@@ -1,4 +1,5 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
@@ -14,9 +15,45 @@ import {
   Truck,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { verifyStock } from "@/lib/api";
+import { toast } from "sonner";
 
 const Cart = () => {
   const { cartItems, cartCount, cartTotal, removeFromCart, updateQuantity, clearCart } = useCart();
+  const [isVerifying, setIsVerifying] = useState(false);
+  const navigate = useNavigate();
+
+  const handleCheckout = async () => {
+    setIsVerifying(true);
+    try {
+      const items = cartItems.map(item => ({
+        productId: item.product.id,
+        variantId: item.variantId,
+        quantity: item.quantity,
+      }));
+
+      const result = await verifyStock(items);
+
+      if (!result.available) {
+        const unavailable = result.items
+          .filter(i => !i.available)
+          .map(i => `${i.productName || 'Unknown'}: only ${i.currentStock} left (requested ${i.requested})`)
+          .join('\n');
+        toast.error('Some items are no longer available', {
+          description: unavailable,
+          duration: 6000,
+        });
+        return;
+      }
+
+      // Stock verified — proceed to checkout
+      navigate("/checkout");
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to verify stock');
+    } finally {
+      setIsVerifying(false);
+    }
+  };
 
   if (cartCount === 0) {
     return (
@@ -188,8 +225,10 @@ const Cart = () => {
                 <Button
                   size="lg"
                   className="w-full bg-gradient-to-r from-primary to-orange-500 hover:opacity-90 h-12 text-lg"
+                  onClick={handleCheckout}
+                  disabled={isVerifying}
                 >
-                  Proceed to Checkout
+                  {isVerifying ? 'Verifying Stock...' : 'Proceed to Checkout'}
                 </Button>
 
                 <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">

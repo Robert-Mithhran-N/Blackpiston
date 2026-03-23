@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -29,42 +29,39 @@ import { fetchProductById, fetchProductsByCategory } from "@/lib/api";
 import { Product, ProductVariant } from "@/types/user";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
+import { useStockUpdates, StockUpdatePayload } from "@/hooks/useStockUpdates";
 
-// Mock specifications data
+// Product specifications — uses real data from the API, falls back to defaults
 const getProductSpecs = (product: Product) => {
-    const specsMap: Record<string, { label: string; value: string }[]> = {
+    // If the product has specifications stored in the database, use them
+    if (product.specifications && product.specifications.length > 0) {
+        return product.specifications;
+    }
+
+    // Fallback: generic category-based defaults (shown only when no specs in DB)
+    const defaultSpecsMap: Record<string, { label: string; value: string }[]> = {
         helmets: [
-            { label: "Shell Material", value: "Carbon Fiber Composite" },
-            { label: "Weight", value: "1,350g ± 50g" },
-            { label: "Certification", value: "ECE 22.06, DOT, SNELL" },
-            { label: "Visor", value: "Anti-fog, Pinlock Ready" },
-            { label: "Ventilation", value: "8 intake, 6 exhaust vents" },
+            { label: "Shell Material", value: "Composite" },
+            { label: "Certification", value: "ISI / ECE" },
+            { label: "Visor", value: "Clear Visor" },
             { label: "Interior", value: "Removable, Washable" },
         ],
         jackets: [
-            { label: "Material", value: "Premium Cowhide Leather" },
-            { label: "Protection", value: "CE Level 2 (Shoulders, Elbows, Back)" },
-            { label: "Lining", value: "Mesh + Thermal Liner" },
-            { label: "Closure", value: "YKK Zippers" },
-            { label: "Pockets", value: "4 External, 2 Internal" },
-            { label: "Airbag Ready", value: "Yes" },
+            { label: "Material", value: "Textile / Leather" },
+            { label: "Protection", value: "CE Certified" },
+            { label: "Lining", value: "Mesh Liner" },
         ],
         boots: [
-            { label: "Upper Material", value: "Microfiber + Leather" },
-            { label: "Sole", value: "Vibram Racing Compound" },
-            { label: "Protection", value: "Toe Slider, Heel Counter" },
-            { label: "Closure", value: "Velcro + Buckle System" },
-            { label: "Height", value: "320mm" },
-            { label: "Weight", value: "1.2kg per boot" },
+            { label: "Upper Material", value: "Synthetic / Leather" },
+            { label: "Sole", value: "Rubber Compound" },
+            { label: "Protection", value: "Ankle Protection" },
         ],
         accessories: [
             { label: "Material", value: "Premium Grade" },
-            { label: "Compatibility", value: "Universal" },
-            { label: "Warranty", value: "1 Year Manufacturer" },
-            { label: "Origin", value: "Imported" },
+            { label: "Warranty", value: "Manufacturer Warranty" },
         ],
     };
-    return specsMap[product.category] || specsMap.accessories;
+    return defaultSpecsMap[product.category] || defaultSpecsMap.accessories;
 };
 
 const ProductDetail = () => {
@@ -171,6 +168,45 @@ const ProductDetail = () => {
             })
             .finally(() => setIsLoading(false));
     }, [productId]);
+
+    // ── Real-time stock updates via Socket.IO ──
+    const handleStockUpdate = useCallback((data: StockUpdatePayload) => {
+        setProduct(prev => {
+            if (!prev) return prev;
+            const newInStock = data.inStock;
+            return {
+                ...prev,
+                stockQuantity: data.newStock,
+                inStock: newInStock,
+            };
+        });
+
+        // Update variant stocks if provided
+        if (data.variants) {
+            setRawVariants(prev =>
+                prev.map(v => {
+                    const updated = data.variants?.find(uv => uv.id === v.id);
+                    return updated ? { ...v, stockQuantity: updated.stockQuantity } : v;
+                })
+            );
+        }
+
+        // Show a toast so the user knows stock changed
+        if (!data.inStock) {
+            toast.error("This item is now out of stock");
+        } else {
+            toast.info(`Stock updated — ${data.newStock} available`);
+        }
+
+        // Cap quantity selector to new stock
+        setQuantity(q => {
+            const maxStock = data.newStock;
+            if (maxStock <= 0) return 1;
+            return q > maxStock ? maxStock : q;
+        });
+    }, []);
+
+    useStockUpdates(productId, handleStockUpdate);
 
     // Extract unique variant options
     const uniqueSizes = useMemo(() => {
@@ -337,15 +373,34 @@ const ProductDetail = () => {
                             <div className="space-y-4">
                                 {/* Main Image */}
                                 <div className="relative aspect-square overflow-hidden rounded-2xl bg-gradient-to-br from-muted to-muted/50 border-2 border-border group max-w-md mx-auto">
+                                    <style>{`
+                                        @keyframes productFadeIn {
+                                            from {
+                                                opacity: 0.2;
+                                                transform: scale(0.96);
+                                                filter: blur(4px);
+                                            }
+                                            to {
+                                                opacity: 1;
+                                                transform: scale(1);
+                                                filter: blur(0);
+                                            }
+                                        }
+                                        .animate-product-fade-in {
+                                            animation: productFadeIn 0.35s ease-in-out forwards;
+                                        }
+                                    `}</style>
+
                                     {discountPercent > 0 && (
                                         <Badge className="absolute top-4 left-4 z-10 bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 font-bold text-lg px-4 py-1">
                                             {discountPercent}% OFF
                                         </Badge>
                                     )}
                                     <img
+                                        key={selectedImage}
                                         src={images[selectedImage] || images[0]}
                                         alt={product.name}
-                                        className="w-full h-full object-cover transition-all duration-500 ease-in-out group-hover:scale-105"
+                                        className="w-full h-full object-cover animate-product-fade-in group-hover:scale-105 transition-transform duration-500"
                                         onError={(e) => {
                                             (e.target as HTMLImageElement).src =
                                                 "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop";

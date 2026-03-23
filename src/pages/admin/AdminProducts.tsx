@@ -71,8 +71,6 @@ import {
   updateProduct,
   deleteProduct,
   uploadImages,
-  fetchProductTypes,
-  createProductType as apiCreateProductType,
   fetchCategoriesByType,
   fetchTagSuggestions,
   createCategory as apiCreateCategory,
@@ -103,16 +101,9 @@ interface ProductCategory {
   id: string;
   name: string;
   slug: string;
-  productTypeId?: string | null;
 }
 
-interface ProductTypeT {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  _count?: { categories: number; products: number };
-}
+
 
 interface Product {
   id: string;
@@ -120,8 +111,6 @@ interface Product {
   slug: string;
   description?: string;
   shortDescription?: string;
-  productTypeId?: string;
-  productType?: { id: string; name: string; slug: string };
   categoryId?: string;
   categorySlug?: string;
   category?: ProductCategory;
@@ -148,7 +137,6 @@ interface FormData {
   shortDescription: string;
   brand: string;
   sku: string;
-  productTypeId: string;
   categoryId: string;
   categorySlug: string;
   tagChips: string[];
@@ -169,7 +157,6 @@ const emptyForm: FormData = {
   shortDescription: "",
   brand: "",
   sku: "",
-  productTypeId: "",
   categoryId: "",
   categorySlug: "",
   tagChips: [],
@@ -193,7 +180,6 @@ const AdminProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [allCategories, setAllCategories] = useState<ProductCategory[]>([]);
-  const [productTypes, setProductTypes] = useState<ProductTypeT[]>([]);
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 1 });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -201,7 +187,6 @@ const AdminProducts = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   // Dialog state
@@ -217,9 +202,7 @@ const AdminProducts = () => {
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   const tagInputRef = useRef<HTMLInputElement>(null);
 
-  // Add new type/category inline
-  const [showNewTypeInput, setShowNewTypeInput] = useState(false);
-  const [newTypeName, setNewTypeName] = useState("");
+  // Add new category inline
   const [showNewCatInput, setShowNewCatInput] = useState(false);
   const [newCatName, setNewCatName] = useState("");
 
@@ -240,7 +223,6 @@ const AdminProducts = () => {
       if (searchQuery.trim()) params.search = searchQuery.trim();
       if (categoryFilter !== "all") params.category = categoryFilter;
       if (statusFilter !== "all") params.status = statusFilter;
-      if (typeFilter !== "all") params.productTypeId = typeFilter;
 
       const data = await fetchAdminProducts(params as any);
       setProducts(data.products || []);
@@ -251,7 +233,7 @@ const AdminProducts = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, searchQuery, categoryFilter, statusFilter, typeFilter]);
+  }, [currentPage, searchQuery, categoryFilter, statusFilter]);
 
   useEffect(() => {
     loadProducts();
@@ -267,18 +249,12 @@ const AdminProducts = () => {
         setAllCategories(catArr);
       })
       .catch(() => { });
-
-    fetchProductTypes()
-      .then((data) => setProductTypes(data.productTypes || []))
-      .catch(() => { });
   }, []);
 
   // Reload categories when form type changes
-  const loadFormCategories = useCallback(async (typeId: string) => {
+  const loadFormCategories = useCallback(async () => {
     try {
-      const data = typeId
-        ? await fetchCategoriesByType(typeId)
-        : await fetchCategories();
+      const data = await fetchCategoriesByType();
       const cats = data.categories || data || [];
       setCategories(Array.isArray(cats) ? cats : []);
     } catch {
@@ -310,14 +286,12 @@ const AdminProducts = () => {
 
   const openEditForm = (product: Product) => {
     setEditingProduct(product);
-    const typeId = product.productTypeId || "";
     setFormData({
       name: product.name,
       description: product.description || "",
       shortDescription: product.shortDescription || "",
       brand: product.brand || "",
       sku: product.sku || "",
-      productTypeId: typeId,
       categoryId: product.categoryId || "",
       categorySlug: product.categorySlug || "",
       tagChips: product.tags || [],
@@ -331,8 +305,7 @@ const AdminProducts = () => {
       images: product.images || [],
       variants: product.variants || [],
     });
-    if (typeId) loadFormCategories(typeId);
-    else setCategories(allCategories);
+    setCategories(allCategories);
     setIsFormOpen(true);
   };
 
@@ -374,7 +347,6 @@ const AdminProducts = () => {
         shortDescription: formData.shortDescription.trim() || null,
         brand: formData.brand.trim() || null,
         sku: formData.sku.trim() || undefined,
-        productTypeId: formData.productTypeId || null,
         categoryId: formData.categoryId || null,
         categorySlug: formData.categorySlug || null,
         price,
@@ -384,7 +356,11 @@ const AdminProducts = () => {
         isFeatured: formData.isFeatured,
         isActive: formData.isActive,
         images: formData.images,
-        variants: formData.variants,
+        variants: formData.variants.map(v => ({
+          ...v,
+          price: v.price !== "" && v.price != null ? Number(v.price) : null,
+          stockQuantity: v.stockQuantity !== "" && v.stockQuantity != null ? Number(v.stockQuantity) : 0,
+        })),
       };
 
       if (editingProduct) {
@@ -398,10 +374,6 @@ const AdminProducts = () => {
       setIsFormOpen(false);
       setEditingProduct(null);
       loadProducts();
-      // Refresh product types counts
-      fetchProductTypes()
-        .then((data) => setProductTypes(data.productTypes || []))
-        .catch(() => { });
     } catch (err: any) {
       toast.error(err?.message || "Failed to save product");
     } finally {
@@ -523,16 +495,6 @@ const AdminProducts = () => {
     }));
   };
 
-  const handleProductTypeChange = (typeId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      productTypeId: typeId,
-      categoryId: "",
-      categorySlug: "",
-    }));
-    loadFormCategories(typeId);
-  };
-
   // ---- Tag chip helpers ----
   const normalizeTagForChip = (raw: string) => raw.replace(/^#/, "").trim();
 
@@ -581,28 +543,11 @@ const AdminProducts = () => {
   };
 
   // ---- Inline create helpers ----
-  const handleCreateTypeInline = async () => {
-    if (!newTypeName.trim()) return;
-    try {
-      const data = await apiCreateProductType({ name: newTypeName.trim() });
-      const newType = data.productType;
-      setProductTypes((prev) => [...prev, newType]);
-      setFormData((prev) => ({ ...prev, productTypeId: newType.id, categoryId: "", categorySlug: "" }));
-      loadFormCategories(newType.id);
-      setNewTypeName("");
-      setShowNewTypeInput(false);
-      toast.success(`Type "${newType.name}" created`);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to create type");
-    }
-  };
-
   const handleCreateCategoryInline = async () => {
     if (!newCatName.trim()) return;
     try {
       const data = await apiCreateCategory({
         name: newCatName.trim(),
-        productTypeId: formData.productTypeId || undefined,
       });
       const newCat = data.category;
       setCategories((prev) => [...prev, newCat]);
@@ -650,19 +595,6 @@ const AdminProducts = () => {
                   className="pl-9"
                 />
               </div>
-              <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setCurrentPage(1); }}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {productTypes.map((pt) => (
-                    <SelectItem key={pt.id} value={pt.id}>
-                      {pt.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setCurrentPage(1); }}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Category" />
@@ -720,7 +652,6 @@ const AdminProducts = () => {
                         <TableHead className="w-16">Image</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>SKU</TableHead>
-                        <TableHead>Type</TableHead>
                         <TableHead>Category</TableHead>
                         <TableHead className="text-right">Price</TableHead>
                         <TableHead className="text-right">Offer</TableHead>
@@ -757,9 +688,6 @@ const AdminProducts = () => {
                           </TableCell>
                           <TableCell className="font-mono text-xs text-muted-foreground">
                             {p.sku}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {p.productType?.name || "—"}
                           </TableCell>
                           <TableCell className="text-sm">
                             {p.category?.name || "—"}
@@ -964,53 +892,7 @@ const AdminProducts = () => {
                     />
                   </div>
                 </div>
-                {/* Product Type */}
-                <div className="space-y-2">
-                  <Label>Product Type</Label>
-                  {showNewTypeInput ? (
-                    <div className="flex gap-2">
-                      <Input
-                        value={newTypeName}
-                        onChange={(e) => setNewTypeName(e.target.value)}
-                        placeholder="New type name…"
-                        onKeyDown={(e) => e.key === "Enter" && handleCreateTypeInline()}
-                      />
-                      <Button size="sm" onClick={handleCreateTypeInline} className="shrink-0">Add</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setShowNewTypeInput(false)} className="shrink-0">
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Select
-                        value={formData.productTypeId || "__none__"}
-                        onValueChange={(v) => handleProductTypeChange(v === "__none__" ? "" : v)}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select a type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">— No type —</SelectItem>
-                          {productTypes.map((pt) => (
-                            <SelectItem key={pt.id} value={pt.id}>
-                              {pt.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="shrink-0"
-                        title="Add new type"
-                        onClick={() => setShowNewTypeInput(true)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-                {/* Category (optional, filtered by type) */}
+                {/* Category */}
                 <div className="space-y-2">
                   <Label>Category</Label>
                   {showNewCatInput ? (

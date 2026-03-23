@@ -10,6 +10,8 @@ type UserData = {
     email: string;
     role: string;
     avatar?: string | null;
+    authProvider?: string | null;
+    savedAddresses?: any[];
 };
 
 type UserAuthContextValue = {
