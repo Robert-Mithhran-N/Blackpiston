@@ -94,7 +94,7 @@ router.get('/', async (req: Request, res: Response) => {
     }
 });
 
-// Get all categories
+// Get all categories (flat list)
 // IMPORTANT: This must come BEFORE the /:idOrSlug catch-all route
 router.get('/categories/all', async (req: Request, res: Response) => {
     try {
@@ -112,7 +112,48 @@ router.get('/categories/all', async (req: Request, res: Response) => {
     }
 });
 
-// Get products by category
+// Get categories as a tree (top-level types with nested sub-categories)
+// IMPORTANT: This must come BEFORE the /:idOrSlug catch-all route
+router.get('/categories/tree', async (req: Request, res: Response) => {
+    try {
+        const allCats = await prisma.productCategory.findMany({
+            where: { isActive: true },
+            orderBy: { sortOrder: 'asc' },
+        });
+
+        // Build tree: top-level (no parentId) → children
+        const topLevel = allCats.filter(c => !c.parentId);
+        const tree = topLevel.map(parent => ({
+            ...parent,
+            children: allCats
+                .filter(c => c.parentId === parent.id)
+                .sort((a, b) => a.sortOrder - b.sortOrder),
+        }));
+
+        res.json({ tree });
+    } catch (error) {
+        console.error('Get categories tree error:', error);
+        res.status(500).json({ error: 'Failed to fetch category tree' });
+    }
+});
+
+// Get children of a parent category (for dependent dropdown)
+// IMPORTANT: This must come BEFORE the /:idOrSlug catch-all route
+router.get('/categories/:parentId/children', async (req: Request, res: Response) => {
+    try {
+        const { parentId } = req.params;
+        const children = await prisma.productCategory.findMany({
+            where: { parentId, isActive: true },
+            orderBy: { sortOrder: 'asc' },
+        });
+        res.json({ categories: children });
+    } catch (error) {
+        console.error('Get category children error:', error);
+        res.status(500).json({ error: 'Failed to fetch sub-categories' });
+    }
+});
+
+// Get products by category slug (supports both parent and child slugs)
 // IMPORTANT: This must come BEFORE the /:idOrSlug catch-all route
 router.get('/category/:slug', async (req: Request, res: Response) => {
     try {
@@ -123,22 +164,35 @@ router.get('/category/:slug', async (req: Request, res: Response) => {
         const limitNum = parseInt(limit as string);
         const skip = (pageNum - 1) * limitNum;
 
+        // Check if this slug is a parent category
+        const parentCat = await prisma.productCategory.findUnique({ where: { slug } });
+        let slugsToMatch = [slug];
+
+        if (parentCat && !parentCat.parentId) {
+            // It's a top-level type — also include all its children's slugs
+            const children = await prisma.productCategory.findMany({
+                where: { parentId: parentCat.id, isActive: true },
+                select: { slug: true },
+            });
+            if (children.length > 0) {
+                slugsToMatch = [slug, ...children.map(c => c.slug)];
+            }
+        }
+
+        const where: any = {
+            categorySlug: { in: slugsToMatch },
+            isActive: true,
+        };
+
         const [products, total] = await Promise.all([
             prisma.product.findMany({
-                where: {
-                    categorySlug: slug,
-                    isActive: true
-                },
+                where,
                 skip,
                 take: limitNum,
-                orderBy: { createdAt: 'desc' }
+                orderBy: { createdAt: 'desc' },
+                include: { category: { select: { id: true, name: true, slug: true } } },
             }),
-            prisma.product.count({
-                where: {
-                    categorySlug: slug,
-                    isActive: true
-                }
-            })
+            prisma.product.count({ where }),
         ]);
 
         res.json({
@@ -147,8 +201,8 @@ router.get('/category/:slug', async (req: Request, res: Response) => {
                 page: pageNum,
                 limit: limitNum,
                 total,
-                totalPages: Math.ceil(total / limitNum)
-            }
+                totalPages: Math.ceil(total / limitNum),
+            },
         });
     } catch (error) {
         console.error('Get products by category error:', error);

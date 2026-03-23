@@ -169,6 +169,15 @@ const ProductDetail = () => {
             .finally(() => setIsLoading(false));
     }, [productId]);
 
+    // Auto-select first available color on load
+    useEffect(() => {
+        if (rawVariants.length > 0 && !selectedColor) {
+            const colors = rawVariants.map(v => v.color).filter(Boolean) as string[];
+            const firstColor = [...new Set(colors)][0];
+            if (firstColor) setSelectedColor(firstColor);
+        }
+    }, [rawVariants, selectedColor]);
+
     // ── Real-time stock updates via Socket.IO ──
     const handleStockUpdate = useCallback((data: StockUpdatePayload) => {
         setProduct(prev => {
@@ -237,15 +246,22 @@ const ProductDetail = () => {
         }) || null;
     }, [rawVariants, selectedSize, selectedColor, selectedModel, uniqueSizes.length, uniqueColors.length, uniqueModels.length, hasVariants]);
 
-    // Build images array — prefer variant images, fallback to product images
+    // Build images array — COLOR-DRIVEN: find images from any variant matching selectedColor
     const images = useMemo(() => {
-        if (selectedVariant?.images && selectedVariant.images.length > 0) {
-            return selectedVariant.images.map(img => img.url);
+        // If a color is selected, find images from variants with that color
+        if (selectedColor && rawVariants.length > 0) {
+            const colorVariant = rawVariants.find(
+                v => v.color === selectedColor && v.images && v.images.length > 0
+            );
+            if (colorVariant?.images && colorVariant.images.length > 0) {
+                return colorVariant.images.map(img => img.url);
+            }
         }
+        // Fallback to product default images
         return product?.images && product.images.length > 0
             ? product.images
             : product?.image ? [product.image] : [];
-    }, [selectedVariant, product]);
+    }, [selectedColor, rawVariants, product]);
 
     // Effective price, stock, inStock
     const effectivePrice = selectedVariant?.price ?? product?.offerPrice ?? product?.price ?? 0;
@@ -530,7 +546,7 @@ const ProductDetail = () => {
                                                     {uniqueSizes.map(size => (
                                                         <button
                                                             key={size}
-                                                            onClick={() => { setSelectedSize(size === selectedSize ? null : size); setSelectedImage(0); }}
+                                                            onClick={() => setSelectedSize(size === selectedSize ? null : size)}
                                                             className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-200 ${selectedSize === size
                                                                 ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/25"
                                                                 : "bg-background border-border hover:border-primary/60 hover:text-primary"
@@ -566,7 +582,7 @@ const ProductDetail = () => {
                                             </div>
                                         )}
 
-                                        {/* Model Selector */}
+                                        {/* Model Selector — does NOT affect images */}
                                         {uniqueModels.length > 0 && (
                                             <div className="space-y-2">
                                                 <label className="text-sm font-medium">
@@ -576,7 +592,7 @@ const ProductDetail = () => {
                                                     {uniqueModels.map(model => (
                                                         <button
                                                             key={model}
-                                                            onClick={() => { setSelectedModel(model === selectedModel ? null : model); setSelectedImage(0); }}
+                                                            onClick={() => setSelectedModel(model === selectedModel ? null : model)}
                                                             className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all duration-200 ${selectedModel === model
                                                                 ? "bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/25"
                                                                 : "bg-background border-border hover:border-primary/60 hover:text-primary"

@@ -101,6 +101,7 @@ interface ProductCategory {
   id: string;
   name: string;
   slug: string;
+  parentId?: string;
 }
 
 
@@ -113,6 +114,7 @@ interface Product {
   shortDescription?: string;
   categoryId?: string;
   categorySlug?: string;
+  productType?: string;
   category?: ProductCategory;
   brand?: string;
   price: number;
@@ -139,6 +141,7 @@ interface FormData {
   sku: string;
   categoryId: string;
   categorySlug: string;
+  productType: string;
   tagChips: string[];
   tagInput: string;
   price: string;
@@ -159,6 +162,7 @@ const emptyForm: FormData = {
   sku: "",
   categoryId: "",
   categorySlug: "",
+  productType: "",
   tagChips: [],
   tagInput: "",
   price: "",
@@ -196,13 +200,14 @@ const AdminProducts = () => {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [variantUploadingIndex, setVariantUploadingIndex] = useState<number | null>(null);
 
   // Tag suggestions
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   const tagInputRef = useRef<HTMLInputElement>(null);
 
-  // Add new category inline
+  // Removed inline category creation for simplicity with dependent dropdowns
   const [showNewCatInput, setShowNewCatInput] = useState(false);
   const [newCatName, setNewCatName] = useState("");
 
@@ -294,6 +299,7 @@ const AdminProducts = () => {
       sku: product.sku || "",
       categoryId: product.categoryId || "",
       categorySlug: product.categorySlug || "",
+      productType: product.productType || "",
       tagChips: product.tags || [],
       tagInput: "",
       price: String(product.price),
@@ -349,6 +355,7 @@ const AdminProducts = () => {
         sku: formData.sku.trim() || undefined,
         categoryId: formData.categoryId || null,
         categorySlug: formData.categorySlug || null,
+        productType: formData.productType || null,
         price,
         offerPrice,
         stockQuantity: stock,
@@ -475,6 +482,44 @@ const AdminProducts = () => {
     }));
   };
 
+  // Per-variant image upload
+  const handleVariantImageUpload = async (variantIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    const inputEl = e.target; // save ref before async
+    if (!files || files.length === 0) return;
+    setVariantUploadingIndex(variantIndex);
+    try {
+      const uploaded = await uploadImages(Array.from(files));
+      const newImages: ProductImage[] = uploaded.map((f) => ({
+        url: f.url,
+        alt: formData.variants[variantIndex]?.color || "Variant image",
+        isPrimary: false,
+      }));
+      setFormData((prev) => ({
+        ...prev,
+        variants: prev.variants.map((v, i) =>
+          i === variantIndex ? { ...v, images: [...(v.images || []), ...newImages] } : v
+        ),
+      }));
+      toast.success(`${uploaded.length} image(s) uploaded for variant`);
+    } catch (err: any) {
+      console.error("Variant image upload error:", err);
+      toast.error(err?.message || "Failed to upload variant images");
+    } finally {
+      setVariantUploadingIndex(null);
+      if (inputEl) inputEl.value = "";
+    }
+  };
+
+  const removeVariantImage = (variantIndex: number, imageIndex: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      variants: prev.variants.map((v, i) =>
+        i === variantIndex ? { ...v, images: (v.images || []).filter((_, j) => j !== imageIndex) } : v
+      ),
+    }));
+  };
+
   // --------------------------------
   // Helpers
   // --------------------------------
@@ -484,6 +529,18 @@ const AdminProducts = () => {
   const getProductImage = (product: Product) => {
     const primary = product.images?.find((i) => i.isPrimary);
     return primary?.url || product.images?.[0]?.url || "";
+  };
+
+  const topLevelCategories = useMemo(() => categories.filter((c) => !c.parentId), [categories]);
+  const subCategories = useMemo(() => categories.filter((c) => c.parentId === formData.productType), [categories, formData.productType]);
+
+  const handleProductTypeChange = (typeId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      productType: typeId,
+      categoryId: "",
+      categorySlug: "",
+    }));
   };
 
   const handleCategoryChange = (catId: string) => {
@@ -892,51 +949,48 @@ const AdminProducts = () => {
                     />
                   </div>
                 </div>
-                {/* Category */}
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  {showNewCatInput ? (
-                    <div className="flex gap-2">
-                      <Input
-                        value={newCatName}
-                        onChange={(e) => setNewCatName(e.target.value)}
-                        placeholder="New category name…"
-                        onKeyDown={(e) => e.key === "Enter" && handleCreateCategoryInline()}
-                      />
-                      <Button size="sm" onClick={handleCreateCategoryInline} className="shrink-0">Add</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setShowNewCatInput(false)} className="shrink-0">
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Select
-                        value={formData.categoryId || "__none__"}
-                        onValueChange={(v) => handleCategoryChange(v === "__none__" ? "" : v)}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">— No category —</SelectItem>
-                          {categories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="shrink-0"
-                        title="Add new category"
-                        onClick={() => setShowNewCatInput(true)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
+                {/* Product Type & Category */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Product Type</Label>
+                    <Select
+                      value={formData.productType || "__none__"}
+                      onValueChange={(v) => handleProductTypeChange(v === "__none__" ? "" : v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Product Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">— Select Type —</SelectItem>
+                        {topLevelCategories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Category</Label>
+                    <Select
+                      value={formData.categoryId || "__none__"}
+                      onValueChange={(v) => handleCategoryChange(v === "__none__" ? "" : v)}
+                      disabled={!formData.productType}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">— Select Category —</SelectItem>
+                        {subCategories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
                 {/* Tags — chip editor */}
                 <div className="space-y-2">
@@ -1135,7 +1189,7 @@ const AdminProducts = () => {
                   <div>
                     <Label>Product Variants</Label>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      Add size, color, model, price &amp; stock variations.
+                      Add size, color, model, price &amp; stock variations. Upload images per color.
                     </p>
                   </div>
                   <Button size="sm" variant="outline" onClick={addVariant}>
@@ -1157,6 +1211,7 @@ const AdminProducts = () => {
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-medium text-muted-foreground">
                             Variant #{i + 1}
+                            {variant.color && <span className="ml-1 text-primary"> — {variant.color}</span>}
                           </span>
                           <Button
                             size="icon"
@@ -1208,6 +1263,52 @@ const AdminProducts = () => {
                               onChange={(e) => updateVariant(i, "stockQuantity", Number(e.target.value) || 0)}
                             />
                           </div>
+                        </div>
+
+                        {/* Per-Variant Image Upload (Color Images) */}
+                        <div className="space-y-2 pt-2 border-t border-border/60">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-xs">
+                              Images for this variant
+                              {variant.color && <span className="text-primary"> ({variant.color})</span>}
+                            </Label>
+                            <label className="cursor-pointer">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                className="hidden"
+                                onChange={(e) => handleVariantImageUpload(i, e)}
+                                disabled={variantUploadingIndex === i}
+                              />
+                              <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border hover:bg-accent transition-colors">
+                                {variantUploadingIndex === i ? (
+                                  <><Loader2 className="h-3 w-3 animate-spin" /> Uploading...</>
+                                ) : (
+                                  <><ImageUp className="h-3 w-3" /> Upload</>
+                                )}
+                              </span>
+                            </label>
+                          </div>
+                          {(variant.images && variant.images.length > 0) && (
+                            <div className="flex flex-wrap gap-2">
+                              {variant.images.map((img, j) => (
+                                <div key={j} className="relative group h-16 w-16 rounded-md overflow-hidden border border-border">
+                                  <img src={img.url} alt={img.alt || "variant"} className="h-full w-full object-cover" />
+                                  <button
+                                    type="button"
+                                    className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                    onClick={() => removeVariantImage(i, j)}
+                                  >
+                                    <X className="h-3.5 w-3.5 text-red-400" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {(!variant.images || variant.images.length === 0) && (
+                            <p className="text-xs text-muted-foreground italic">No images — will use product default images</p>
+                          )}
                         </div>
                       </div>
                     ))}

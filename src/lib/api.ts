@@ -70,6 +70,18 @@ export async function fetchCategories() {
     return res.json();
 }
 
+export async function fetchCategoryTree() {
+    const res = await fetch(`${API_BASE}/products/categories/tree`);
+    if (!res.ok) throw new Error("Failed to fetch category tree");
+    return res.json();
+}
+
+export async function fetchCategoryChildren(parentId: string) {
+    const res = await fetch(`${API_BASE}/products/categories/${parentId}/children`);
+    if (!res.ok) throw new Error("Failed to fetch sub-categories");
+    return res.json();
+}
+
 export async function fetchProductsByCategory(
     slug: string,
     params?: { page?: number; limit?: number }

@@ -166,4 +166,19 @@ router.delete('/image/:publicId(*)', authenticateUpload, async (req: Request, re
     }
 });
 
+// Multer error handling middleware — must be AFTER all upload routes
+router.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    if (err) {
+        console.error('❌ Upload middleware error:', err.message || err);
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: 'File too large. Maximum size is 5MB.' });
+        }
+        if (err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE') {
+            return res.status(400).json({ error: 'Too many files. Maximum is 5 images at once.' });
+        }
+        return res.status(500).json({ error: err.message || 'Upload failed' });
+    }
+    next();
+});
+
 export default router;
