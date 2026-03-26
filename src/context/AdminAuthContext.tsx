@@ -91,6 +91,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
 
       setUser(userData);
       setToken(data.token);
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: userData, token: data.token }));
 
       const redirect =
         (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
@@ -104,6 +105,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const loginWithData = (newToken: string, userData: AdminUser, opts?: { redirectTo?: string }) => {
     setUser(userData);
     setToken(newToken);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: userData, token: newToken }));
 
     const redirect =
       opts?.redirectTo ||

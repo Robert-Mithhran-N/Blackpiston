@@ -1,0 +1,34 @@
+[36mvite v5.4.19 [32mbuilding for production...[36m[39m
+transforming...
+Browserslist: browsers data (caniuse-lite) is 9 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+[32m✓[39m 3409 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                               [39m[1m[2m    1.54 kB[22m[1m[22m[2m │ gzip:   0.64 kB[22m
+[2mdist/[22m[32massets/AGV logo-BVa1qg6c.svg             [39m[1m[2m    4.88 kB[22m[1m[22m[2m │ gzip:   2.03 kB[22m
+[2mdist/[22m[32massets/SMK-LOGO-2-Cf4GtyK9.webp          [39m[1m[2m    4.95 kB[22m[1m[22m
+[2mdist/[22m[32massets/planet_dsg_logo-RmIIbr9h.avif     [39m[1m[2m    5.98 kB[22m[1m[22m
+[2mdist/[22m[32massets/RCB logo-BhLtuvNb.svg             [39m[1m[2m    7.01 kB[22m[1m[22m[2m │ gzip:   4.63 kB[22m
+[2mdist/[22m[32massets/insta 360logo-black-DCAV4lqS.svg  [39m[1m[2m    7.91 kB[22m[1m[22m[2m │ gzip:   3.35 kB[22m
+[2mdist/[22m[32massets/AXOR_NEW_LOGO-DJzpnc70.webp       [39m[1m[2m   15.97 kB[22m[1m[22m
+[2mdist/[22m[32massets/Vega_LOGO-B5TN-vDO.webp           [39m[1m[2m   25.16 kB[22m[1m[22m
+[2mdist/[22m[32massets/shop-helmet-BS1S6sPD.png          [39m[1m[2m  870.62 kB[22m[1m[22m
+[2mdist/[22m[32massets/shop-boot-iYkcGgy7.png            [39m[1m[2m  938.64 kB[22m[1m[22m
+[2mdist/[22m[32massets/shop-gloves--7tRZErK.png          [39m[1m[2m  993.65 kB[22m[1m[22m
+[2mdist/[22m[32massets/shop-access-DxrjcSsL.png          [39m[1m[2m  997.90 kB[22m[1m[22m
+[2mdist/[22m[32massets/hero home img-Cc1ihN-l.png        [39m[1m[2m2,840.86 kB[22m[1m[22m
+[2mdist/[22m[32massets/logo-Bec1EfFY.png                 [39m[1m[2m3,079.11 kB[22m[1m[22m
+[2mdist/[22m[35massets/index-C5W_UtPw.css                [39m[1m[2m   98.42 kB[22m[1m[22m[2m │ gzip:  15.88 kB[22m
+[2mdist/[22m[36massets/purify.es-C5KSVp3G.js             [39m[1m[2m   22.74 kB[22m[1m[22m[2m │ gzip:   8.79 kB[22m
+[2mdist/[22m[36massets/index.es-CjIuc53A.js              [39m[1m[2m  150.59 kB[22m[1m[22m[2m │ gzip:  51.53 kB[22m
+[2mdist/[22m[36massets/html2canvas.esm-CBrSDip1.js       [39m[1m[2m  201.42 kB[22m[1m[22m[2m │ gzip:  48.03 kB[22m
+[2mdist/[22m[36massets/jspdf.es.min-BaFjhvSS.js          [39m[1m[2m  413.70 kB[22m[1m[22m[2m │ gzip: 135.03 kB[22m
+[2mdist/[22m[36massets/index-Bnv0Gpr-.js                 [39m[1m[33m2,086.66 kB[39m[22m[2m │ gzip: 463.78 kB[22m
+[33m
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.[39m
+[32m✓ built in 27.31s[39m

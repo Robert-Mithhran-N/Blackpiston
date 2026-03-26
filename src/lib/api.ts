@@ -1,7 +1,22 @@
 // Centralized API client for BlackPiston Garage
 // All frontend API calls go through here
 
+import axios from 'axios';
+
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+
+// PHASE 3 — API BASE URL FIX (CRITICAL)
+export const API = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3001"
+});
+
+API.interceptors.request.use((config) => {
+    const token = getAuthToken();
+    if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
 
 function getAuthToken(): string | null {
     // Check admin auth first (stored as JSON { user, token })
@@ -31,6 +46,8 @@ function getAuthHeaders(): Record<string, string> {
 // ============================================================
 // Products
 // ============================================================
+
+
 
 export async function fetchProducts(params?: {
     page?: number;
@@ -79,6 +96,14 @@ export async function fetchCategoryTree() {
 export async function fetchCategoryChildren(parentId: string) {
     const res = await fetch(`${API_BASE}/products/categories/${parentId}/children`);
     if (!res.ok) throw new Error("Failed to fetch sub-categories");
+    return res.json();
+}
+
+export async function fetchCategoriesByType(productType?: string) {
+    const searchParams = new URLSearchParams();
+    if (productType) searchParams.set("type", productType);
+    const res = await fetch(`${API_BASE}/products/categories/all?${searchParams.toString()}`);
+    if (!res.ok) throw new Error("Failed to fetch categories by type");
     return res.json();
 }
 
@@ -408,17 +433,6 @@ export async function deleteTopOffer(id: string) {
     return res.json();
 }
 
-// ============================================================
-// Categories
-// ============================================================
-
-export async function fetchCategoriesByType() {
-    const res = await fetch(
-        `${API_BASE}/products/categories/all`
-    );
-    if (!res.ok) throw new Error("Failed to fetch categories");
-    return res.json();
-}
 
 // ============================================================
 // Search & Tags

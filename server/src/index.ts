@@ -29,27 +29,9 @@ const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-const allowedOrigins = [
-    process.env.FRONTEND_URL || 'http://localhost:5000',
-    'http://localhost:5000',
-    'http://localhost:5173',
-    'http://localhost:3000',
-].filter(Boolean);
-
 app.use(cors({
-    origin: (origin, callback) => {
-        // Allow requests with no origin (server-to-server, Postman, curl, etc.)
-        if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        }
-        // In development, allow all origins
-        if (process.env.NODE_ENV === 'development') {
-            return callback(null, true);
-        }
-        callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true
+  origin: ["http://localhost:5173", "http://localhost:5000"],
+  credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -129,6 +111,7 @@ async function startServer() {
     initSocketServer(httpServer);
 
     httpServer.listen(PORT, () => {
+        console.log("Server running on port " + PORT);
         console.log(`
 🏍️  BlackPiston Garage API Server
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
