@@ -42,6 +42,11 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminOrderHistory from "./pages/admin/AdminOrderHistory";
 import AdminLowStock from "./pages/admin/AdminLowStock";
 import AdminRequests from "./pages/admin/AdminRequests";
+import AdminBlog from "./pages/admin/AdminBlog";
+import AdminBuilds from "./pages/admin/AdminBuilds";
+import AdminAppointments from "./pages/admin/AdminAppointments";
+import AdminServices from "./pages/admin/AdminServices";
+import AdminMessages from "./pages/admin/AdminMessages";
 import AdminTopOffers from "./pages/admin/AdminTopOffers";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminSettings from "./pages/admin/AdminSettings";
@@ -100,6 +105,11 @@ const App = () => (
                     <Route path="orders/history" element={<AdminOrderHistory />} />
                     <Route path="low-stock" element={<AdminLowStock />} />
                     <Route path="requests" element={<AdminRequests />} />
+                    <Route path="blog" element={<AdminBlog />} />
+                    <Route path="builds" element={<AdminBuilds />} />
+                    <Route path="appointments" element={<AdminAppointments />} />
+                    <Route path="services" element={<AdminServices />} />
+                    <Route path="messages" element={<AdminMessages />} />
                     <Route path="users" element={<AdminUsers />} />
                     <Route path="settings" element={<AdminSettings />} />
                   </Route>

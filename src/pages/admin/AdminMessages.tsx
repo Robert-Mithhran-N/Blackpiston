@@ -34,7 +34,7 @@ const AdminMessages = () => {
 
   const { data, isLoading } = useQuery({
     queryKey: ["adminRequests"],
-    queryFn: fetchAdminRequests,
+    queryFn: () => fetchAdminRequests(),
   });
 
   const updateMutation = useMutation({
@@ -313,7 +313,6 @@ const AdminMessages = () => {
 
                 <div className="flex justify-between items-center pt-4 border-t mt-4">
                   <Button 
-                    variant="destructive" 
                     variant="ghost" 
                     className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
                     onClick={() => handleDeleteClick(selectedMessage.id)}
