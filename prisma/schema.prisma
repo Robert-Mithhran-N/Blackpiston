@@ -193,10 +193,7 @@ model Product {
   description      String?
   shortDescription String?
 
-  categoryId       String?                @db.ObjectId
-  category         ProductCategory?       @relation(fields: [categoryId], references: [id])
-  categorySlug     String?
-  productType      String?
+  // Category fields removed - using tags for filtering instead
   brand            String?
   price            Float
   offerPrice       Float?
@@ -218,34 +215,13 @@ model Product {
   updatedAt        DateTime               @updatedAt
 
   // Relations
-  topOffers TopOffer[]
   inventory Inventory?
   reviews   Review[]
 
   @@map("products")
 }
 
-model ProductCategory {
-  id            String       @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  slug          String       @unique
-  description   String?
-  image         String?
-  icon          String?
-  parentId      String?      @db.ObjectId
-
-  level         Int          @default(0)
-  totalProducts Int          @default(0)
-  sortOrder     Int          @default(0)
-  isActive      Boolean      @default(true)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-
-  // Relations
-  products Product[]
-
-  @@map("product_categories")
-}
+// ProductCategory model removed - using tags for product filtering
 
 
 
@@ -362,29 +338,7 @@ model Payment {
   @@map("payments")
 }
 
-model TopOffer {
-  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
-  productId          String   @db.ObjectId
-  product            Product  @relation(fields: [productId], references: [id])
-  title              String
-  description        String?
-  originalPrice      Float
-  offerPrice         Float
-  discountPercentage Float?
-  discountType       String   @default("PERCENTAGE")
-  bannerImage        String?
-  badge              String?
-  priority           Int      @default(0)
-  validFrom          DateTime?
-  validUntil         DateTime?
-  isActive           Boolean  @default(true)
-  usageLimit         Int?
-  usedCount          Int      @default(0)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  @@map("top_offers")
-}
+// TopOffer model removed - using dynamic discount-based system instead
 
 type StockHistoryEntry {
   type        String

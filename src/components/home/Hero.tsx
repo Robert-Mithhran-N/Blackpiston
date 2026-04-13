@@ -3,7 +3,7 @@ import { ArrowRight, Wrench, Truck, RotateCcw, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button";
 
 // Import hero image
-import heroImage from "@/assets/hero home img.png";
+import heroImage from "@/assets/hero-gear.jpg";
 
 const Hero = () => {
   return (
@@ -105,21 +105,11 @@ const Hero = () => {
                   className="absolute inset-0 w-full h-full object-cover object-center"
                 />
 
-                {/* Layer 2: Dim overlay - darker for more contrast */}
-                <div className="absolute inset-0 bg-black/50 pointer-events-none" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/40 pointer-events-none" />
+                {/* Layer 2: Subtle overlay for edge contrast */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
 
                 {/* Layer 3: Cross-direction diagonal white light sweep */}
-                <div className="hero-cross-light-sweep absolute inset-0 pointer-events-none" />
-
-                {/* Layer 4: Caption text - centered, orange-white gradient */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  <h2 className="hero-caption-gradient font-display text-xl md:text-2xl lg:text-3xl text-center tracking-wide leading-relaxed px-6">
-                    Ride to feel alive,
-                    <br />
-                    buy to stay alive
-                  </h2>
-                </div>
+                <div className="hero-cross-light-sweep absolute inset-0 pointer-events-none z-10" />
 
 
                 {/* Soft edge overlay */}

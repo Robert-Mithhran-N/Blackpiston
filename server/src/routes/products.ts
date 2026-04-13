@@ -28,9 +28,7 @@ router.get('/', async (req: Request, res: Response) => {
             isActive: true
         };
 
-        if (category) {
-            where.categorySlug = category;
-        }
+        // Category filtering removed - using tags instead
 
         if (brand) {
             where.brand = brand;
@@ -65,16 +63,8 @@ router.get('/', async (req: Request, res: Response) => {
                 where,
                 orderBy,
                 skip,
-                take: limitNum,
-                include: {
-                    category: {
-                        select: {
-                            id: true,
-                            name: true,
-                            slug: true
-                        }
-                    }
-                }
+                take: limitNum
+                // category include removed
             }),
             prisma.product.count({ where })
         ]);
@@ -230,29 +220,52 @@ router.get('/featured/list', async (req: Request, res: Response) => {
     }
 });
 
-// Get top offers
+// ============================================================
+// Dynamic Top Offers - Based on Highest Discounts
 // IMPORTANT: This must come BEFORE the /:idOrSlug catch-all route
+// ============================================================
 router.get('/offers/top', async (req: Request, res: Response) => {
     try {
-        const offers = await prisma.topOffer.findMany({
+        const limit = parseInt(req.query.limit as string) || 8;
+
+        // Fetch active products with offer prices (discounts)
+        const products = await prisma.product.findMany({
             where: {
                 isActive: true,
-                OR: [
-                    { validUntil: null },
-                    { validUntil: { gte: new Date() } }
-                ]
+                inStock: true,
+                offerPrice: { not: null, gt: 0 }
             },
             include: {
-                product: true
-            },
-            orderBy: { priority: 'asc' },
-            take: 10
+                category: {
+                    select: {
+                        id: true,
+                        name: true,
+                        slug: true
+                    }
+                }
+            }
         });
 
-        res.json({ offers });
+        // Calculate discount percentage and sort by highest discount
+        const productsWithDiscount = products
+            .map(product => {
+                const discountPercent = product.offerPrice
+                    ? Math.round(((product.price - product.offerPrice) / product.price) * 100)
+                    : 0;
+                
+                return {
+                    ...product,
+                    discountPercent
+                };
+            })
+            .filter(p => p.discountPercent > 0)
+            .sort((a, b) => b.discountPercent - a.discountPercent)
+            .slice(0, limit);
+
+        res.json({ products: productsWithDiscount });
     } catch (error) {
         console.error('Get top offers error:', error);
-        res.status(500).json({ error: 'Failed to fetch offers' });
+        res.status(500).json({ error: 'Failed to fetch top offers' });
     }
 });
 
