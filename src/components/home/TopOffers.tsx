@@ -7,36 +7,31 @@ import ProductCard from "@/components/ProductCard";
 import { fetchTopOffers } from "@/lib/api";
 import { Product } from "@/types/user";
 
-// Map top offer API response to Product type for ProductCard
-function mapOfferToProduct(offer: any): Product {
-    const p = offer.product || offer;
-    // Images come from DB as { url, alt, isPrimary } objects
-    const primaryImg = p.images?.find((i: any) => i.isPrimary);
-    const firstImg = p.images?.[0];
-    const imageUrl = primaryImg?.url || firstImg?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
-
-    return {
-        id: p.id,
-        name: p.name,
-        category: p.categorySlug || "accessories",
-        price: offer.originalPrice || p.price,
-        offerPrice: offer.offerPrice || p.offerPrice || undefined,
-        image: imageUrl,
-        rating: p.averageRating || p.rating || 0,
-        description: p.description || "",
-        inStock: p.inStock !== false && (p.stockQuantity === undefined || p.stockQuantity > 0),
-        featured: p.isFeatured || false,
-        isTopOffer: true,
-    };
-}
-
+// Dynamic Top Offers - automatically shows products with highest discounts
 const TopOffers = () => {
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetchTopOffers()
-            .then((data) => setProducts((data.offers || []).map(mapOfferToProduct)))
+            .then((data) => {
+                // New API returns { products: [...] } with discountPercent already calculated
+                const productsData = data.products || [];
+                setProducts(productsData.map((p: any) => ({
+                    id: p.id,
+                    name: p.name,
+                    category: p.categorySlug || p.category?.slug || "accessories",
+                    price: p.price,
+                    offerPrice: p.offerPrice,
+                    image: p.images?.[0]?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop",
+                    rating: p.rating || 0,
+                    description: p.description || "",
+                    inStock: p.inStock !== false,
+                    featured: p.isFeatured || false,
+                    isTopOffer: true,
+                    discountPercent: p.discountPercent || 0,
+                })));
+            })
             .catch((err) => console.error("Failed to load top offers:", err))
             .finally(() => setLoading(false));
     }, []);

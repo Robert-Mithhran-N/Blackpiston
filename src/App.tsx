@@ -7,7 +7,7 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Shop from "./pages/Shop";
-import ShopCategory from "./pages/ShopCategory";
+// ShopCategory removed - categories feature removed
 import ProductDetail from "./pages/ProductDetail";
 import Garage from "./pages/Garage";
 import Build from "./pages/Build";
@@ -47,7 +47,7 @@ import AdminBuilds from "./pages/admin/AdminBuilds";
 import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminServices from "./pages/admin/AdminServices";
 import AdminMessages from "./pages/admin/AdminMessages";
-import AdminTopOffers from "./pages/admin/AdminTopOffers";
+// AdminTopOffers removed - using dynamic discount-based system
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -56,20 +56,26 @@ const queryClient = new QueryClient();
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
-const App = () => (
+console.log("🎨 App.tsx rendering");
+console.log("🔑 Google Client ID:", GOOGLE_CLIENT_ID ? "Set" : "Not set");
+
+const App = () => {
+  console.log("🎨 App component rendering");
+  
+  return (
   <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <CartProvider>
-            <UserAuthProvider>
-              <AdminAuthProvider>
+          <UserAuthProvider>
+            <AdminAuthProvider>
+              <CartProvider>
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/shop" element={<Shop />} />
-                  <Route path="/shop/:category" element={<ShopCategory />} />
+                  {/* /shop/:category route removed - categories feature removed */}
                   <Route path="/product/:productId" element={<ProductDetail />} />
                   <Route path="/garage" element={<Garage />} />
                   <Route path="/build" element={<Build />} />
@@ -99,7 +105,7 @@ const App = () => (
                   <Route path="/admin" element={<AdminRoute />}>
                     <Route index element={<AdminDashboard />} />
                     <Route path="products" element={<AdminProducts />} />
-                    <Route path="top-offers" element={<AdminTopOffers />} />
+                    {/* top-offers route removed - using dynamic discount system */}
                     <Route path="payments" element={<AdminPayments />} />
                     <Route path="orders" element={<AdminOrders />} />
                     <Route path="orders/history" element={<AdminOrderHistory />} />
@@ -117,14 +123,15 @@ const App = () => (
                   {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                   <Route path="*" element={<NotFound />} />
                 </Routes>
-              </AdminAuthProvider>
-            </UserAuthProvider>
-          </CartProvider>
+              </CartProvider>
+            </AdminAuthProvider>
+          </UserAuthProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
   </GoogleOAuthProvider>
 );
+};
 
 export default App;
 

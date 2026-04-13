@@ -81,46 +81,7 @@ export async function fetchProductById(idOrSlug: string) {
     return res.json();
 }
 
-export async function fetchCategories() {
-    const res = await fetch(`${API_BASE}/products/categories/all`);
-    if (!res.ok) throw new Error("Failed to fetch categories");
-    return res.json();
-}
-
-export async function fetchCategoryTree() {
-    const res = await fetch(`${API_BASE}/products/categories/tree`);
-    if (!res.ok) throw new Error("Failed to fetch category tree");
-    return res.json();
-}
-
-export async function fetchCategoryChildren(parentId: string) {
-    const res = await fetch(`${API_BASE}/products/categories/${parentId}/children`);
-    if (!res.ok) throw new Error("Failed to fetch sub-categories");
-    return res.json();
-}
-
-export async function fetchCategoriesByType(productType?: string) {
-    const searchParams = new URLSearchParams();
-    if (productType) searchParams.set("type", productType);
-    const res = await fetch(`${API_BASE}/products/categories/all?${searchParams.toString()}`);
-    if (!res.ok) throw new Error("Failed to fetch categories by type");
-    return res.json();
-}
-
-export async function fetchProductsByCategory(
-    slug: string,
-    params?: { page?: number; limit?: number }
-) {
-    const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.set("page", String(params.page));
-    if (params?.limit) searchParams.set("limit", String(params.limit));
-
-    const res = await fetch(
-        `${API_BASE}/products/category/${slug}?${searchParams.toString()}`
-    );
-    if (!res.ok) throw new Error("Failed to fetch products by category");
-    return res.json();
-}
+// Categories removed - using tags for product filtering
 
 export async function fetchFeaturedProducts() {
     const res = await fetch(`${API_BASE}/products/featured/list`);
@@ -233,43 +194,8 @@ export async function deleteProduct(id: string) {
 }
 
 // ============================================================
-// Categories Admin
+// Categories Admin - REMOVED (categories feature removed)
 // ============================================================
-
-export async function createCategory(data: Record<string, unknown>) {
-    const res = await fetch(`${API_BASE}/admin/categories`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to create category");
-    }
-    return res.json();
-}
-
-export async function updateCategory(id: string, data: Record<string, unknown>) {
-    const res = await fetch(`${API_BASE}/admin/categories/${id}`, {
-        method: "PUT",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
-    });
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || "Failed to update category");
-    }
-    return res.json();
-}
-
-export async function deleteCategory(id: string) {
-    const res = await fetch(`${API_BASE}/admin/categories/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to delete category");
-    return res.json();
-}
 
 export async function fetchAdminOrders(params?: {
     page?: number;
@@ -393,45 +319,11 @@ export async function fetchAdminUsers(params?: {
     return res.json();
 }
 
-export async function fetchAdminTopOffers() {
-    const res = await fetch(`${API_BASE}/admin/top-offers`, {
-        headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to fetch top offers");
-    return res.json();
-}
-
-export async function createTopOffer(data: Record<string, unknown>) {
-    const res = await fetch(`${API_BASE}/admin/top-offers`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error("Failed to create top offer");
-    return res.json();
-}
-
-export async function updateTopOffer(
-    id: string,
-    data: Record<string, unknown>
-) {
-    const res = await fetch(`${API_BASE}/admin/top-offers/${id}`, {
-        method: "PUT",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error("Failed to update top offer");
-    return res.json();
-}
-
-export async function deleteTopOffer(id: string) {
-    const res = await fetch(`${API_BASE}/admin/top-offers/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to delete top offer");
-    return res.json();
-}
+// ============================================================
+// Admin - Top Offers (REMOVED - using dynamic discount system)
+// ============================================================
+// Top offers are now automatically generated based on product discounts
+// See fetchTopOffers() above for the public endpoint
 
 
 // ============================================================

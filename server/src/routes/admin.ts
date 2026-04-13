@@ -155,8 +155,8 @@ const createProductSchema = z.object({
     slug: z.string().optional().nullable(),
     description: z.string().optional().nullable(),
     shortDescription: z.string().optional().nullable(),
-    categoryId: z.string().optional().nullable(),
-    categorySlug: z.string().optional().nullable(),
+    // categoryId: removed with categories feature
+    // categorySlug: removed with categories feature
     brand: z.string().optional().nullable(),
     price: z.coerce.number().positive('Price must be greater than 0'),
     offerPrice: z.coerce.number().positive().optional().nullable(),
@@ -301,7 +301,7 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
 
         // Sanitize ObjectId fields — empty strings and non-24-hex values become null
         const isValidObjectId = (v: any) => typeof v === 'string' && /^[a-fA-F0-9]{24}$/.test(v);
-        const safeCategoryId = isValidObjectId(data.categoryId) ? data.categoryId : null;
+        // safeCategoryId removed with categories feature
 
         // Auto-generate SKU if not provided
         const finalSku = data.sku || `BP - ${Date.now().toString(36).toUpperCase()} `;
@@ -334,9 +334,9 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
                 slug: data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
                 description: data.description,
                 shortDescription: data.shortDescription,
-                categoryId: safeCategoryId,
-                categorySlug: data.categorySlug || null,
-                productType: data.productType || null,
+                // categoryId: removed with categories
+                // categorySlug: removed with categories
+                // productType: removed with categories
                 brand: data.brand,
                 price: data.price,
                 offerPrice: data.offerPrice ?? null,
@@ -354,8 +354,8 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
                 specifications: data.specifications,
                 rating: data.rating,
                 totalReviews: data.totalReviews,
-            },
-            include: { category: true }
+            }
+            // include: { category: true } removed
         });
 
         console.log('✅ [POST /products] Product created:', product.id, product.name);
@@ -399,13 +399,11 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
         if ('shortDescription' in body) updateData.shortDescription = body.shortDescription || null;
         if ('brand' in body) updateData.brand = body.brand || null;
         if ('sku' in body) updateData.sku = body.sku || undefined;
-        if ('categorySlug' in body) updateData.categorySlug = body.categorySlug || null;
-        if ('productType' in body) updateData.productType = body.productType || null;
+        // categorySlug removed with categories
+        // productType removed with categories
 
         // ObjectId fields
-        if ('categoryId' in body) {
-            updateData.categoryId = isValidObjectId(body.categoryId) ? body.categoryId : null;
-        }
+        // categoryId removed with categories
 
         // Numeric fields — coerce from string
         if ('price' in body) {
@@ -459,8 +457,8 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
 
         const product = await prisma.product.update({
             where: { id },
-            data: updateData,
-            include: { category: true }
+            data: updateData
+            // include: { category: true } removed
         });
 
         console.log('✅ [PUT /products/:id] Product updated:', product.id, product.name);
@@ -534,13 +532,15 @@ router.get('/products', authenticateAdmin, async (req: Request, res: Response) =
         }
 
         if (category) {
-            where.categorySlug = category;
+            // Category filtering removed - using tags instead
+            // where.categorySlug = category;
         }
 
-        const productTypeId = req.query.productTypeId as string | undefined;
-        if (productTypeId) {
-            where.productTypeId = productTypeId;
-        }
+        // productTypeId removed with categories
+        // const productTypeId = req.query.productTypeId as string | undefined;
+        // if (productTypeId) {
+        //     where.productTypeId = productTypeId;
+        // }
 
         if (status === 'active') where.isActive = true;
         if (status === 'inactive') where.isActive = false;
@@ -550,7 +550,7 @@ router.get('/products', authenticateAdmin, async (req: Request, res: Response) =
                 where,
                 skip,
                 take: limitNum,
-                include: { category: true, inventory: true }
+                include: { inventory: true } // category removed
             }),
             prisma.product.count({ where })
         ]);
@@ -750,7 +750,7 @@ router.get('/inventory/low-stock', authenticateAdmin, async (req: Request, res: 
         const allInventory = await prisma.inventory.findMany({
             include: {
                 product: {
-                    select: { id: true, name: true, categorySlug: true, images: true }
+                    select: { id: true, name: true, images: true } // categorySlug removed
                 }
             },
             orderBy: { availableStock: 'asc' }
@@ -886,83 +886,8 @@ router.get('/users', authenticateAdmin, async (req: Request, res: Response) => {
 // ============================================================
 // Top Offers CRUD
 // ============================================================
-router.post('/top-offers', authenticateAdmin, async (req: Request, res: Response) => {
-    try {
-        const {
-            productId, title, description, discountPercent,
-            offerPrice, originalPrice, badgeText, priority,
-            validFrom, validUntil, isActive
-        } = req.body;
-
-        const offer = await prisma.topOffer.create({
-            data: {
-                productId,
-                title,
-                description,
-                discountPercentage: discountPercent,
-                offerPrice,
-                originalPrice,
-                badge: badgeText,
-                priority: priority || 0,
-                validFrom: validFrom ? new Date(validFrom) : null,
-                validUntil: validUntil ? new Date(validUntil) : null,
-                isActive: isActive !== false,
-            },
-            include: { product: true }
-        });
-
-        res.status(201).json({ message: 'Top offer created', offer });
-    } catch (error) {
-        console.error('Create top offer error:', error);
-        res.status(500).json({ error: 'Failed to create top offer' });
-    }
-});
-
-router.put('/top-offers/:id', authenticateAdmin, async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-        const updateData = req.body;
-        delete updateData.id;
-
-        if (updateData.validFrom) updateData.validFrom = new Date(updateData.validFrom);
-        if (updateData.validUntil) updateData.validUntil = new Date(updateData.validUntil);
-
-        const offer = await prisma.topOffer.update({
-            where: { id },
-            data: updateData,
-            include: { product: true }
-        });
-
-        res.json({ message: 'Top offer updated', offer });
-    } catch (error) {
-        console.error('Update top offer error:', error);
-        res.status(500).json({ error: 'Failed to update top offer' });
-    }
-});
-
-router.delete('/top-offers/:id', authenticateAdmin, async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-        await prisma.topOffer.delete({ where: { id } });
-        res.json({ message: 'Top offer deleted' });
-    } catch (error) {
-        console.error('Delete top offer error:', error);
-        res.status(500).json({ error: 'Failed to delete top offer' });
-    }
-});
-
-// Get all top offers (admin — includes inactive)
-router.get('/top-offers', authenticateAdmin, async (req: Request, res: Response) => {
-    try {
-        const offers = await prisma.topOffer.findMany({
-            include: { product: true },
-            orderBy: { priority: 'asc' }
-        });
-        res.json({ offers });
-    } catch (error) {
-        console.error('Get top offers error:', error);
-        res.status(500).json({ error: 'Failed to fetch top offers' });
-    }
-});
+// Top Offers - REMOVED (now using dynamic discount-based system)
+// See /products/offers/top endpoint in products.ts
+// ============================================================
 
 export default router;

@@ -2,7 +2,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import Hero from "@/components/home/Hero";
 import TopOffers from "@/components/home/TopOffers";
-import FeaturedCategories from "@/components/home/FeaturedCategories";
+// FeaturedCategories removed - categories feature removed
 import FeaturedProducts from "@/components/home/FeaturedProducts";
 import FeaturedBuilds from "@/components/home/FeaturedBuilds";
 import TrustBadges from "@/components/home/TrustBadges";
@@ -17,7 +17,7 @@ const Index = () => {
         <Hero />
         <TrustBadges />
         <TopOffers />
-        <FeaturedCategories />
+        {/* FeaturedCategories removed - categories feature removed */}
         <FeaturedProducts />
         <FeaturedBuilds />
         <CTABanner />

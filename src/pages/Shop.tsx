@@ -29,13 +29,7 @@ import {
 import { fetchProducts, fetchCategories } from "@/lib/api";
 import { Product } from "@/types/user";
 
-// Category icons
-const categoryIcons: Record<string, React.ElementType> = {
-  helmets: HardHat,
-  jackets: Shirt,
-  boots: Footprints,
-  accessories: Sparkles,
-};
+// Category icons removed - categories feature removed
 
 // Map API product to ProductCard shape
 function mapProduct(p: any): Product {
@@ -47,7 +41,7 @@ function mapProduct(p: any): Product {
   return {
     id: p.id,
     name: p.name,
-    category: p.categorySlug || p.category?.slug || "accessories",
+    category: "products", // Simplified - no categories
     price: p.price,
     offerPrice: p.offerPrice || undefined,
     image: imageUrl,
@@ -63,22 +57,17 @@ function mapProduct(p: any): Product {
 
 const Shop = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  // Category filtering removed - categories feature removed
   const [sortBy, setSortBy] = useState<string>("featured");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<{ id: string; name: string; slug: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([
-      fetchProducts({ limit: 200 }),
-      fetchCategories(),
-    ])
-      .then(([prodData, catData]) => {
+    fetchProducts({ limit: 200 })
+      .then((prodData) => {
         setAllProducts((prodData.products || []).map(mapProduct));
-        setCategories(catData.categories || []);
       })
       .catch((err) => console.error("Failed to load shop data:", err))
       .finally(() => setLoading(false));
@@ -91,17 +80,12 @@ const Shop = () => {
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(
-        (p) =>
-          p.name.toLowerCase().includes(query) ||
-          p.category.toLowerCase().includes(query)
+      filtered = filtered.filter((p) =>
+        p.name.toLowerCase().includes(query)
       );
     }
 
-    // Category filter
-    if (selectedCategory !== "all") {
-      filtered = filtered.filter((p) => p.category === selectedCategory);
-    }
+    // Category filter removed - using tags instead
 
     // Sort
     switch (sortBy) {
@@ -126,7 +110,7 @@ const Shop = () => {
     }
 
     return filtered;
-  }, [allProducts, searchQuery, selectedCategory, sortBy]);
+  }, [allProducts, searchQuery, sortBy]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -165,21 +149,7 @@ const Shop = () => {
                   />
                 </div>
 
-                {/* Category Filter */}
-                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                  <SelectTrigger className="w-[180px]">
-                    <Filter className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.slug}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {/* Category Filter removed - categories feature removed */}
 
                 {/* Sort */}
                 <Select value={sortBy} onValueChange={setSortBy}>
@@ -216,30 +186,7 @@ const Shop = () => {
             </CardContent>
           </Card>
 
-          {/* Category Quick Links */}
-          <div className="flex flex-wrap gap-2 mb-8">
-            <Badge
-              variant={selectedCategory === "all" ? "default" : "outline"}
-              className="cursor-pointer hover:bg-primary/20"
-              onClick={() => setSelectedCategory("all")}
-            >
-              All Products
-            </Badge>
-            {categories.map((cat) => {
-              const Icon = categoryIcons[cat.slug] || Sparkles;
-              return (
-                <Badge
-                  key={cat.id}
-                  variant={selectedCategory === cat.slug ? "default" : "outline"}
-                  className="cursor-pointer hover:bg-primary/20"
-                  onClick={() => setSelectedCategory(cat.slug)}
-                >
-                  <Icon className="h-3 w-3 mr-1" />
-                  {cat.name}
-                </Badge>
-              );
-            })}
-          </div>
+          {/* Category Quick Links removed - categories feature removed */}
 
           {/* Results Count */}
           <div className="flex items-center justify-between mb-6">
