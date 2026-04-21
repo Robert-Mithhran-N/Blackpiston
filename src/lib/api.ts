@@ -52,19 +52,26 @@ function getAuthHeaders(): Record<string, string> {
 export async function fetchProducts(params?: {
     page?: number;
     limit?: number;
-    category?: string;
-    brand?: string;
     search?: string;
-    sortBy?: string;
-    sortOrder?: string;
-    featured?: boolean;
+    brand?: string;
     minPrice?: number;
     maxPrice?: number;
+    color?: string;
+    size?: string;
+    discount?: number;
+    inStock?: boolean;
+    featured?: boolean;
+    tags?: string;
+    sort?: string;
+    // Legacy params
+    category?: string;
+    sortBy?: string;
+    sortOrder?: string;
 }) {
     const searchParams = new URLSearchParams();
     if (params) {
         Object.entries(params).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
+            if (value !== undefined && value !== null && value !== "") {
                 searchParams.set(key, String(value));
             }
         });
@@ -72,6 +79,12 @@ export async function fetchProducts(params?: {
 
     const res = await fetch(`${API_BASE}/products?${searchParams.toString()}`);
     if (!res.ok) throw new Error("Failed to fetch products");
+    return res.json();
+}
+
+export async function fetchProductFilters() {
+    const res = await fetch(`${API_BASE}/products/filters`);
+    if (!res.ok) throw new Error("Failed to fetch product filters");
     return res.json();
 }
 
