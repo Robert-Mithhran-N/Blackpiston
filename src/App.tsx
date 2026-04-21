@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { useState } from "react";
+import SplashScreen, { shouldShowSplash } from "@/components/SplashScreen";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Shop from "./pages/Shop";
@@ -56,13 +58,17 @@ const queryClient = new QueryClient();
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
-console.log("🎨 App.tsx rendering");
-console.log("🔑 Google Client ID:", GOOGLE_CLIENT_ID ? "Set" : "Not set");
-
 const App = () => {
-  console.log("🎨 App component rendering");
-  
+  const [showSplash, setShowSplash] = useState(shouldShowSplash);
+
   return (
+  <>
+    {/* Splash Screen — plays once per localStorage session */}
+    {showSplash && (
+      <SplashScreen onComplete={() => setShowSplash(false)} />
+    )}
+
+    <div className={showSplash ? "invisible" : "visible"}>
   <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -130,6 +136,8 @@ const App = () => {
       </TooltipProvider>
     </QueryClientProvider>
   </GoogleOAuthProvider>
+    </div>
+  </>
 );
 };
 
