@@ -1,82 +1,36 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, ChevronDown, HardHat, Shirt, Footprints, Sparkles, Home, LogOut, Settings, MapPin, Package as PackageIcon, ArrowRight } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, Home, LogOut, Settings, MapPin, Package as PackageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useUserAuth } from "@/context/UserAuthContext";
-import { fetchCategoryTree } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import logo from "@/assets/logo.png";
-
-// Import shop category images
-import helmetImg from "@/assets/shop-btn-logos/shop-helmet.png";
-import glovesImg from "@/assets/shop-btn-logos/shop-gloves.png";
-import bootImg from "@/assets/shop-btn-logos/shop-boot.png";
-import accessImg from "@/assets/shop-btn-logos/shop-access.png";
-
-// Category icons mapping (fallback)
-const categoryIcons: Record<string, React.ElementType> = {
-  helmets: HardHat,
-  gloves: Shirt,
-  jackets: Shirt,
-  boots: Footprints,
-  accessories: Sparkles,
-};
-
-// Category images mapping
-const categoryImages: Record<string, string> = {
-  helmets: helmetImg,
-  gloves: glovesImg,
-  jackets: glovesImg,
-  boots: bootImg,
-  accessories: accessImg,
-  pants: glovesImg,
-  'rain-gear': bootImg,
-  luggage: accessImg,
-};
 
 const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [shopOpen, setShopOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const shopRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, logout } = useUserAuth();
   const navigate = useNavigate();
   const { cartCount } = useCart();
   const { pathname } = useLocation();
 
-  // Close user menu and shop dropdown on outside click
+  // Close user menu on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
-      }
-      if (shopRef.current && !shopRef.current.contains(e.target as Node)) {
-        setShopOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch categories as tree from API
-  const [categories, setCategories] = useState<{ id: string; name: string; slug: string; children?: any[] }[]>([]);
-  useEffect(() => {
-    fetchCategoryTree()
-      .then((data) => setCategories(data.tree || []))
-      .catch((err) => console.error("Failed to load category tree:", err));
-  }, []);
+  // Categories feature removed - using simple shop link instead
+  const categories: { id: string; name: string; slug: string; children?: any[] }[] = [];
 
   const navState = useMemo(
     () => ({
@@ -115,66 +69,10 @@ const Header = () => {
             Home
           </NavLink>
 
-          {/* Shop Dropdown — click only */}
-          <div className="relative" ref={shopRef}>
-            <button
-              onClick={() => setShopOpen((prev) => !prev)}
-              className={`${navClass(navState.shop)} flex items-center gap-1 bg-transparent border-none cursor-pointer`}
-            >
-              Shop
-              <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${shopOpen ? "rotate-180" : ""}`} />
-            </button>
-
-            {shopOpen && (
-              <div className="absolute left-0 top-full mt-2 w-[800px] max-w-[90vw] p-6 bg-card border border-border rounded-xl shadow-2xl z-50 hidden lg:block">
-                <div className="mb-6">
-                  <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">
-                    Shop by Category
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Premium motorcycle gear & accessories
-                  </p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-10">
-                  {categories.map((type) => (
-                    <div key={type.id} className="space-y-3">
-                      <Link
-                        to={`/shop/${type.slug}`}
-                        onClick={() => setShopOpen(false)}
-                        className="text-sm font-semibold text-primary uppercase tracking-wider hover:underline flex items-center gap-2 group w-fit"
-                      >
-                        {type.name}
-                        <ArrowRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </Link>
-                      <div className="flex flex-col space-y-2">
-                        {type.children?.map((child) => (
-                          <Link
-                            key={child.id}
-                            to={`/shop/${child.slug}`}
-                            onClick={() => setShopOpen(false)}
-                            className="text-sm text-muted-foreground hover:text-primary transition-colors flex items-center"
-                          >
-                            <span className="w-1.5 h-1.5 rounded-full bg-primary/40 mr-2 flex-shrink-0"></span>
-                            {child.name}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-border">
-                  <Link
-                    to="/shop"
-                    onClick={() => setShopOpen(false)}
-                    className="text-sm text-primary hover:underline font-medium"
-                  >
-                    View All Products →
-                  </Link>
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Shop Link - Categories removed */}
+          <NavLink to="/shop" className={({ isActive }) => navClass(isActive)}>
+            Shop
+          </NavLink>
 
           <NavLink
             to="/garage"
@@ -350,43 +248,15 @@ const Header = () => {
                   Home
                 </Link>
 
-                {/* Shop Categories */}
-                <div className="space-y-2">
-                  <p className="text-sm font-ui font-semibold text-primary uppercase tracking-wider">
-                    Shop
-                  </p>
-                  {categories.map((type) => {
-                    const Icon = categoryIcons[type.slug] || Sparkles;
-                    return (
-                      <div key={type.id} className="flex flex-col mb-4 bg-zinc-900/40 p-3 rounded-lg border border-border">
-                        <Link
-                          to={`/shop/${type.slug}`}
-                          onClick={() => setMobileMenuOpen(false)}
-                          className="flex items-center justify-between py-2 text-foreground font-semibold hover:text-primary transition-colors"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Icon className="h-4 w-4 text-primary" />
-                            {type.name}
-                          </div>
-                        </Link>
-                        {type.children && type.children.length > 0 && (
-                          <div className="pl-7 mt-2 space-y-2 border-l border-zinc-700/50">
-                            {type.children.map((child) => (
-                              <Link
-                                key={child.id}
-                                to={`/shop/${child.slug}`}
-                                onClick={() => setMobileMenuOpen(false)}
-                                className="block py-1 text-sm text-muted-foreground hover:text-primary transition-colors"
-                              >
-                                - {child.name}
-                              </Link>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                {/* Shop Link - Categories removed */}
+                <Link
+                  to="/shop"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 py-2 text-foreground hover:text-primary transition-colors font-medium"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  Shop
+                </Link>
 
                 <div className="border-t border-border pt-4 space-y-2">
                   <NavLink

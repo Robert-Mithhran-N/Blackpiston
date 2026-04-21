@@ -25,7 +25,7 @@ import {
     ChevronRight,
     AlertCircle,
 } from "lucide-react";
-import { fetchProductById, fetchProductsByCategory } from "@/lib/api";
+import { fetchProductById, fetchProducts } from "@/lib/api";
 import { Product, ProductVariant } from "@/types/user";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
@@ -132,35 +132,34 @@ const ProductDetail = () => {
                 };
                 setProduct(mapped);
 
-                // Fetch related products
-                if (mapped.category) {
-                    fetchProductsByCategory(mapped.category)
-                        .then((catData) => {
-                            const related = (catData.products || [])
-                                .filter((r: any) => r.id !== p.id)
-                                .slice(0, 6)
-                                .map((r: any): Product => {
-                                    const rPrimary = r.images?.find((i: any) => i.isPrimary);
-                                    const rFirst = r.images?.[0];
-                                    const rImg = rPrimary?.url || rFirst?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
-                                    return {
-                                        id: r.id,
-                                        name: r.name,
-                                        category: r.categorySlug || r.category?.slug || "accessories",
-                                        price: r.price,
-                                        offerPrice: r.offerPrice || undefined,
-                                        image: rImg,
-                                        rating: r.averageRating || r.rating || 0,
-                                        description: r.description || "",
-                                        inStock: r.inStock !== false && (r.stockQuantity === undefined || r.stockQuantity > 0),
-                                        featured: r.isFeatured || false,
-                                        isTopOffer: false,
-                                    };
-                                });
-                            setRelatedProducts(related);
-                        })
-                        .catch(() => setRelatedProducts([]));
-                }
+                // Fetch related products by brand/tags
+                fetchProducts({ limit: 8, featured: true })
+                    .then((catData) => {
+                        const related = (catData.products || [])
+                            .filter((r: any) => r.id !== p.id)
+                            .slice(0, 6)
+                            .map((r: any): Product => {
+                                const rPrimary = r.images?.find((i: any) => i.isPrimary);
+                                const rFirst = r.images?.[0];
+                                const rImg = rPrimary?.url || rFirst?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
+                                return {
+                                    id: r.id,
+                                    name: r.name,
+                                    category: r.categorySlug || r.category?.slug || "accessories",
+                                    price: r.price,
+                                    offerPrice: r.offerPrice || undefined,
+                                    image: rImg,
+                                    rating: r.averageRating || r.rating || 0,
+                                    description: r.description || "",
+                                    inStock: r.inStock !== false && (r.stockQuantity === undefined || r.stockQuantity > 0),
+                                    featured: r.isFeatured || false,
+                                    isTopOffer: false,
+                                };
+                            });
+                        setRelatedProducts(related);
+                    })
+                    .catch(() => setRelatedProducts([]));
+
             })
             .catch((err) => {
                 console.error("Failed to load product:", err);
