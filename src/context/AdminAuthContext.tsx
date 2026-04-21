@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 type AdminUser = {
@@ -53,18 +53,21 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Persist auth changes to localStorage (skip the initial mount)
-  const initialized = useState(true)[0]; // always true after eager init
+  // Use refs so callbacks always have the latest navigate/location
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
+  const locationRef = useRef(location);
+  locationRef.current = location;
+
+  // Persist auth changes to localStorage
   useEffect(() => {
-    if (!initialized) return;
     if (user && token) {
       window.localStorage.setItem(
         STORAGE_KEY,
         JSON.stringify({ user, token }),
       );
     }
-    // Only clear localStorage on explicit logout (handled in logout())
-  }, [user, token, initialized]);
+  }, [user, token]);
 
   // Real admin login via backend API
   const login = async (email: string, password: string) => {
@@ -94,9 +97,9 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: userData, token: data.token }));
 
       const redirect =
-        (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
+        (locationRef.current.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
         "/admin";
-      navigate(redirect, { replace: true });
+      navigateRef.current(redirect, { replace: true });
     } finally {
       setIsLoading(false);
     }
@@ -109,16 +112,16 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
 
     const redirect =
       opts?.redirectTo ||
-      (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
+      (locationRef.current.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
       "/admin";
-    navigate(redirect, { replace: true });
+    navigateRef.current(redirect, { replace: true });
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
     window.localStorage.removeItem(STORAGE_KEY);
-    navigate("/login", { replace: true });
+    navigateRef.current("/login", { replace: true });
   };
 
   const value: AdminAuthContextValue = {

@@ -520,7 +520,6 @@ export async function verifyStock(items: {
         throw new Error(err.error || "Failed to verify stock");
     }
     return res.json();
-    return res.json();
 }
 
 // ============================================================
