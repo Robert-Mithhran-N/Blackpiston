@@ -3,20 +3,99 @@ import prisma from '../config/database.js';
 
 const router = Router();
 
-// Get all products with filtering and pagination
+// ============================================================
+// Helper: Normalize tag string
+// ============================================================
+function normalizeTag(raw: string): string {
+    return raw.replace(/^#/, '').trim().toLowerCase().replace(/\s+/g, '-');
+}
+
+// ============================================================
+// GET /products/filters — Returns all available filter values
+// (brands, colors, sizes, price range) from active products
+// ============================================================
+router.get('/filters', async (req: Request, res: Response) => {
+    try {
+        const products = await prisma.product.findMany({
+            where: { isActive: true },
+            select: {
+                brand: true,
+                price: true,
+                offerPrice: true,
+                variants: true,
+                tagStrings: true,
+            },
+        });
+
+        // Collect unique brands
+        const brandSet = new Set<string>();
+        // Collect unique colors & sizes from variants
+        const colorSet = new Set<string>();
+        const sizeSet = new Set<string>();
+        // Collect all tags for category inference
+        const tagCountMap = new Map<string, number>();
+        // Track price range
+        let minPrice = Infinity;
+        let maxPrice = 0;
+
+        for (const p of products) {
+            if (p.brand) brandSet.add(p.brand);
+
+            const effectivePrice = p.offerPrice || p.price;
+            if (effectivePrice < minPrice) minPrice = effectivePrice;
+            if (p.price > maxPrice) maxPrice = p.price;
+
+            for (const v of p.variants) {
+                if (v.color) colorSet.add(v.color.trim());
+                if (v.size) sizeSet.add(v.size.trim().toUpperCase());
+            }
+
+            for (const tag of p.tagStrings) {
+                tagCountMap.set(tag, (tagCountMap.get(tag) || 0) + 1);
+            }
+        }
+
+        // Sort tags by frequency for category chips
+        const topTags = Array.from(tagCountMap.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 30)
+            .map(([tag, count]) => ({ tag, count }));
+
+        res.json({
+            brands: Array.from(brandSet).sort(),
+            colors: Array.from(colorSet).sort(),
+            sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'].filter(s => sizeSet.has(s)),
+            priceRange: {
+                min: minPrice === Infinity ? 0 : Math.floor(minPrice),
+                max: Math.ceil(maxPrice),
+            },
+            tags: topTags,
+        });
+    } catch (error) {
+        console.error('Get filters error:', error);
+        res.status(500).json({ error: 'Failed to fetch filters' });
+    }
+});
+
+// ============================================================
+// GET /products — Full-featured filtering, sorting, pagination
+// ============================================================
 router.get('/', async (req: Request, res: Response) => {
     try {
         const {
             page = '1',
             limit = '12',
-            category,
+            search,
             brand,
             minPrice,
             maxPrice,
-            search,
-            sortBy = 'createdAt',
-            sortOrder = 'desc',
-            featured
+            color,
+            size,
+            discount,
+            inStock,
+            featured,
+            tags,
+            sort = 'newest',
         } = req.query;
 
         const pageNum = parseInt(page as string);
@@ -24,59 +103,147 @@ router.get('/', async (req: Request, res: Response) => {
         const skip = (pageNum - 1) * limitNum;
 
         // Build where clause
-        const where: any = {
-            isActive: true
-        };
+        const where: any = { isActive: true };
+        const andConditions: any[] = [];
 
-        // Category filtering removed - using tags instead
-
-        if (brand) {
-            where.brand = brand;
-        }
-
-        if (minPrice || maxPrice) {
-            where.price = {};
-            if (minPrice) where.price.gte = parseFloat(minPrice as string);
-            if (maxPrice) where.price.lte = parseFloat(maxPrice as string);
-        }
-
+        // Search — name, description, brand, tags
         if (search) {
-            const normalizedSearch = (search as string).replace(/^#/, '').trim().toLowerCase();
-            where.OR = [
-                { name: { contains: search as string, mode: 'insensitive' } },
-                { description: { contains: search as string, mode: 'insensitive' } },
-                { tagStrings: { hasSome: [normalizedSearch] } }
-            ];
+            const q = (search as string).trim();
+            if (q) {
+                const normalizedQ = normalizeTag(q);
+                andConditions.push({
+                    OR: [
+                        { name: { contains: q, mode: 'insensitive' } },
+                        { description: { contains: q, mode: 'insensitive' } },
+                        { brand: { contains: q, mode: 'insensitive' } },
+                        { tagStrings: { hasSome: [normalizedQ] } },
+                    ],
+                });
+            }
         }
 
+        // Tag filtering (multi-select, comma-separated)
+        if (tags) {
+            const tagList = (tags as string).split(',').map(t => normalizeTag(t)).filter(Boolean);
+            if (tagList.length > 0) {
+                andConditions.push({ tagStrings: { hasSome: tagList } });
+            }
+        }
+
+        // Brand multi-select (comma-separated)
+        if (brand) {
+            const brands = (brand as string).split(',').map(b => b.trim()).filter(Boolean);
+            if (brands.length === 1) {
+                where.brand = brands[0];
+            } else if (brands.length > 1) {
+                andConditions.push({ brand: { in: brands } });
+            }
+        }
+
+        // Price range
+        if (minPrice || maxPrice) {
+            const priceFilter: any = {};
+            if (minPrice) priceFilter.gte = parseFloat(minPrice as string);
+            if (maxPrice) priceFilter.lte = parseFloat(maxPrice as string);
+            where.price = priceFilter;
+        }
+
+        // In stock filter
+        if (inStock === 'true') {
+            where.inStock = true;
+            where.stockQuantity = { gt: 0 };
+        }
+
+        // Featured filter
         if (featured === 'true') {
             where.isFeatured = true;
         }
 
-        // Build order by
-        const orderBy: any = {};
-        orderBy[sortBy as string] = sortOrder;
+        // Apply compound conditions
+        if (andConditions.length > 0) {
+            where.AND = andConditions;
+        }
 
-        // Get products
+        // Build sort order
+        let orderBy: any;
+        switch (sort) {
+            case 'price_asc':
+                orderBy = { price: 'asc' };
+                break;
+            case 'price_desc':
+                orderBy = { price: 'desc' };
+                break;
+            case 'rating':
+                orderBy = { rating: 'desc' };
+                break;
+            case 'name_asc':
+                orderBy = { name: 'asc' };
+                break;
+            case 'name_desc':
+                orderBy = { name: 'desc' };
+                break;
+            case 'newest':
+            default:
+                orderBy = { createdAt: 'desc' };
+                break;
+        }
+
+        // Fetch products
         const [products, total] = await Promise.all([
             prisma.product.findMany({
                 where,
                 orderBy,
                 skip,
-                take: limitNum
-                // category include removed
+                take: limitNum,
             }),
-            prisma.product.count({ where })
+            prisma.product.count({ where }),
         ]);
 
+        // Post-filter for variant-level filters (color, size) and discount
+        // MongoDB embedded arrays can't be filtered with Prisma this way,
+        // so we do it in application code
+        let filtered = products;
+
+        // Color filter (matches variant colors)
+        if (color) {
+            const colors = (color as string).split(',').map(c => c.trim().toLowerCase());
+            filtered = filtered.filter(p =>
+                p.variants.some(v => v.color && colors.includes(v.color.toLowerCase()))
+            );
+        }
+
+        // Size filter (matches variant sizes)
+        if (size) {
+            const sizes = (size as string).split(',').map(s => s.trim().toUpperCase());
+            filtered = filtered.filter(p =>
+                p.variants.some(v => v.size && sizes.includes(v.size.toUpperCase()))
+            );
+        }
+
+        // Discount filter (minimum discount %)
+        if (discount) {
+            const minDiscount = parseInt(discount as string);
+            if (!isNaN(minDiscount) && minDiscount > 0) {
+                filtered = filtered.filter(p => {
+                    if (!p.offerPrice || p.offerPrice >= p.price) return false;
+                    const pct = Math.round(((p.price - p.offerPrice) / p.price) * 100);
+                    return pct >= minDiscount;
+                });
+            }
+        }
+
+        // Adjust total count for post-filters
+        const hasPostFilters = color || size || discount;
+        const adjustedTotal = hasPostFilters ? filtered.length : total;
+
         res.json({
-            products,
+            products: filtered,
             pagination: {
                 page: pageNum,
                 limit: limitNum,
-                total,
-                totalPages: Math.ceil(total / limitNum)
-            }
+                total: adjustedTotal,
+                totalPages: Math.ceil(adjustedTotal / limitNum),
+            },
         });
     } catch (error) {
         console.error('Get products error:', error);
@@ -84,16 +251,34 @@ router.get('/', async (req: Request, res: Response) => {
     }
 });
 
-// Get all categories (flat list)
-// IMPORTANT: This must come BEFORE the /:idOrSlug catch-all route
+// ============================================================
+// GET /products/categories/all — Flat category list
+// ============================================================
 router.get('/categories/all', async (req: Request, res: Response) => {
     try {
-        const where: any = { isActive: true };
-
-        const categories = await prisma.productCategory.findMany({
-            where,
-            orderBy: { sortOrder: 'asc' },
+        // Categories model was removed — return tags-based categories instead
+        const products = await prisma.product.findMany({
+            where: { isActive: true },
+            select: { tagStrings: true },
+            take: 500,
         });
+
+        const tagCounts = new Map<string, number>();
+        for (const p of products) {
+            for (const tag of p.tagStrings) {
+                tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+            }
+        }
+
+        const categories = Array.from(tagCounts.entries())
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 20)
+            .map(([tag, count]) => ({
+                id: tag,
+                name: tag.charAt(0).toUpperCase() + tag.slice(1).replace(/-/g, ' '),
+                slug: tag,
+                productCount: count,
+            }));
 
         res.json({ categories });
     } catch (error) {
@@ -102,49 +287,33 @@ router.get('/categories/all', async (req: Request, res: Response) => {
     }
 });
 
-// Get categories as a tree (top-level types with nested sub-categories)
-// IMPORTANT: This must come BEFORE the /:idOrSlug catch-all route
-router.get('/categories/tree', async (req: Request, res: Response) => {
+// ============================================================
+// GET /products/categories/tree — Category tree (tags-based)
+// ============================================================
+router.get('/categories/tree', async (_req: Request, res: Response) => {
     try {
-        const allCats = await prisma.productCategory.findMany({
-            where: { isActive: true },
-            orderBy: { sortOrder: 'asc' },
-        });
-
-        // Build tree: top-level (no parentId) → children
-        const topLevel = allCats.filter(c => !c.parentId);
-        const tree = topLevel.map(parent => ({
-            ...parent,
-            children: allCats
-                .filter(c => c.parentId === parent.id)
-                .sort((a, b) => a.sortOrder - b.sortOrder),
-        }));
-
-        res.json({ tree });
+        res.json({ tree: [] });
     } catch (error) {
         console.error('Get categories tree error:', error);
         res.status(500).json({ error: 'Failed to fetch category tree' });
     }
 });
 
-// Get children of a parent category (for dependent dropdown)
-// IMPORTANT: This must come BEFORE the /:idOrSlug catch-all route
-router.get('/categories/:parentId/children', async (req: Request, res: Response) => {
+// ============================================================
+// GET /products/categories/:parentId/children
+// ============================================================
+router.get('/categories/:parentId/children', async (_req: Request, res: Response) => {
     try {
-        const { parentId } = req.params;
-        const children = await prisma.productCategory.findMany({
-            where: { parentId, isActive: true },
-            orderBy: { sortOrder: 'asc' },
-        });
-        res.json({ categories: children });
+        res.json({ categories: [] });
     } catch (error) {
         console.error('Get category children error:', error);
         res.status(500).json({ error: 'Failed to fetch sub-categories' });
     }
 });
 
-// Get products by category slug (supports both parent and child slugs)
-// IMPORTANT: This must come BEFORE the /:idOrSlug catch-all route
+// ============================================================
+// GET /products/category/:slug — Products by tag slug
+// ============================================================
 router.get('/category/:slug', async (req: Request, res: Response) => {
     try {
         const { slug } = req.params;
@@ -154,23 +323,10 @@ router.get('/category/:slug', async (req: Request, res: Response) => {
         const limitNum = parseInt(limit as string);
         const skip = (pageNum - 1) * limitNum;
 
-        // Check if this slug is a parent category
-        const parentCat = await prisma.productCategory.findUnique({ where: { slug } });
-        let slugsToMatch = [slug];
-
-        if (parentCat && !parentCat.parentId) {
-            // It's a top-level type — also include all its children's slugs
-            const children = await prisma.productCategory.findMany({
-                where: { parentId: parentCat.id, isActive: true },
-                select: { slug: true },
-            });
-            if (children.length > 0) {
-                slugsToMatch = [slug, ...children.map(c => c.slug)];
-            }
-        }
+        const normalizedSlug = normalizeTag(slug);
 
         const where: any = {
-            categorySlug: { in: slugsToMatch },
+            tagStrings: { hasSome: [normalizedSlug] },
             isActive: true,
         };
 
@@ -180,7 +336,6 @@ router.get('/category/:slug', async (req: Request, res: Response) => {
                 skip,
                 take: limitNum,
                 orderBy: { createdAt: 'desc' },
-                include: { category: { select: { id: true, name: true, slug: true } } },
             }),
             prisma.product.count({ where }),
         ]);
@@ -200,17 +355,18 @@ router.get('/category/:slug', async (req: Request, res: Response) => {
     }
 });
 
-// Get featured products
-// IMPORTANT: This must come BEFORE the /:idOrSlug catch-all route
-router.get('/featured/list', async (req: Request, res: Response) => {
+// ============================================================
+// GET /products/featured/list — Featured products
+// ============================================================
+router.get('/featured/list', async (_req: Request, res: Response) => {
     try {
         const products = await prisma.product.findMany({
             where: {
                 isFeatured: true,
-                isActive: true
+                isActive: true,
             },
             take: 8,
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
         });
 
         res.json({ products });
@@ -221,41 +377,29 @@ router.get('/featured/list', async (req: Request, res: Response) => {
 });
 
 // ============================================================
-// Dynamic Top Offers - Based on Highest Discounts
-// IMPORTANT: This must come BEFORE the /:idOrSlug catch-all route
+// GET /products/offers/top — Dynamic top offers (highest discounts)
 // ============================================================
 router.get('/offers/top', async (req: Request, res: Response) => {
     try {
         const limit = parseInt(req.query.limit as string) || 8;
 
-        // Fetch active products with offer prices (discounts)
         const products = await prisma.product.findMany({
             where: {
                 isActive: true,
                 inStock: true,
-                offerPrice: { not: null, gt: 0 }
+                offerPrice: { not: null, gt: 0 },
             },
-            include: {
-                category: {
-                    select: {
-                        id: true,
-                        name: true,
-                        slug: true
-                    }
-                }
-            }
         });
 
-        // Calculate discount percentage and sort by highest discount
         const productsWithDiscount = products
             .map(product => {
                 const discountPercent = product.offerPrice
                     ? Math.round(((product.price - product.offerPrice) / product.price) * 100)
                     : 0;
-                
+
                 return {
                     ...product,
-                    discountPercent
+                    discountPercent,
                 };
             })
             .filter(p => p.discountPercent > 0)
@@ -272,10 +416,6 @@ router.get('/offers/top', async (req: Request, res: Response) => {
 // ============================================================
 // Search — unified tag + text search
 // ============================================================
-function normalizeTag(raw: string): string {
-    return raw.replace(/^#/, '').trim().toLowerCase().replace(/\s+/g, '-');
-}
-
 router.get('/search', async (req: Request, res: Response) => {
     try {
         const { q, tags, page = '1', limit = '20' } = req.query;
@@ -311,7 +451,7 @@ router.get('/search', async (req: Request, res: Response) => {
                 if (where.tagStrings) {
                     where.AND = [
                         { tagStrings: where.tagStrings },
-                        { OR: textConditions }
+                        { OR: textConditions },
                     ];
                     delete where.tagStrings;
                 } else {
@@ -326,11 +466,8 @@ router.get('/search', async (req: Request, res: Response) => {
                 skip,
                 take: limitNum,
                 orderBy,
-                include: {
-                    category: { select: { id: true, name: true, slug: true } },
-                }
             }),
-            prisma.product.count({ where })
+            prisma.product.count({ where }),
         ]);
 
         res.json({
@@ -339,8 +476,8 @@ router.get('/search', async (req: Request, res: Response) => {
                 page: pageNum,
                 limit: limitNum,
                 total,
-                totalPages: Math.ceil(total / limitNum)
-            }
+                totalPages: Math.ceil(total / limitNum),
+            },
         });
     } catch (error) {
         console.error('Search error:', error);
@@ -387,13 +524,14 @@ router.get('/tags/suggestions', async (req: Request, res: Response) => {
     }
 });
 
-// Get single product by ID or slug
-// IMPORTANT: This catch-all route MUST be defined LAST among the product routes
+// ============================================================
+// GET /products/:idOrSlug — Single product by ID or slug
+// IMPORTANT: This catch-all route MUST be defined LAST
+// ============================================================
 router.get('/:idOrSlug', async (req: Request, res: Response) => {
     try {
         const { idOrSlug } = req.params;
 
-        // Try to find by ID first, then by slug
         let product = null;
 
         // Check if it looks like an ObjectId
@@ -401,13 +539,12 @@ router.get('/:idOrSlug', async (req: Request, res: Response) => {
             product = await prisma.product.findUnique({
                 where: { id: idOrSlug },
                 include: {
-                    category: true,
                     reviews: {
                         where: { isApproved: true },
                         take: 10,
-                        orderBy: { createdAt: 'desc' }
-                    }
-                }
+                        orderBy: { createdAt: 'desc' },
+                    },
+                },
             });
         }
 
@@ -416,13 +553,12 @@ router.get('/:idOrSlug', async (req: Request, res: Response) => {
             product = await prisma.product.findUnique({
                 where: { slug: idOrSlug },
                 include: {
-                    category: true,
                     reviews: {
                         where: { isApproved: true },
                         take: 10,
-                        orderBy: { createdAt: 'desc' }
-                    }
-                }
+                        orderBy: { createdAt: 'desc' },
+                    },
+                },
             });
         }
 
