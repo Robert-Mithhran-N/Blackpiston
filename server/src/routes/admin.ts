@@ -5,6 +5,7 @@ import { randomUUID } from 'crypto';
 import prisma from '../config/database.js';
 import { deleteFromCloudinary } from '../config/cloudinary.js';
 import { emitStockUpdate } from '../socketManager.js';
+import { Parser } from 'json2csv';
 
 const router = Router();
 
@@ -497,18 +498,45 @@ router.get('/payments', authenticateAdmin, async (req: Request, res: Response) =
         if (status) where.paymentStatus = status;
         if (method) where.paymentMethod = method;
 
-        const [payments, total] = await Promise.all([
+        const [rawPayments, total] = await Promise.all([
             prisma.payment.findMany({
                 where,
                 skip,
                 take: limitNum,
                 orderBy: { createdAt: 'desc' },
+                include: {
+                    user: { select: { name: true, phone: true } },
+                    order: { select: { orderNumber: true, orderStatus: true, orderedAt: true, createdAt: true, products: true, shippingAddress: true } }
+                }
             }),
             prisma.payment.count({ where })
         ]);
 
+        const formattedPayments = rawPayments.map(p => {
+            const addr = p.order?.shippingAddress as any;
+            const addressString = addr ? `${addr.city || ''}, ${addr.state || ''}`.replace(/^, |^,|, $|, $/g, '') || 'N/A' : 'N/A';
+            return {
+                id: p.paymentId || p.id,
+                realId: p.id,
+                userId: p.userId,
+                username: p.user?.name || 'Unknown',
+                contact: p.user?.phone || 'N/A',
+                address: addressString,
+                orderId: p.order?.orderNumber || p.orderId,
+                realOrderId: p.orderId,
+                itemsOrdered: p.order?.products?.length ? `${p.order.products.length} items` : 'N/A',
+                orderDate: p.order?.orderedAt || p.order?.createdAt || p.createdAt,
+                amountDue: p.amountDue,
+                amountReceived: p.amountReceived,
+                amountReceivedDate: p.receivedDate,
+                paymentMethod: p.paymentMethod,
+                paymentStatus: p.paymentStatus,
+                orderStatus: p.order?.orderStatus || 'N/A'
+            };
+        });
+
         res.json({
-            payments,
+            payments: formattedPayments,
             pagination: { page: pageNum, limit: limitNum, total, totalPages: Math.ceil(total / limitNum) }
         });
     } catch (error) {
@@ -747,6 +775,89 @@ router.get('/users', authenticateAdmin, async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Get users error:', error);
         res.status(500).json({ error: 'Failed to fetch users' });
+    }
+});
+
+// Export all users
+router.get('/users/export', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const users = await prisma.user.findMany({
+            orderBy: { createdAt: 'desc' },
+            select: {
+                name: true,
+                email: true,
+                phone: true,
+                role: true,
+                isActive: true,
+                createdAt: true,
+                _count: { select: { orders: true } },
+            }
+        });
+
+        // Add total orders and spending if needed. Currently counting orders.
+        // For total spending, we'd need to join orders, but we'll stick to _count.orders for now.
+        const csvData = users.map(user => ({
+            Name: user.name,
+            Email: user.email,
+            Phone: user.phone || 'N/A',
+            Role: user.role,
+            Status: user.isActive ? 'Active' : 'Inactive',
+            'Joined Date': user.createdAt.toISOString().split('T')[0],
+            'Total Orders': user._count.orders
+        }));
+
+        const parser = new Parser();
+        const csv = parser.parse(csvData);
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment('users_export.csv');
+        return res.send(csv);
+    } catch (error) {
+        console.error('Export users error:', error);
+        res.status(500).json({ error: 'Failed to export users' });
+    }
+});
+
+// Export single user
+router.get('/users/:id/export', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const user = await prisma.user.findUnique({
+            where: { id },
+            select: {
+                name: true,
+                email: true,
+                phone: true,
+                role: true,
+                isActive: true,
+                createdAt: true,
+                _count: { select: { orders: true } },
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const csvData = [{
+            Name: user.name,
+            Email: user.email,
+            Phone: user.phone || 'N/A',
+            Role: user.role,
+            Status: user.isActive ? 'Active' : 'Inactive',
+            'Joined Date': user.createdAt.toISOString().split('T')[0],
+            'Total Orders': user._count.orders
+        }];
+
+        const parser = new Parser();
+        const csv = parser.parse(csvData);
+
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`user_${id}_export.csv`);
+        return res.send(csv);
+    } catch (error) {
+        console.error('Export user error:', error);
+        res.status(500).json({ error: 'Failed to export user' });
     }
 });
 

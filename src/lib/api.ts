@@ -269,6 +269,28 @@ export async function fetchAdminPayments(params?: {
     return res.json();
 }
 
+export async function updateOrderPaymentStatus(orderId: string, status: string) {
+    const res = await fetch(`${API_BASE}/orders/admin/${orderId}/payment`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ status }),
+    });
+    if (!res.ok) throw new Error("Failed to update payment status");
+    return res.json();
+}
+
+export async function markCODReceived(orderId: string) {
+    const res = await fetch(`${API_BASE}/orders/admin/${orderId}/cod-received`, {
+        method: "PATCH",
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Failed to mark COD as received");
+    }
+    return res.json();
+}
+
 export async function fetchAdminRequests(params?: {
     page?: number;
     limit?: number;
@@ -330,6 +352,22 @@ export async function fetchAdminUsers(params?: {
     );
     if (!res.ok) throw new Error("Failed to fetch users");
     return res.json();
+}
+
+export async function exportAdminUsersCSV() {
+    const res = await fetch(`${API_BASE}/admin/users/export`, {
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to export users");
+    return res.blob();
+}
+
+export async function exportAdminUserCSV(userId: string) {
+    const res = await fetch(`${API_BASE}/admin/users/${userId}/export`, {
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to export user");
+    return res.blob();
 }
 
 // ============================================================

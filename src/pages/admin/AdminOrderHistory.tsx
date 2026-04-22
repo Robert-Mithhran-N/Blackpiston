@@ -59,6 +59,7 @@ const getPaymentStatusColor = (status: PaymentStatus) => {
 
 // Get product summary from order items
 const getProductSummary = (order: Order): string => {
+    if (!order.items) return "No items";
     return order.items.map(item => `${item.productName.split(' ').slice(0, 2).join(' ')} ×${item.quantity}`).join(', ');
 };
 

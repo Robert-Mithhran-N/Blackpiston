@@ -26,6 +26,7 @@ export interface Product {
     images?: string[];
     rating: number;
     description?: string;
+    shortDescription?: string;
     inStock: boolean;
     featured?: boolean;
     isTopOffer?: boolean;

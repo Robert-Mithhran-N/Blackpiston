@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -59,7 +60,7 @@ import {
     ClipboardList,
 } from "lucide-react";
 import { toast } from "sonner";
-import { fetchAdminOrders, updateOrderStatus as apiUpdateOrderStatus } from "@/lib/api";
+import { fetchAdminOrders, updateOrderStatus as apiUpdateOrderStatus, markCODReceived } from "@/lib/api";
 import { Order, OrderStatus, PaymentStatus } from "@/types/admin";
 import jsPDF from "jspdf";
 
@@ -400,8 +401,7 @@ function OrderTimeline({ order }: { order: Order }) {
 // ============================================================
 
 const AdminOrders = () => {
-    const [isLoading, setIsLoading] = useState(true);
-    const [orders, setOrders] = useState<Order[]>([]);
+    const queryClient = useQueryClient();
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [searchInput, setSearchInput] = useState("");
@@ -413,24 +413,15 @@ const AdminOrders = () => {
         return () => clearTimeout(timer);
     }, [searchInput]);
 
-    // Load orders
-    const loadOrders = useCallback(() => {
-        setIsLoading(true);
-        fetchAdminOrders()
-            .then((data) => {
-                const all = (data.orders || []).map(normalizeOrder);
-                const activeOrders = all.filter(
-                    (o: Order) => !["DELIVERED", "COMPLETED", "CANCELLED", "RETURNED"].includes(o.orderStatus)
-                );
-                setOrders(activeOrders);
-            })
-            .catch((err) => console.error("Failed to load orders:", err))
-            .finally(() => setIsLoading(false));
-    }, []);
+    // Load orders with React Query
+    const { data: rawOrders, isLoading } = useQuery({
+        queryKey: ["orders"],
+        queryFn: fetchAdminOrders,
+    });
 
-    useEffect(() => {
-        loadOrders();
-    }, [loadOrders]);
+    const orders = (rawOrders?.orders || [])
+        .map(normalizeOrder)
+        .filter((o: Order) => !["DELIVERED", "COMPLETED", "CANCELLED", "RETURNED"].includes(o.orderStatus));
 
     // Filtered orders
     const filteredOrders = orders.filter(o => {
@@ -448,30 +439,40 @@ const AdminOrders = () => {
     const processingCount = orders.filter((o) => ["PROCESSING", "PACKED"].includes(o.orderStatus)).length;
     const shippedCount = orders.filter((o) => ["SHIPPED", "OUT_FOR_DELIVERY"].includes(o.orderStatus)).length;
 
-    // Update order status
-    const handleUpdateStatus = (orderId: string, newStatus: OrderStatus) => {
-        apiUpdateOrderStatus(orderId, { status: newStatus })
-            .then(() => {
-                // Remove from active list if it's a terminal status
-                if (["DELIVERED", "COMPLETED", "CANCELLED", "RETURNED"].includes(newStatus)) {
-                    setOrders((prev) => prev.filter(o => o.id !== orderId));
-                    if (selectedOrder?.id === orderId) {
-                        setIsDetailOpen(false);
-                    }
+    // Update order status mutation
+    const updateStatusMutation = useMutation({
+        mutationFn: ({ orderId, status }: { orderId: string; status: OrderStatus }) =>
+            apiUpdateOrderStatus(orderId, { status }),
+        onSuccess: (data, variables) => {
+            queryClient.invalidateQueries({ queryKey: ["orders"] });
+            if (selectedOrder?.id === variables.orderId) {
+                if (["DELIVERED", "COMPLETED", "CANCELLED", "RETURNED"].includes(variables.status)) {
+                    setIsDetailOpen(false);
                 } else {
-                    setOrders((prev) =>
-                        prev.map((o) =>
-                            o.id === orderId ? { ...o, orderStatus: newStatus, updatedAt: new Date().toISOString() } : o
-                        )
-                    );
-                    if (selectedOrder?.id === orderId) {
-                        setSelectedOrder((prev) => (prev ? { ...prev, orderStatus: newStatus } : null));
-                    }
+                    setSelectedOrder((prev) => (prev ? { ...prev, orderStatus: variables.status } : null));
                 }
-                toast.success(`Order status updated to ${newStatus.replace(/_/g, " ")}`);
-            })
-            .catch(() => toast.error("Failed to update order status"));
+            }
+            toast.success(`Order status updated to ${variables.status.replace(/_/g, " ")}`);
+        },
+        onError: () => toast.error("Failed to update order status"),
+    });
+
+    const handleUpdateStatus = (orderId: string, newStatus: OrderStatus) => {
+        updateStatusMutation.mutate({ orderId, status: newStatus });
     };
+
+    // Mark COD Received mutation
+    const markCODMutation = useMutation({
+        mutationFn: (orderId: string) => markCODReceived(orderId),
+        onSuccess: (data, orderId) => {
+            queryClient.invalidateQueries({ queryKey: ["orders"] });
+            if (selectedOrder?.id === orderId) {
+                setSelectedOrder((prev) => (prev ? { ...prev, paymentStatus: "PAID" } : null));
+            }
+            toast.success("COD marked as received");
+        },
+        onError: (err: any) => toast.error(err.message || "Failed to mark COD as received"),
+    });
 
     return (
         <AdminLayout>
@@ -654,6 +655,14 @@ const AdminOrders = () => {
                                                                 Download Invoice
                                                             </DropdownMenuItem>
                                                             <DropdownMenuSeparator />
+                                                            {order.paymentMethod === "COD" && order.paymentStatus !== "PAID" && (
+                                                                <DropdownMenuItem
+                                                                    onClick={() => markCODMutation.mutate(order.id)}
+                                                                >
+                                                                    <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                                                                    Mark COD Received
+                                                                </DropdownMenuItem>
+                                                            )}
                                                             <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, "CONFIRMED")}>
                                                                 <CheckCircle className="mr-2 h-4 w-4" />
                                                                 Confirm
@@ -735,9 +744,21 @@ const AdminOrders = () => {
                                                 </div>
                                                 <div className="flex justify-between items-center">
                                                     <span className="text-xs text-muted-foreground">Status</span>
-                                                    <Badge className={getPaymentStatusColor(selectedOrder.paymentStatus)}>
-                                                        {selectedOrder.paymentStatus}
-                                                    </Badge>
+                                                    <div className="flex items-center gap-2">
+                                                        <Badge className={getPaymentStatusColor(selectedOrder.paymentStatus)}>
+                                                            {selectedOrder.paymentStatus}
+                                                        </Badge>
+                                                        {selectedOrder.paymentMethod === "COD" && selectedOrder.paymentStatus !== "PAID" && (
+                                                            <Button
+                                                                size="sm"
+                                                                className="h-6 text-[10px] px-2 bg-green-600 hover:bg-green-700"
+                                                                onClick={() => markCODMutation.mutate(selectedOrder.id)}
+                                                                disabled={markCODMutation.isPending}
+                                                            >
+                                                                Mark Received
+                                                            </Button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
