@@ -86,13 +86,13 @@ const ProductCard = ({ product, variant = "default", onAddToCart }: ProductCardP
             `}
                     >
                         {/* Product Description on Hover */}
-                        {product.description && (
+                        {(product.shortDescription || product.description) && (
                             <p
                                 className={`text-white/90 text-sm text-center mb-4 line-clamp-2 transition-all duration-500 delay-100
                   ${isHovered ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"}
                 `}
                             >
-                                {product.description}
+                                {product.shortDescription || product.description}
                             </p>
                         )}
 

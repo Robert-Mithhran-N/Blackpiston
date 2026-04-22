@@ -12,8 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Users, Search, Loader2 } from "lucide-react";
-import { fetchAdminUsers } from "@/lib/api";
+import { Users, Search, Loader2, Download } from "lucide-react";
+import { fetchAdminUsers, exportAdminUsersCSV, exportAdminUserCSV } from "@/lib/api";
 
 interface AdminUser {
   id: string;
@@ -58,16 +58,53 @@ const AdminUsers = () => {
     loadUsers();
   };
 
+  const handleExportAll = async () => {
+    try {
+      const blob = await exportAdminUsersCSV();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "users_export.csv";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("Failed to export users:", err);
+      // could show a toast here
+    }
+  };
+
+  const handleExportUser = async (userId: string) => {
+    try {
+      const blob = await exportAdminUserCSV(userId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `user_${userId}_export.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("Failed to export user:", err);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Users</h1>
             <p className="text-muted-foreground">
               Manage registered riders and access levels.
             </p>
           </div>
+          <Button onClick={handleExportAll} variant="outline" className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Export All Users
+          </Button>
         </div>
 
         {/* Search */}
@@ -119,6 +156,7 @@ const AdminUsers = () => {
                     <TableHead>Orders</TableHead>
                     <TableHead>Provider</TableHead>
                     <TableHead>Joined</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -156,6 +194,16 @@ const AdminUsers = () => {
                       </TableCell>
                       <TableCell>
                         {new Date(user.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleExportUser(user.id)}
+                          title="Download User Data"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}

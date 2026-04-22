@@ -22,6 +22,7 @@ function mapProduct(p: any): Product {
         image: imageUrl,
         rating: p.averageRating || p.rating || 0,
         description: p.description || "",
+        shortDescription: p.shortDescription || "",
         inStock: p.inStock !== false && (p.stockQuantity === undefined || p.stockQuantity > 0),
         featured: p.isFeatured || false,
         isTopOffer: false,

@@ -452,6 +452,117 @@ router.patch('/admin/:orderId/status', authenticateToken, async (req: Request, r
     }
 });
 
+// Admin: Update payment status
+// IMPORTANT: This must come BEFORE the /:orderId catch-all route
+router.patch('/admin/:orderId/payment', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const userRole = (req as any).userRole;
+
+        if (!['ADMIN', 'STAFF'].includes(userRole)) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const { orderId } = req.params;
+        const { status } = req.body;
+
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            include: { payment: true }
+        });
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        const updateData: any = { paymentStatus: status };
+        if (status === 'PAID') {
+            updateData.isPaid = true;
+            updateData.paidAt = new Date();
+        } else if (status === 'FAILED' || status === 'PENDING') {
+            updateData.isPaid = false;
+        }
+
+        const updatedOrder = await prisma.order.update({
+            where: { id: orderId },
+            data: updateData
+        });
+
+        if (order.payment) {
+            await prisma.payment.update({
+                where: { id: order.payment.id },
+                data: { paymentStatus: status }
+            });
+        }
+
+        res.json({
+            message: 'Payment status updated',
+            order: updatedOrder
+        });
+    } catch (error) {
+        console.error('Update payment status error:', error);
+        res.status(500).json({ error: 'Failed to update payment status' });
+    }
+});
+
+// Admin: Mark COD as received
+// IMPORTANT: This must come BEFORE the /:orderId catch-all route
+router.patch('/admin/:orderId/cod-received', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const userRole = (req as any).userRole;
+
+        if (!['ADMIN', 'STAFF'].includes(userRole)) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const { orderId } = req.params;
+
+        const order = await prisma.order.findUnique({
+            where: { id: orderId },
+            include: { payment: true }
+        });
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        if (order.paymentMethod !== 'COD') {
+            return res.status(400).json({ error: 'Not a COD order' });
+        }
+
+        if (order.paymentStatus === 'PAID') {
+            return res.status(400).json({ error: 'Order already paid' });
+        }
+
+        const updatedOrder = await prisma.order.update({
+            where: { id: orderId },
+            data: { 
+                paymentStatus: 'PAID',
+                isPaid: true,
+                paidAt: new Date()
+            }
+        });
+
+        if (order.payment) {
+            await prisma.payment.update({
+                where: { id: order.payment.id },
+                data: {
+                    paymentStatus: 'PAID',
+                    amountReceived: order.payment.amountDue,
+                    receivedDate: new Date()
+                }
+            });
+        }
+
+        res.json({
+            message: 'COD marked as received',
+            order: updatedOrder
+        });
+    } catch (error) {
+        console.error('Mark COD received error:', error);
+        res.status(500).json({ error: 'Failed to mark COD as received' });
+    }
+});
+
 // Cancel order — restore stock and emit updates
 router.post('/:orderId/cancel', authenticateToken, async (req: Request, res: Response) => {
     try {

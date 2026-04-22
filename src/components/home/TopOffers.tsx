@@ -26,6 +26,7 @@ const TopOffers = () => {
                     image: p.images?.[0]?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop",
                     rating: p.rating || 0,
                     description: p.description || "",
+                    shortDescription: p.shortDescription || "",
                     inStock: p.inStock !== false,
                     featured: p.isFeatured || false,
                     isTopOffer: true,
