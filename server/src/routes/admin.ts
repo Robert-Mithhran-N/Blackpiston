@@ -142,13 +142,7 @@ const productImageSchema = z.object({
     isPrimary: z.boolean().optional().default(false),
 });
 
-const createCategorySchema = z.object({
-    name: z.string().min(1, 'Category name is required').trim(),
-    slug: z.string().min(1, 'Slug is required').trim(),
-    description: z.string().optional().nullable(),
-    image: z.string().optional().nullable(),
-    icon: z.string().optional().nullable(),
-});
+// createCategorySchema removed — categories feature removed
 
 const createProductSchema = z.object({
     name: z.string().min(1, 'Product name is required').trim(),
@@ -194,89 +188,9 @@ const createProductSchema = z.object({
 });
 
 // ============================================================
-// Categories Management
+// Categories Management — REMOVED (using tags instead)
+// Stub routes return informative messages
 // ============================================================
-
-// Create Category
-router.post('/categories', authenticateAdmin, async (req: Request, res: Response) => {
-    try {
-        const validatedData = createCategorySchema.parse(req.body);
-
-        const existingCategory = await prisma.productCategory.findUnique({
-            where: { slug: validatedData.slug }
-        });
-
-        if (existingCategory) {
-            return res.status(400).json({ error: 'A category with this slug already exists' });
-        }
-
-        const category = await prisma.productCategory.create({
-            data: validatedData
-        });
-
-        res.status(201).json({ message: 'Category created successfully', category });
-    } catch (error) {
-        if (error instanceof z.ZodError) {
-            return res.status(400).json({ error: 'Validation failed', details: error.errors });
-        }
-        res.status(500).json({ error: 'Failed to create category' });
-    }
-});
-
-// Update Category
-router.put('/categories/:id', authenticateAdmin, async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-        const validatedData = createCategorySchema.partial().parse(req.body);
-
-        if (validatedData.slug) {
-            const existingCategory = await prisma.productCategory.findUnique({
-                where: { slug: validatedData.slug }
-            });
-            if (existingCategory && existingCategory.id !== id) {
-                return res.status(400).json({ error: 'A category with this slug already exists' });
-            }
-        }
-
-        const category = await prisma.productCategory.update({
-            where: { id },
-            data: validatedData
-        });
-
-        res.json({ message: 'Category updated successfully', category });
-    } catch (error) {
-        if (error instanceof z.ZodError) {
-            return res.status(400).json({ error: 'Validation failed', details: error.errors });
-        }
-        res.status(500).json({ error: 'Failed to update category' });
-    }
-});
-
-// Delete Category
-router.delete('/categories/:id', authenticateAdmin, async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-
-        // Check if category has products
-        const productsCount = await prisma.product.count({
-            where: { categoryId: id }
-        });
-
-        if (productsCount > 0) {
-            return res.status(400).json({ 
-                error: `Cannot delete category: contains ${productsCount} products. Reassign or delete the products first.` 
-            });
-        }
-
-        await prisma.productCategory.delete({
-            where: { id }
-        });
-
-        res.json({ message: 'Category deleted successfully' });
-    } catch (error) {
-        res.status(500).json({ error: 'Failed to delete category' });
-    }
-});
 
 
 // ============================================================
@@ -566,55 +480,8 @@ router.get('/products', authenticateAdmin, async (req: Request, res: Response) =
 });
 
 // ============================================================
-// Categories CRUD
+// Categories CRUD — REMOVED (using tags for product filtering)
 // ============================================================
-router.post('/categories', authenticateAdmin, async (req: Request, res: Response) => {
-    try {
-        const { name, slug, description, image, icon, sortOrder } = req.body;
-        const category = await prisma.productCategory.create({
-            data: {
-                name,
-                slug: slug || name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-                description,
-                image,
-                icon,
-                sortOrder: sortOrder || 0,
-                isActive: true,
-            }
-        });
-        res.status(201).json({ message: 'Category created', category });
-    } catch (error) {
-        console.error('Create category error:', error);
-        res.status(500).json({ error: 'Failed to create category' });
-    }
-});
-
-router.put('/categories/:id', authenticateAdmin, async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-        const updateData = req.body;
-        delete updateData.id;
-        const category = await prisma.productCategory.update({
-            where: { id },
-            data: updateData,
-        });
-        res.json({ message: 'Category updated', category });
-    } catch (error) {
-        console.error('Update category error:', error);
-        res.status(500).json({ error: 'Failed to update category' });
-    }
-});
-
-router.delete('/categories/:id', authenticateAdmin, async (req: Request, res: Response) => {
-    try {
-        const { id } = req.params;
-        await prisma.productCategory.delete({ where: { id } });
-        res.json({ message: 'Category deleted' });
-    } catch (error) {
-        console.error('Delete category error:', error);
-        res.status(500).json({ error: 'Failed to delete category' });
-    }
-});
 
 // ============================================================
 // Payments
