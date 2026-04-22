@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 
-const STORAGE_KEY = "bp_splash_seen";
+const STORAGE_KEY = "introSeen";
 const FALLBACK_TIMEOUT = 5000; // Max time before auto-dismiss (ms)
 
 interface SplashScreenProps {
@@ -18,7 +18,7 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
 
     // Mark as seen
     try {
-      localStorage.setItem(STORAGE_KEY, "true");
+      sessionStorage.setItem(STORAGE_KEY, "true");
     } catch {}
 
     // Wait for fade animation to complete
@@ -104,9 +104,9 @@ const SplashScreen = ({ onComplete }: SplashScreenProps) => {
  */
 export function shouldShowSplash(): boolean {
   try {
-    return !localStorage.getItem(STORAGE_KEY);
+    return !sessionStorage.getItem(STORAGE_KEY);
   } catch {
-    return false; // If localStorage is blocked, skip splash
+    return false; // If sessionStorage is blocked, skip splash
   }
 }
 
@@ -115,7 +115,7 @@ export function shouldShowSplash(): boolean {
  */
 export function resetSplash(): void {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    sessionStorage.removeItem(STORAGE_KEY);
   } catch {}
 }
 
