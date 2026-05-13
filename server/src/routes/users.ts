@@ -119,11 +119,15 @@ router.post('/addresses', async (req: Request, res: Response) => {
         const newAddress = {
             id: new ObjectId().toString(),
             label: addressData.label || 'Home',
-            street: addressData.street || '',
+            fullName: addressData.fullName || '',
+            phone: addressData.phone || '',
+            addressLine1: addressData.addressLine1 || '',
+            addressLine2: addressData.addressLine2 || '',
             city: addressData.city || '',
             state: addressData.state || '',
             pincode: addressData.pincode || '',
             country: addressData.country || 'India',
+            landmark: addressData.landmark || '',
             isDefault: addressData.isDefault || false
         };
 

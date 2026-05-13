@@ -54,19 +54,27 @@ const ProfileAddresses = () => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const label = formData.get("label") as string;
-    const street = formData.get("street") as string;
+    const fullName = formData.get("fullName") as string;
+    const phone = formData.get("phone") as string;
+    const addressLine1 = formData.get("addressLine1") as string;
+    const addressLine2 = formData.get("addressLine2") as string;
+    const landmark = formData.get("landmark") as string;
     const city = formData.get("city") as string;
     const state = formData.get("state") as string;
     const pincode = formData.get("pincode") as string;
 
-    if (!label || !street || !city || !state || !pincode) {
+    if (!fullName || !phone || !addressLine1 || !city || !state || !pincode) {
       toast.error("Please fill all required fields");
       return;
     }
 
     addMutation.mutate({
       label,
-      street,
+      fullName,
+      phone,
+      addressLine1,
+      addressLine2,
+      landmark,
       city,
       state,
       pincode,
@@ -102,11 +110,29 @@ const ProfileAddresses = () => {
             <form onSubmit={handleAddSubmit} className="space-y-4 py-4">
               <div className="space-y-2">
                 <Label htmlFor="label">Address Label (Home, Office, etc.)</Label>
-                <Input id="label" name="label" required placeholder="e.g., Home" />
+                <Input id="label" name="label" placeholder="e.g., Home" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input id="fullName" name="fullName" required placeholder="John Doe" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input id="phone" name="phone" required placeholder="+91 9876543210" />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="street">Street Address</Label>
-                <Input id="street" name="street" required placeholder="123 Main St, Apt 4B" />
+                <Label htmlFor="addressLine1">Address Line 1</Label>
+                <Input id="addressLine1" name="addressLine1" required placeholder="Flat / House No / Building" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="addressLine2">Address Line 2 (Optional)</Label>
+                <Input id="addressLine2" name="addressLine2" placeholder="Street / Area / Locality" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="landmark">Landmark (Optional)</Label>
+                <Input id="landmark" name="landmark" placeholder="Near Apollo Hospital" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -166,9 +192,14 @@ const ProfileAddresses = () => {
                 </div>
                 
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg text-foreground mb-1">{address.label}</h3>
+                  <h3 className="font-semibold text-lg text-foreground mb-1">
+                    {address.fullName} {address.label && <span className="text-sm font-normal text-muted-foreground ml-2">({address.label})</span>}
+                  </h3>
                   <div className="text-sm text-muted-foreground space-y-1">
-                    <p>{address.street}</p>
+                    <p>{address.phone}</p>
+                    <p>{address.addressLine1}</p>
+                    {address.addressLine2 && <p>{address.addressLine2}</p>}
+                    {address.landmark && <p>Landmark: {address.landmark}</p>}
                     <p>{address.city}, {address.state} {address.pincode}</p>
                     <p>{address.country}</p>
                   </div>

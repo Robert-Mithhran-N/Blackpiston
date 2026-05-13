@@ -1,6 +1,11 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from "react";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && !envUrl.includes("localhost")) return envUrl;
+  return `${window.location.protocol}//${window.location.hostname}:3001/api`;
+};
+const API_BASE = getApiBaseUrl();
 const TOKEN_KEY = "blackpiston_user_token";
 const USER_KEY = "blackpiston_user";
 

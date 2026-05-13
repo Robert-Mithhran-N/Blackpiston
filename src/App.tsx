@@ -4,8 +4,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import { useState } from "react";
-import SplashScreen, { shouldShowSplash } from "@/components/SplashScreen";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
@@ -55,21 +53,22 @@ import AdminPayments from "./pages/admin/AdminPayments";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminUsers from "./pages/admin/AdminUsers";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: true, // Auto refetch when app is resumed
+      refetchOnReconnect: true,   // Auto refetch when network restores
+      staleTime: 1000 * 60 * 5,   // Data is fresh for 5 minutes
+      gcTime: 1000 * 60 * 15,     // Keep unused data in cache for 15 minutes
+    },
+  },
+});
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
 const App = () => {
-  const [showSplash, setShowSplash] = useState(shouldShowSplash);
-
   return (
   <>
-    {/* Splash Screen — plays once per localStorage session */}
-    {showSplash && (
-      <SplashScreen onComplete={() => setShowSplash(false)} />
-    )}
-
-    <div className={showSplash ? "invisible" : "visible"}>
   <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
@@ -138,7 +137,6 @@ const App = () => {
       </TooltipProvider>
     </QueryClientProvider>
   </GoogleOAuthProvider>
-    </div>
   </>
 );
 };

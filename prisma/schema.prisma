@@ -112,14 +112,18 @@ type Address {
 }
 
 type SavedAddress {
-  id        String   @map("_id") @db.ObjectId
-  label     String
-  street    String?
-  city      String?
-  state     String?
-  pincode   String?
-  country   String?
-  isDefault Boolean  @default(false)
+  id           String   @map("_id") @db.ObjectId
+  label        String?
+  fullName     String
+  phone        String
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  pincode      String
+  country      String   @default("India")
+  landmark     String?
+  isDefault    Boolean  @default(false)
 }
 
 model User {
