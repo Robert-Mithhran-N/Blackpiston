@@ -1,4 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -51,42 +52,66 @@ import {
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { fetchAdminPayments } from "@/lib/api";
+import { fetchAdminPayments, markCODReceived, updateOrderStatus as apiUpdateOrderStatus } from "@/lib/api";
 
 // Types
-type PaymentStatus = "Paid" | "Pending" | "Partial" | "Refunded";
-type PaymentMethod = "Online" | "COD" | "Bank Transfer";
+type PaymentStatus = "PAID" | "PENDING" | "FAILED" | "REFUNDED" | "PARTIALLY_REFUNDED" | "PROCESSING" | "Paid" | "Pending" | "Partial" | "Refunded";
+type PaymentMethod = "ONLINE" | "COD" | "UPI" | "CARD" | "NETBANKING" | "WALLET" | "Online" | "Bank Transfer";
 
 interface Payment {
   id: string;
+  realId: string;
   userId: string;
   username: string;
   contact: string;
   address: string;
   orderId: string;
+  realOrderId: string;
   itemsOrdered: string;
   orderDate: string;
-  productReceivedDate: string | null;
   amountDue: number;
   amountReceived: number;
   amountReceivedDate: string | null;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  orderStatus: string;
 }
 
 const AdminPayments = () => {
   const navigate = useNavigate();
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  // Fetch payments from API
-  useEffect(() => {
-    setIsLoading(true);
-    fetchAdminPayments()
-      .then((data) => setPayments(data.payments || []))
-      .catch((err) => console.error("Failed to load payments:", err))
-      .finally(() => setIsLoading(false));
-  }, []);
+  // Fetch payments from API using React Query
+  const { data: paymentsData, isLoading } = useQuery({
+    queryKey: ["adminPayments"],
+    queryFn: () => fetchAdminPayments(),
+  });
+
+  const payments: Payment[] = paymentsData?.payments || [];
+
+  // Mutation to mark COD as received
+  const markCODMutation = useMutation({
+    mutationFn: (orderId: string) => markCODReceived(orderId),
+    onSuccess: () => {
+      toast.success("COD payment marked as received");
+      queryClient.invalidateQueries({ queryKey: ["adminPayments"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to mark COD as received");
+    },
+  });
+  // Mutation to update order status
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ orderId, status }: { orderId: string; status: string }) => apiUpdateOrderStatus(orderId, { status }),
+    onSuccess: (data, variables) => {
+      toast.success(`Order status updated to ${variables.status.replace(/_/g, " ")}`);
+      queryClient.invalidateQueries({ queryKey: ["adminPayments"] });
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update order status");
+    },
+  });
+
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<PaymentStatus[]>([]);
@@ -103,7 +128,7 @@ const AdminPayments = () => {
   const kpis = useMemo(() => {
     const totalDue = payments.reduce((sum, p) => sum + p.amountDue, 0);
     const totalReceived = payments.reduce((sum, p) => sum + p.amountReceived, 0);
-    const onlinePayments = payments.filter((p) => p.paymentMethod === "Online").length;
+    const onlinePayments = payments.filter((p) => p.paymentMethod !== "COD").length;
     return { totalDue, totalReceived, onlinePayments };
   }, [payments]);
 
@@ -207,8 +232,9 @@ const AdminPayments = () => {
 
   const confirmDelete = () => {
     if (paymentToDelete) {
-      setPayments(payments.filter((p) => p.id !== paymentToDelete));
-      toast.success("Payment record deleted successfully");
+      toast.error("Delete not fully implemented yet in the API");
+      // setPayments(payments.filter((p) => p.id !== paymentToDelete));
+      // toast.success("Payment record deleted successfully");
       setDeleteDialogOpen(false);
       setPaymentToDelete(null);
       setSelectedRows(new Set());
@@ -217,8 +243,9 @@ const AdminPayments = () => {
 
   const handleBulkDelete = () => {
     if (selectedRows.size === 0) return;
-    setPayments(payments.filter((p) => !selectedRows.has(p.id)));
-    toast.success(`${selectedRows.size} payment record(s) deleted successfully`);
+    toast.error("Bulk delete not fully implemented yet in the API");
+    // setPayments(payments.filter((p) => !selectedRows.has(p.id)));
+    // toast.success(`${selectedRows.size} payment record(s) deleted successfully`);
     setSelectedRows(new Set());
   };
 
@@ -294,6 +321,7 @@ const AdminPayments = () => {
         "Amount Received",
         "Status",
         "Method",
+        "Order Status",
       ];
 
       // Table rows
@@ -301,17 +329,18 @@ const AdminPayments = () => {
         p.id,
         p.username,
         p.orderId,
-        `₹${p.amountDue.toLocaleString()}`,
-        `₹${p.amountReceived.toLocaleString()}`,
+        `Rs. ${p.amountDue.toLocaleString("en-IN")}`,
+        `Rs. ${p.amountReceived.toLocaleString("en-IN")}`,
         p.paymentStatus,
         p.paymentMethod,
+        p.orderStatus,
       ]);
 
       // Simple table (jsPDF doesn't have built-in table, so we'll create a simple one)
       doc.setFontSize(8);
       let startY = yPos + 10;
       const rowHeight = 7;
-      const colWidths = [25, 30, 25, 25, 25, 20, 25];
+      const colWidths = [25, 30, 25, 20, 20, 20, 20, 20];
       let xPos = 14;
 
       // Headers
@@ -348,16 +377,19 @@ const AdminPayments = () => {
     }
   };
 
-  // Status badge color
-  const getStatusColor = (status: PaymentStatus) => {
-    switch (status) {
-      case "Paid":
+  const getStatusColor = (status: PaymentStatus | string) => {
+    const s = status.toUpperCase();
+    switch (s) {
+      case "PAID":
         return "bg-green-500/20 text-green-500 border-green-500/50";
-      case "Pending":
+      case "PENDING":
         return "bg-yellow-500/20 text-yellow-500 border-yellow-500/50";
-      case "Partial":
+      case "PARTIAL":
+      case "PARTIALLY_REFUNDED":
+      case "PROCESSING":
         return "bg-orange-500/20 text-orange-500 border-orange-500/50";
-      case "Refunded":
+      case "REFUNDED":
+      case "FAILED":
         return "bg-red-500/20 text-red-500 border-red-500/50";
       default:
         return "bg-gray-500/20 text-gray-500 border-gray-500/50";
@@ -440,10 +472,10 @@ const AdminPayments = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="Paid">Paid</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Partial">Partial</SelectItem>
-                  <SelectItem value="Refunded">Refunded</SelectItem>
+                  <SelectItem value="PAID">Paid</SelectItem>
+                  <SelectItem value="PENDING">Pending</SelectItem>
+                  <SelectItem value="FAILED">Failed</SelectItem>
+                  <SelectItem value="REFUNDED">Refunded</SelectItem>
                 </SelectContent>
               </Select>
               <Select
@@ -457,9 +489,10 @@ const AdminPayments = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Methods</SelectItem>
-                  <SelectItem value="Online">Online</SelectItem>
+                  <SelectItem value="ONLINE">Online</SelectItem>
                   <SelectItem value="COD">COD</SelectItem>
-                  <SelectItem value="Bank Transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="UPI">UPI</SelectItem>
+                  <SelectItem value="CARD">Card</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -561,7 +594,17 @@ const AdminPayments = () => {
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                       </Button>
                     </TableHead>
-                    <TableHead>Product Received</TableHead>
+                    <TableHead>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 -ml-3"
+                        onClick={() => handleSort("orderStatus")}
+                      >
+                        Order Status
+                        <ArrowUpDown className="ml-2 h-4 w-4" />
+                      </Button>
+                    </TableHead>
                     <TableHead>
                       <Button
                         variant="ghost"
@@ -633,9 +676,7 @@ const AdminPayments = () => {
                         <TableCell className="text-sm">{payment.itemsOrdered}</TableCell>
                         <TableCell className="text-sm">{payment.orderDate}</TableCell>
                         <TableCell className="text-sm">
-                          {payment.productReceivedDate || (
-                            <span className="text-muted-foreground">Not received</span>
-                          )}
+                          <Badge variant="outline">{payment.orderStatus?.replace(/_/g, " ") || "N/A"}</Badge>
                         </TableCell>
                         <TableCell className="font-medium">
                           ₹{payment.amountDue.toLocaleString()}
@@ -655,6 +696,17 @@ const AdminPayments = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
+                          {payment.paymentMethod === "COD" && payment.paymentStatus !== "PAID" && (
+                            <Button 
+                              size="sm" 
+                              onClick={() => markCODMutation.mutate(payment.realOrderId)}
+                              disabled={markCODMutation.isPending}
+                              className="bg-green-600 hover:bg-green-700 text-white mr-2"
+                            >
+                              <CheckCircle2 className="mr-1 h-3 w-3" />
+                              Mark Received
+                            </Button>
+                          )}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -663,10 +715,28 @@ const AdminPayments = () => {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onClick={() => navigate(`/admin/orders?orderId=${payment.orderId}`)}
+                                onClick={() => navigate(`/admin/orders?orderId=${payment.realOrderId}`)}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Order
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => updateStatusMutation.mutate({ orderId: payment.realOrderId, status: "CONFIRMED" })}
+                              >
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                Mark Confirmed
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => updateStatusMutation.mutate({ orderId: payment.realOrderId, status: "SHIPPED" })}
+                              >
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                Mark Shipped
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => updateStatusMutation.mutate({ orderId: payment.realOrderId, status: "DELIVERED" })}
+                              >
+                                <CheckCircle2 className="mr-2 h-4 w-4" />
+                                Mark Delivered
                               </DropdownMenuItem>
                               <DropdownMenuItem>
                                 <Edit className="mr-2 h-4 w-4" />

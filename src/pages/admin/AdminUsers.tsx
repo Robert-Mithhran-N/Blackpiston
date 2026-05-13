@@ -1,6 +1,8 @@
+import { useState, useEffect } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -10,47 +12,121 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Users } from "lucide-react";
+import { Users, Search, Loader2, Download } from "lucide-react";
+import { fetchAdminUsers, exportAdminUsersCSV, exportAdminUserCSV } from "@/lib/api";
 
-const mockUsers = [
-  {
-    id: "USR-001",
-    name: "John Doe",
-    email: "john@example.com",
-    role: "user",
-    status: "Active",
-    created: "2025-01-05",
-  },
-  {
-    id: "USR-002",
-    name: "Admin Rider",
-    email: "admin@example.com",
-    role: "admin",
-    status: "Active",
-    created: "2025-01-01",
-  },
-  {
-    id: "USR-003",
-    name: "Banned User",
-    email: "banned@example.com",
-    role: "user",
-    status: "Banned",
-    created: "2024-12-20",
-  },
-];
+interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  avatar?: string;
+  isActive: boolean;
+  authProvider?: string;
+  createdAt: string;
+  lastLogin?: string;
+  _count?: { orders: number };
+}
 
 const AdminUsers = () => {
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      const data = await fetchAdminUsers({ page, limit: 20, search: search || undefined });
+      setUsers(data.users || []);
+      setTotalPages(data.pagination?.totalPages || 1);
+    } catch (err) {
+      console.error("Failed to fetch users:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers();
+  }, [page]);
+
+  const handleSearch = () => {
+    setPage(1);
+    loadUsers();
+  };
+
+  const handleExportAll = async () => {
+    try {
+      const blob = await exportAdminUsersCSV();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "users_export.csv";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("Failed to export users:", err);
+      // could show a toast here
+    }
+  };
+
+  const handleExportUser = async (userId: string) => {
+    try {
+      const blob = await exportAdminUserCSV(userId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `user_${userId}_export.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("Failed to export user:", err);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Users</h1>
             <p className="text-muted-foreground">
               Manage registered riders and access levels.
             </p>
           </div>
+          <Button onClick={handleExportAll} variant="outline" className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Export All Users
+          </Button>
         </div>
+
+        {/* Search */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex gap-3">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="pl-10"
+                />
+              </div>
+              <Button onClick={handleSearch} variant="outline">
+                Search
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>
@@ -60,70 +136,110 @@ const AdminUsers = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="w-40">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockUsers.map((user) => (
-                  <TableRow key={user.id} id={`user-${user.id}`}>
-                    <TableCell className="font-mono text-xs">
-                      {user.id}
-                    </TableCell>
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          user.role === "admin"
-                            ? "bg-primary/10 text-primary border-primary/40"
-                            : "bg-muted/60 text-muted-foreground border-border/60"
-                        }
-                      >
-                        {user.role === "admin" ? "Admin" : "User"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={
-                          user.status === "Active"
-                            ? "bg-green-500/10 text-green-400 border-green-500/40"
-                            : "bg-red-500/10 text-red-400 border-red-500/40"
-                        }
-                      >
-                        {user.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{user.created}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button size="xs" variant="outline">
-                          Change role
-                        </Button>
-                        <Button size="xs" variant="outline">
-                          {user.status === "Active" ? "Ban" : "Unban"}
-                        </Button>
-                      </div>
-                    </TableCell>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="ml-2 text-muted-foreground">Loading users...</span>
+              </div>
+            ) : users.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                No users found.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Orders</TableHead>
+                    <TableHead>Provider</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {users.map((user) => (
+                    <TableRow key={user.id} id={`user-${user.id}`}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            user.role === "ADMIN"
+                              ? "bg-primary/10 text-primary border-primary/40"
+                              : user.role === "STAFF"
+                                ? "bg-blue-500/10 text-blue-400 border-blue-500/40"
+                                : "bg-muted/60 text-muted-foreground border-border/60"
+                          }
+                        >
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          className={
+                            user.isActive
+                              ? "bg-green-500/10 text-green-400 border-green-500/40"
+                              : "bg-red-500/10 text-red-400 border-red-500/40"
+                          }
+                        >
+                          {user.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{user._count?.orders ?? 0}</TableCell>
+                      <TableCell className="capitalize">
+                        {user.authProvider || "local"}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => handleExportUser(user.id)}
+                          title="Download User Data"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </CardContent>
         </Card>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage(page - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground">
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= totalPages}
+              onClick={() => setPage(page + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
 };
 
 export default AdminUsers;
-
-

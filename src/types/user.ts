@@ -1,8 +1,21 @@
-// User Website TypeScript Types
+export interface ProductVariantImage {
+    url: string;
+    alt?: string;
+    isPrimary?: boolean;
+}
 
-// ============================================================
-// Product Types
-// ============================================================
+export interface ProductVariant {
+    id?: string;
+    size?: string;
+    color?: string;
+    model?: string;
+    sku: string;
+    stockQuantity: number;
+    price?: number;
+    priceModifier?: number;
+    images?: ProductVariantImage[];
+}
+
 export interface Product {
     id: string;
     name: string;
@@ -13,10 +26,13 @@ export interface Product {
     images?: string[];
     rating: number;
     description?: string;
+    shortDescription?: string;
     inStock: boolean;
     featured?: boolean;
     isTopOffer?: boolean;
     specifications?: { label: string; value: string }[];
+    variants?: ProductVariant[];
+    stockQuantity?: number;
 }
 
 export type ProductCategory = string;
@@ -62,6 +78,8 @@ export interface BuildKit {
 // ============================================================
 export interface CartItem {
     product: Product;
+    variantId?: string;
+    variantLabel?: string;
     quantity: number;
 }
 

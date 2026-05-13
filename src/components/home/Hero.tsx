@@ -3,11 +3,11 @@ import { ArrowRight, Wrench, Truck, RotateCcw, ShieldCheck } from "lucide-react"
 import { Button } from "@/components/ui/button";
 
 // Import hero image
-import heroImage from "@/assets/hero home img.png";
+import heroImage from "@/assets/hero-gear.jpg";
 
 const Hero = () => {
   return (
-    <section className="relative py-16 lg:py-20 flex items-center overflow-hidden">
+    <section className="relative py-6 lg:py-10 flex items-center overflow-hidden">
       {/* Background with gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-background via-background to-card">
         {/* Decorative elements */}
@@ -25,14 +25,14 @@ const Hero = () => {
       </div>
 
       <div className="container relative z-10">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 items-center">
           {/* Left Content */}
-          <div className="space-y-6 animate-slide-up">
+          <div className="space-y-4 animate-slide-up">
             <div>
-              <p className="text-primary font-ui font-semibold text-sm uppercase tracking-widest mb-4">
+              <p className="text-primary font-ui font-semibold text-xs uppercase tracking-widest mb-2">
                 Premium Motorcycle Gear & Workshop
               </p>
-              <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl xl:text-7xl text-foreground leading-tight tracking-wide mb-6">
+              <h1 className="font-display text-4xl sm:text-5xl lg:text-5xl xl:text-6xl text-foreground leading-tight tracking-wide mb-4">
                 GEAR UP.<br />
                 <span className="text-gradient-flame">RIDE HARD.</span><br />
                 MODIFY SMARTER.
@@ -83,7 +83,7 @@ const Hero = () => {
 
           {/* Right Content - Hero Image with premium effects */}
           <div className="relative hidden lg:block">
-            <div className="relative w-full aspect-[3/4] max-w-md mx-auto">
+            <div className="relative w-full aspect-square max-w-[20rem] mx-auto">
               {/* Animated parallax ring behind image */}
               <div className="absolute inset-0 -z-10 flex items-center justify-center">
                 <div className="absolute w-full h-full rounded-full border-2 border-primary/20 animate-rotate-slow" />
@@ -105,21 +105,11 @@ const Hero = () => {
                   className="absolute inset-0 w-full h-full object-cover object-center"
                 />
 
-                {/* Layer 2: Dim overlay - darker for more contrast */}
-                <div className="absolute inset-0 bg-black/50 pointer-events-none" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/40 pointer-events-none" />
+                {/* Layer 2: Subtle overlay for edge contrast */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent pointer-events-none" />
 
                 {/* Layer 3: Cross-direction diagonal white light sweep */}
-                <div className="hero-cross-light-sweep absolute inset-0 pointer-events-none" />
-
-                {/* Layer 4: Caption text - centered, orange-white gradient */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
-                  <h2 className="hero-caption-gradient font-display text-xl md:text-2xl lg:text-3xl text-center tracking-wide leading-relaxed px-6">
-                    Ride to feel alive,
-                    <br />
-                    buy to stay alive
-                  </h2>
-                </div>
+                <div className="hero-cross-light-sweep absolute inset-0 pointer-events-none z-10" />
 
 
                 {/* Soft edge overlay */}

@@ -29,45 +29,84 @@ export interface TopOffer {
 }
 
 // ============================================================
-// Order Types
+// Order Types — aligned with Prisma OrderProduct & ShippingAddress
 // ============================================================
-export type OrderStatus = 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
-export type PaymentStatus = 'Paid' | 'Pending' | 'Failed' | 'Refunded';
+export type OrderStatus = 'NEW' | 'CONFIRMED' | 'PROCESSING' | 'PACKED' | 'SHIPPED' | 'OUT_FOR_DELIVERY' | 'DELIVERED' | 'COMPLETED' | 'CANCELLED' | 'RETURNED';
+export type PaymentStatus = 'PAID' | 'PENDING' | 'PROCESSING' | 'FAILED' | 'REFUNDED' | 'PARTIALLY_REFUNDED';
+export type PaymentMethod = 'ONLINE' | 'COD' | 'UPI' | 'CARD' | 'NETBANKING' | 'WALLET';
+
+export interface OrderProduct {
+    productId: string;
+    name: string;
+    sku: string;
+    image?: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    variantSize?: string;
+    variantColor?: string;
+}
+
+export interface ShippingAddress {
+    name?: string;
+    phone?: string;
+    street?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    country?: string;
+}
+
+export interface TrackingInfo {
+    carrier?: string;
+    trackingNumber?: string;
+    trackingUrl?: string;
+}
+
+export interface OrderStatusHistoryEntry {
+    status: string;
+    timestamp: string;
+    note?: string;
+    updatedBy?: string;
+}
 
 export interface Order {
     id: string;
+    orderNumber: string;
     userId: string;
-    userName: string;
-    userEmail: string;
-    items: OrderItem[];
+    user?: { name: string; email: string; phone?: string };
+    // Flattened user fields (populated by backend)
+    userName?: string;
+    userEmail?: string;
+    products: OrderProduct[];
+    subtotal: number;
+    shippingCost: number;
+    taxAmount: number;
+    discountAmount: number;
     totalAmount: number;
+    couponCode?: string;
+    paymentMethod: PaymentMethod;
     paymentStatus: PaymentStatus;
     orderStatus: OrderStatus;
-    shippingAddress: Address;
+    shippingAddress?: ShippingAddress;
+    billingAddress?: ShippingAddress;
+    tracking?: TrackingInfo;
+    statusHistory: OrderStatusHistoryEntry[];
+    notes?: string;
+    orderedAt: string;
+    confirmedAt?: string;
+    shippedAt?: string;
+    deliveredAt?: string;
+    completedAt?: string;
+    cancelledAt?: string;
+    cancellationReason?: string;
     createdAt: string;
     updatedAt: string;
 }
 
-export interface OrderItem {
-    id: string;
-    productId: string;
-    productName: string;
-    quantity: number;
-    price: number;
-    total: number;
-    image?: string;
-}
-
-export interface Address {
-    name: string;
-    line1: string;
-    line2?: string;
-    city: string;
-    state: string;
-    postalCode: string;
-    country: string;
-    phone: string;
-}
+// Legacy aliases for backward compatibility
+export type OrderItem = OrderProduct;
+export type Address = ShippingAddress;
 
 // ============================================================
 // Product Types
@@ -94,7 +133,7 @@ export interface LowStockProduct {
 // ============================================================
 // User Product Request Types
 // ============================================================
-export type RequestStatus = 'Pending' | 'Approved' | 'Rejected' | 'Completed';
+export type RequestStatus = 'PENDING' | 'IN_PROGRESS' | 'RESPONDED' | 'COMPLETED' | 'CLOSED';
 
 export interface ProductRequest {
     id: string;

@@ -1,43 +1,12 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, ChevronDown, HardHat, Shirt, Footprints, Sparkles, Home, LogOut } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, Home, LogOut, Settings, MapPin, Package as PackageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useUserAuth } from "@/context/UserAuthContext";
-import { fetchCategories } from "@/lib/api";
+import { useCart } from "@/context/CartContext";
 import logo from "@/assets/logo.png";
-
-// Import shop category images
-import helmetImg from "@/assets/shop-btn-logos/shop-helmet.png";
-import glovesImg from "@/assets/shop-btn-logos/shop-gloves.png";
-import bootImg from "@/assets/shop-btn-logos/shop-boot.png";
-import accessImg from "@/assets/shop-btn-logos/shop-access.png";
-
-// Category icons mapping (fallback)
-const categoryIcons: Record<string, React.ElementType> = {
-  helmets: HardHat,
-  jackets: Shirt,
-  boots: Footprints,
-  accessories: Sparkles,
-};
-
-// Category images mapping
-const categoryImages: Record<string, string> = {
-  helmets: helmetImg,
-  jackets: glovesImg,
-  boots: bootImg,
-  accessories: accessImg,
-};
-
 
 const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -46,8 +15,7 @@ const Header = () => {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, logout } = useUserAuth();
   const navigate = useNavigate();
-  // TODO: Fetch cart count from context/state
-  const [cartCount] = useState(2);
+  const { cartCount } = useCart();
   const { pathname } = useLocation();
 
   // Close user menu on outside click
@@ -61,13 +29,8 @@ const Header = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Fetch categories from API
-  const [categories, setCategories] = useState<{ id: string; name: string; slug: string; productCount?: number }[]>([]);
-  useEffect(() => {
-    fetchCategories()
-      .then((data) => setCategories(data.categories || []))
-      .catch((err) => console.error("Failed to load categories:", err));
-  }, []);
+  // Categories feature removed - using simple shop link instead
+  const categories: { id: string; name: string; slug: string; children?: any[] }[] = [];
 
   const navState = useMemo(
     () => ({
@@ -106,70 +69,10 @@ const Header = () => {
             Home
           </NavLink>
 
-          {/* Shop Mega Menu */}
-          <NavigationMenu>
-            <NavigationMenuList>
-              <NavigationMenuItem>
-                <NavigationMenuTrigger
-                  className={`${navClass(navState.shop)} bg-transparent hover:bg-transparent data-[state=open]:bg-transparent px-0`}
-                >
-                  Shop
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <div className="w-[400px] p-4 bg-card border border-border">
-                    <div className="mb-4">
-                      <h3 className="text-sm font-semibold text-primary uppercase tracking-wider">
-                        Shop by Category
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Premium motorcycle gear & accessories
-                      </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      {categories.map((category) => {
-                        const categoryImage = categoryImages[category.slug];
-                        return (
-                          <NavigationMenuLink key={category.id} asChild>
-                            <Link
-                              to={`/shop/${category.slug}`}
-                              className="group flex items-center gap-3 p-3 rounded-lg bg-zinc-800/50 hover:bg-primary/10 transition-all duration-200 border border-zinc-700/50 hover:border-primary/40 cursor-pointer"
-                            >
-                              {/* Category Image */}
-                              <div className="h-11 w-11 rounded-lg bg-zinc-900/80 flex items-center justify-center overflow-hidden flex-shrink-0">
-                                <img
-                                  src={categoryImage}
-                                  alt={category.name}
-                                  className="w-[90%] h-[90%] object-contain"
-                                />
-                              </div>
-                              {/* Category Text */}
-                              <div className="flex flex-col min-w-0">
-                                <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
-                                  {category.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {category.productCount} products
-                                </p>
-                              </div>
-                            </Link>
-                          </NavigationMenuLink>
-                        );
-                      })}
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-border">
-                      <Link
-                        to="/shop"
-                        className="text-sm text-primary hover:underline font-medium"
-                      >
-                        View All Products →
-                      </Link>
-                    </div>
-                  </div>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
+          {/* Shop Link - Categories removed */}
+          <NavLink to="/shop" className={({ isActive }) => navClass(isActive)}>
+            Shop
+          </NavLink>
 
           <NavLink
             to="/garage"
@@ -244,17 +147,53 @@ const Header = () => {
                     <p className="text-sm font-semibold text-foreground truncate">{user.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                   </div>
-                  <button
-                    onClick={() => {
-                      logout();
-                      setUserMenuOpen(false);
-                      navigate("/login", { replace: true });
-                    }}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign out
-                  </button>
+                  <div className="py-2 flex flex-col gap-1 px-2">
+                    <Link
+                      to="/profile"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted/50 rounded-md transition-colors"
+                    >
+                      <User className="h-4 w-4" />
+                      My Profile
+                    </Link>
+                    <Link
+                      to="/profile/orders"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted/50 rounded-md transition-colors"
+                    >
+                      <PackageIcon className="h-4 w-4" />
+                      My Orders
+                    </Link>
+                    <Link
+                      to="/profile/addresses"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted/50 rounded-md transition-colors"
+                    >
+                      <MapPin className="h-4 w-4" />
+                      Addresses
+                    </Link>
+                    <Link
+                      to="/profile/settings"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2 text-sm text-foreground hover:bg-muted/50 rounded-md transition-colors"
+                    >
+                      <Settings className="h-4 w-4" />
+                      Settings
+                    </Link>
+                  </div>
+                  <div className="pt-2 border-t border-border px-2">
+                    <button
+                      onClick={() => {
+                        logout();
+                        setUserMenuOpen(false);
+                        navigate("/login", { replace: true });
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm text-destructive hover:bg-destructive/10 rounded-md transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign out
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -309,26 +248,15 @@ const Header = () => {
                   Home
                 </Link>
 
-                {/* Shop Categories */}
-                <div className="space-y-2">
-                  <p className="text-sm font-ui font-semibold text-primary uppercase tracking-wider">
-                    Shop
-                  </p>
-                  {categories.map((category) => {
-                    const Icon = categoryIcons[category.id] || Sparkles;
-                    return (
-                      <Link
-                        key={category.id}
-                        to={`/shop/${category.id}`}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className="flex items-center gap-3 py-2 text-metal-light hover:text-primary transition-colors"
-                      >
-                        <Icon className="h-4 w-4" />
-                        {category.name}
-                      </Link>
-                    );
-                  })}
-                </div>
+                {/* Shop Link - Categories removed */}
+                <Link
+                  to="/shop"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-2 py-2 text-foreground hover:text-primary transition-colors font-medium"
+                >
+                  <ShoppingCart className="h-4 w-4" />
+                  Shop
+                </Link>
 
                 <div className="border-t border-border pt-4 space-y-2">
                   <NavLink

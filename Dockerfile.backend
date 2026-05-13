@@ -1,0 +1,30 @@
+# Backend Dockerfile — Node + Prisma
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy server package files
+COPY server/package.json server/package-lock.json ./server/
+
+# Copy prisma schema (needed for prisma generate)
+COPY prisma/ ./prisma/
+COPY .env.example ./.env.example
+
+# Install server dependencies
+WORKDIR /app/server
+RUN npm ci
+
+# Generate Prisma client
+WORKDIR /app
+RUN cd server && npx prisma generate --schema=../prisma/schema.prisma
+
+# Copy server source
+COPY server/ ./server/
+
+# Build TypeScript
+WORKDIR /app/server
+RUN npm run build
+
+EXPOSE 3001
+
+CMD ["node", "dist/index.js"]

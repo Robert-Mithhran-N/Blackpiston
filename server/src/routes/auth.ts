@@ -3,8 +3,15 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import prisma from '../config/database.js';
+import { sendWelcomeEmail, sendPasswordResetEmail } from '../utils/emailService.js';
+import crypto from 'crypto';
+
+import { ObjectId } from 'bson';
 
 const router = Router();
+
+// JWT signing helper — cast expiresIn to satisfy newer @types/jsonwebtoken
+const jwtSignOptions = { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any };
 
 // Google OAuth client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -12,7 +19,7 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // Register new user
 router.post('/register', async (req: Request, res: Response) => {
     try {
-        const { name, email, password, phone } = req.body;
+        const { name, email, password, phone, address } = req.body;
 
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({
@@ -26,6 +33,20 @@ router.post('/register', async (req: Request, res: Response) => {
         // Hash password
         const passwordHash = await bcrypt.hash(password, 12);
 
+        const savedAddresses = [];
+        if (address && address.line1) {
+            savedAddresses.push({
+                id: new ObjectId().toHexString(),
+                label: 'Home',
+                street: address.line1,
+                city: address.city,
+                state: address.state,
+                pincode: address.pincode,
+                country: 'India',
+                isDefault: true
+            });
+        }
+
         // Create user
         const user = await prisma.user.create({
             data: {
@@ -34,7 +55,9 @@ router.post('/register', async (req: Request, res: Response) => {
                 phone,
                 passwordHash,
                 role: 'USER',
-                authProvider: 'local'
+                authProvider: 'local',
+                googleId: `local_${new ObjectId().toHexString()}`,
+                savedAddresses
             },
             select: {
                 id: true,
@@ -50,8 +73,11 @@ router.post('/register', async (req: Request, res: Response) => {
         const token = jwt.sign(
             { userId: user.id, role: user.role },
             process.env.JWT_SECRET || 'default-secret',
-            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+            jwtSignOptions
         );
+
+        // ── Send Welcome Email ──
+        sendWelcomeEmail(user.email, user.name).catch(err => console.error("Welcome Email failed", err));
 
         res.status(201).json({
             message: 'User registered successfully',
@@ -75,7 +101,11 @@ router.post('/login', async (req: Request, res: Response) => {
         });
 
         if (!user) {
-            return res.status(401).json({ error: 'Invalid email or password' });
+            // Signal frontend to route to onboarding flow
+            return res.json({
+                isNewUser: true,
+                email
+            });
         }
 
         // If user signed up via Google and has no password, reject
@@ -102,7 +132,7 @@ router.post('/login', async (req: Request, res: Response) => {
         const token = jwt.sign(
             { userId: user.id, role: user.role },
             process.env.JWT_SECRET || 'default-secret',
-            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+            jwtSignOptions
         );
 
         res.json({
@@ -119,6 +149,99 @@ router.post('/login', async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ error: 'Failed to login' });
+    }
+});
+
+// Forgot Password
+router.post('/forgot-password', async (req: Request, res: Response) => {
+    try {
+        const { email } = req.body;
+        
+        // Find user
+        const user = await prisma.user.findUnique({
+            where: { email }
+        });
+
+        // Always return success for security
+        res.status(200).json({ message: 'If the email exists, a reset link has been sent' });
+
+        if (!user || user.authProvider === 'google') {
+            return;
+        }
+
+        const resetToken = crypto.randomBytes(32).toString('hex');
+        const resetTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+        // Use raw query to bypass active schema lock
+        await prisma.$runCommandRaw({
+            update: "users",
+            updates: [
+                {
+                    q: { _id: { $oid: user.id } },
+                    u: { $set: { resetToken, resetTokenExpiry: { $date: resetTokenExpiry.toISOString() } } }
+                }
+            ]
+        });
+
+        // Send email silently
+        sendPasswordResetEmail(user.email, resetToken).catch(err => console.error("Forgot Password Email failed", err));
+    } catch (error) {
+        console.error('Forgot password error:', error);
+    }
+});
+
+// Reset Password
+router.post('/reset-password', async (req: Request, res: Response) => {
+    try {
+        const { token, newPassword } = req.body;
+
+        if (!token || !newPassword) {
+            return res.status(400).json({ error: 'Token and new password required' });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+        }
+
+        // Use raw find to bypass active schema lock
+        const cursor = await prisma.$runCommandRaw({
+            find: "users",
+            filter: {
+                resetToken: token,
+                resetTokenExpiry: { $gt: { $date: new Date().toISOString() } }
+            },
+            limit: 1
+        }) as any;
+
+        const userBatch = cursor?.cursor?.firstBatch;
+        
+        if (!userBatch || userBatch.length === 0) {
+            return res.status(400).json({ error: 'Invalid or expired token' });
+        }
+
+        const user = userBatch[0];
+        const userId = user._id.$oid;
+
+        const passwordHash = await bcrypt.hash(newPassword, 12);
+
+        // Update password and unset reset tokens
+        await prisma.$runCommandRaw({
+            update: "users",
+            updates: [
+                {
+                    q: { _id: { $oid: userId } },
+                    u: { 
+                        $set: { passwordHash },
+                        $unset: { resetToken: "", resetTokenExpiry: "" }
+                    }
+                }
+            ]
+        });
+
+        res.status(200).json({ message: 'Password has been reset successfully' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ error: 'Failed to reset password' });
     }
 });
 
@@ -191,11 +314,13 @@ router.post('/google', async (req: Request, res: Response) => {
         });
 
         if (user) {
+            const isDummyGoogleId = user.googleId?.startsWith('local_');
+            
             // Update existing user with Google info if not already set
             user = await prisma.user.update({
                 where: { id: user.id },
                 data: {
-                    googleId: user.googleId || googleId,
+                    googleId: isDummyGoogleId ? googleId : (user.googleId || googleId),
                     avatar: user.avatar || picture,
                     isEmailVerified: email_verified || user.isEmailVerified,
                     lastLogin: new Date()
@@ -217,13 +342,16 @@ router.post('/google', async (req: Request, res: Response) => {
                 }
             });
             console.log('✅ Google OAuth: New user created:', email);
+            
+            // ── Send Welcome Email for New Google Signups ──
+            sendWelcomeEmail(user.email, user.name).catch(err => console.error("Google Welcome Email failed", err));
         }
 
         // Generate JWT token
         const token = jwt.sign(
             { userId: user.id, role: user.role },
             process.env.JWT_SECRET || 'default-secret',
-            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+            jwtSignOptions
         );
 
         res.json({
@@ -281,7 +409,7 @@ router.post('/admin/login', async (req: Request, res: Response) => {
         const token = jwt.sign(
             { userId: user.id, role: user.role },
             process.env.JWT_SECRET || 'default-secret',
-            { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+            jwtSignOptions
         );
 
         res.json({

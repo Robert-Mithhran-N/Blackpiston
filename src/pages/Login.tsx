@@ -1,5 +1,5 @@
 import { FormEvent, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { useGoogleLogin } from "@react-oauth/google";
 import { useUserAuth } from "@/context/UserAuthContext";
 import Header from "@/components/layout/Header";
@@ -23,8 +23,14 @@ import {
   TabsTrigger,
 } from "@/components/ui/tabs";
 import { useAdminAuth } from "@/context/AdminAuthContext";
+import { Eye, EyeOff } from "lucide-react";
 
-const API_BASE = "http://localhost:3001/api";
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && !envUrl.includes("localhost")) return envUrl;
+  return `${window.location.protocol}//${window.location.hostname}:3001/api`;
+};
+const API_BASE = getApiBaseUrl();
 
 const Login = () => {
   const adminAuth = useAdminAuth();
@@ -86,6 +92,7 @@ const Login = () => {
   const [userPassword, setUserPassword] = useState("");
   const [userLoading, setUserLoading] = useState(false);
   const [userError, setUserError] = useState<string | null>(null);
+  const [showUserPassword, setShowUserPassword] = useState(false);
 
   const handleUserSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -105,8 +112,14 @@ const Login = () => {
         throw new Error(data.error || "Login failed");
       }
 
+      if (data.isNewUser) {
+        console.log("New user detected, redirecting to onboarding...");
+        navigate("/onboarding", { state: { email: userEmail, password: userPassword } });
+        return;
+      }
+
       userAuth.login(data.token, data.user);
-      console.log("✅ User login successful:", data.user.email);
+      console.log("✅ User login successful:", data.user?.email);
       navigate("/", { replace: true });
     } catch (error) {
       console.error("User login error:", error);
@@ -127,6 +140,7 @@ const Login = () => {
   const [adminPassword, setAdminPassword] = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminError, setAdminError] = useState<string | null>(null);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
 
   const handleAdminSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -153,9 +167,7 @@ const Login = () => {
     } catch (error) {
       console.error("Admin login error:", error);
       if (error instanceof TypeError && error.message === "Failed to fetch") {
-        // Fallback: use fake admin login when backend is offline (dev convenience)
-        console.warn("⚠️ Backend offline — using offline admin login fallback");
-        adminAuth.login();
+        setAdminError("Could not connect to the server. Please ensure the backend is running.");
       } else {
         setAdminError(
           error instanceof Error ? error.message : "Admin login failed. Please try again."
@@ -246,14 +258,24 @@ const Login = () => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="user-password">Password</Label>
-                      <Input
-                        id="user-password"
-                        type="password"
-                        placeholder="••••••••"
-                        required
-                        value={userPassword}
-                        onChange={(e) => setUserPassword(e.target.value)}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="user-password"
+                          type={showUserPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          required
+                          value={userPassword}
+                          onChange={(e) => setUserPassword(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          onClick={() => setShowUserPassword(!showUserPassword)}
+                          tabIndex={-1}
+                        >
+                          {showUserPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
                     {userError && (
                       <p className="text-sm text-destructive">{userError}</p>
@@ -263,9 +285,9 @@ const Login = () => {
                     <Button type="submit" className="w-full sm:w-auto" disabled={userLoading}>
                       {userLoading ? "Signing in..." : "Continue to user portal"}
                     </Button>
-                    <button type="button" className="text-sm text-primary hover:text-primary/80">
+                    <Link to="/forgot-password" className="text-sm text-primary hover:text-primary/80">
                       Forgot password?
-                    </button>
+                    </Link>
                   </CardFooter>
                 </form>
               </Card>
@@ -294,14 +316,24 @@ const Login = () => {
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="admin-password">Password</Label>
-                      <Input
-                        id="admin-password"
-                        type="password"
-                        placeholder="••••••••"
-                        required
-                        value={adminPassword}
-                        onChange={(e) => setAdminPassword(e.target.value)}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="admin-password"
+                          type={showAdminPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          required
+                          value={adminPassword}
+                          onChange={(e) => setAdminPassword(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                          onClick={() => setShowAdminPassword(!showAdminPassword)}
+                          tabIndex={-1}
+                        >
+                          {showAdminPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
                     </div>
 
                     {adminError && (

@@ -47,17 +47,20 @@ import { Order, PaymentStatus } from "@/types/admin";
 // Status color helpers
 const getPaymentStatusColor = (status: PaymentStatus) => {
     switch (status) {
-        case "Paid": return "bg-green-500/20 text-green-400 border-green-500/50";
-        case "Pending": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/50";
-        case "Failed": return "bg-red-500/20 text-red-400 border-red-500/50";
-        case "Refunded": return "bg-gray-500/20 text-gray-400 border-gray-500/50";
+        case "PAID": return "bg-green-500/20 text-green-400 border-green-500/50";
+        case "PENDING":
+        case "PROCESSING": return "bg-yellow-500/20 text-yellow-400 border-yellow-500/50";
+        case "FAILED": return "bg-red-500/20 text-red-400 border-red-500/50";
+        case "REFUNDED":
+        case "PARTIALLY_REFUNDED": return "bg-gray-500/20 text-gray-400 border-gray-500/50";
         default: return "bg-gray-500/20 text-gray-400 border-gray-500/50";
     }
 };
 
-// Get product summary from order items
+// Get product summary from order products
 const getProductSummary = (order: Order): string => {
-    return order.items.map(item => `${item.productName.split(' ').slice(0, 2).join(' ')} ×${item.quantity}`).join(', ');
+    if (!order.products || order.products.length === 0) return "No items";
+    return order.products.map(item => `${item.name.split(' ').slice(0, 2).join(' ')} ×${item.quantity}`).join(', ');
 };
 
 // Determine payment method from order (mock logic)
@@ -85,7 +88,7 @@ const AdminOrderHistory = () => {
             .then((data) => {
                 const all = data.orders || [];
                 const completedOrders = all.filter(
-                    (o: Order) => o.orderStatus === "Delivered" || o.orderStatus === "Cancelled"
+                    (o: Order) => ["DELIVERED", "COMPLETED", "CANCELLED", "RETURNED"].includes(o.orderStatus)
                 );
                 setOrders(completedOrders);
             })
@@ -102,9 +105,9 @@ const AdminOrderHistory = () => {
             const query = searchQuery.toLowerCase();
             filtered = filtered.filter(
                 (o) =>
-                    o.id.toLowerCase().includes(query) ||
-                    o.userName.toLowerCase().includes(query) ||
-                    o.userEmail.toLowerCase().includes(query)
+                    (o.orderNumber || o.id).toLowerCase().includes(query) ||
+                    (o.userName || o.user?.name || '').toLowerCase().includes(query) ||
+                    (o.userEmail || o.user?.email || '').toLowerCase().includes(query)
             );
         }
 
@@ -149,10 +152,10 @@ const AdminOrderHistory = () => {
         });
     };
 
-    const deliveredCount = orders.filter((o) => o.orderStatus === "Delivered").length;
-    const cancelledCount = orders.filter((o) => o.orderStatus === "Cancelled").length;
+    const deliveredCount = orders.filter((o) => ["DELIVERED", "COMPLETED"].includes(o.orderStatus)).length;
+    const cancelledCount = orders.filter((o) => ["CANCELLED", "RETURNED"].includes(o.orderStatus)).length;
     const totalRevenue = orders
-        .filter((o) => o.orderStatus === "Delivered" && o.paymentStatus === "Paid")
+        .filter((o) => ["DELIVERED", "COMPLETED"].includes(o.orderStatus) && o.paymentStatus === "PAID")
         .reduce((sum, o) => sum + o.totalAmount, 0);
 
     return (
@@ -362,11 +365,11 @@ const AdminOrderHistory = () => {
                                             const paymentMethod = getPaymentMethod(order);
                                             return (
                                                 <TableRow key={order.id} className="hover:bg-muted/50">
-                                                    <TableCell className="font-mono text-xs">{order.id}</TableCell>
+                                                    <TableCell className="font-mono text-xs">{order.orderNumber || order.id}</TableCell>
                                                     <TableCell>
                                                         <div>
-                                                            <p className="font-medium">{order.userName}</p>
-                                                            <p className="text-xs text-muted-foreground">{order.userEmail}</p>
+                                                            <p className="font-medium">{order.userName || order.user?.name || 'N/A'}</p>
+                                                            <p className="text-xs text-muted-foreground">{order.userEmail || order.user?.email || ''}</p>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="max-w-[200px]">
@@ -392,7 +395,7 @@ const AdminOrderHistory = () => {
                                                     <TableCell>
                                                         <Badge
                                                             className={
-                                                                order.orderStatus === "Delivered"
+                                                                ["DELIVERED", "COMPLETED"].includes(order.orderStatus)
                                                                     ? "bg-green-500/20 text-green-400 border-green-500/50"
                                                                     : "bg-red-500/20 text-red-400 border-red-500/50"
                                                             }
@@ -436,7 +439,7 @@ const AdminOrderHistory = () => {
                                         Order {selectedOrder.id}
                                         <Badge
                                             className={
-                                                selectedOrder.orderStatus === "Delivered"
+                                                ["DELIVERED", "COMPLETED"].includes(selectedOrder.orderStatus)
                                                     ? "bg-green-500/20 text-green-400 border-green-500/50"
                                                     : "bg-red-500/20 text-red-400 border-red-500/50"
                                             }
@@ -445,7 +448,7 @@ const AdminOrderHistory = () => {
                                         </Badge>
                                     </DialogTitle>
                                     <DialogDescription>
-                                        {selectedOrder.orderStatus === "Delivered" ? "Delivered" : "Cancelled"} on{" "}
+                                        {["DELIVERED", "COMPLETED"].includes(selectedOrder.orderStatus) ? "Delivered" : "Cancelled/Returned"} on{" "}
                                         {formatDate(selectedOrder.updatedAt)}
                                     </DialogDescription>
                                 </DialogHeader>
@@ -474,30 +477,34 @@ const AdminOrderHistory = () => {
 
                                     <div>
                                         <h4 className="text-sm font-medium mb-2">Shipping Address</h4>
+                                        {selectedOrder.shippingAddress ? (
                                         <p className="text-sm text-muted-foreground">
                                             {selectedOrder.shippingAddress.name}<br />
-                                            {selectedOrder.shippingAddress.line1}<br />
+                                            {selectedOrder.shippingAddress.street}<br />
                                             {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state}{" "}
-                                            {selectedOrder.shippingAddress.postalCode}<br />
+                                            {selectedOrder.shippingAddress.pincode}<br />
                                             {selectedOrder.shippingAddress.phone}
                                         </p>
+                                        ) : (
+                                        <p className="text-sm text-muted-foreground">No address provided</p>
+                                        )}
                                     </div>
 
                                     <div>
                                         <h4 className="text-sm font-medium mb-2">Items Ordered</h4>
                                         <div className="space-y-2">
-                                            {selectedOrder.items.map((item) => (
+                                            {(selectedOrder.products || []).map((item, idx) => (
                                                 <div
-                                                    key={item.id}
+                                                    key={item.productId || idx}
                                                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                                                 >
                                                     <div>
-                                                        <p className="text-sm font-medium">{item.productName}</p>
+                                                        <p className="text-sm font-medium">{item.name}</p>
                                                         <p className="text-xs text-muted-foreground">
-                                                            Qty: {item.quantity} × ₹{item.price.toLocaleString()}
+                                                            Qty: {item.quantity} × ₹{item.unitPrice.toLocaleString()}
                                                         </p>
                                                     </div>
-                                                    <p className="font-medium">₹{item.total.toLocaleString()}</p>
+                                                    <p className="font-medium">₹{item.totalPrice.toLocaleString()}</p>
                                                 </div>
                                             ))}
                                         </div>

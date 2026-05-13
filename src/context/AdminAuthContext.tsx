@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 type AdminUser = {
@@ -13,7 +13,8 @@ type AdminAuthContextValue = {
   token: string | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
-  login: (opts?: { redirectTo?: string }) => void;
+  isLoading: boolean;
+  login: (email: string, password: string) => Promise<void>;
   loginWithData: (token: string, userData: AdminUser, opts?: { redirectTo?: string }) => void;
   logout: () => void;
 };
@@ -23,70 +24,109 @@ const AdminAuthContext = createContext<AdminAuthContextValue | undefined>(
 );
 
 const STORAGE_KEY = "blackpiston_admin_auth";
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl && !envUrl.includes("localhost")) return envUrl;
+  return `${window.location.protocol}//${window.location.hostname}:3001/api`;
+};
+const API_BASE = getApiBaseUrl();
 
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<AdminUser | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  // Eagerly read localStorage so auth is available on first render
+  const [user, setUser] = useState<AdminUser | null>(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.user && parsed?.token) return parsed.user;
+      }
+    } catch { /* ignore */ }
+    return null;
+  });
+  const [token, setToken] = useState<string | null>(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.user && parsed?.token) return parsed.token;
+      }
+    } catch { /* ignore */ }
+    return null;
+  });
+  const [isLoading, setIsLoading] = useState(false);
+
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { user: AdminUser; token: string };
-      setUser(parsed.user);
-      setToken(parsed.token);
-    } catch {
-      // ignore
-    }
-  }, []);
+  // Use refs so callbacks always have the latest navigate/location
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
+  const locationRef = useRef(location);
+  locationRef.current = location;
 
+  // Persist auth changes to localStorage
   useEffect(() => {
-    if (!user || !token) {
-      window.localStorage.removeItem(STORAGE_KEY);
-      return;
+    if (user && token) {
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ user, token }),
+      );
     }
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ user, token }),
-    );
   }, [user, token]);
 
-  const login = (opts?: { redirectTo?: string }) => {
-    const fakeUser: AdminUser = {
-      id: "admin-1",
-      name: "Garage Admin",
-      email: "admin@blackpiston.garage",
-      role: "admin",
-    };
-    const fakeToken = "FAKE_ADMIN_JWT_TOKEN";
-    setUser(fakeUser);
-    setToken(fakeToken);
+  // Real admin login via backend API
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const redirect =
-      opts?.redirectTo ||
-      (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
-      "/admin";
-    navigate(redirect, { replace: true });
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Login failed");
+      }
+
+      const userData: AdminUser = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        role: data.user.role,
+      };
+
+      setUser(userData);
+      setToken(data.token);
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: userData, token: data.token }));
+
+      const redirect =
+        (locationRef.current.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
+        "/admin";
+      navigateRef.current(redirect, { replace: true });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const loginWithData = (newToken: string, userData: AdminUser, opts?: { redirectTo?: string }) => {
     setUser(userData);
     setToken(newToken);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: userData, token: newToken }));
 
     const redirect =
       opts?.redirectTo ||
-      (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
+      (locationRef.current.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
       "/admin";
-    navigate(redirect, { replace: true });
+    navigateRef.current(redirect, { replace: true });
   };
 
   const logout = () => {
     setUser(null);
     setToken(null);
     window.localStorage.removeItem(STORAGE_KEY);
-    navigate("/login", { replace: true });
+    navigateRef.current("/login", { replace: true });
   };
 
   const value: AdminAuthContextValue = {
@@ -94,6 +134,7 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     token,
     isAuthenticated: Boolean(user && token),
     isAdmin: Boolean(user && token && ["admin", "super-admin", "ADMIN", "STAFF"].includes(user.role)),
+    isLoading,
     login,
     loginWithData,
     logout,
@@ -113,5 +154,3 @@ export const useAdminAuth = () => {
   }
   return ctx;
 };
-
-

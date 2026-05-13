@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -62,20 +62,18 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  Percent,
+  Info,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   fetchAdminProducts,
-  fetchCategories,
   createProduct,
   updateProduct,
   deleteProduct,
   uploadImages,
-  fetchProductTypes,
-  createProductType as apiCreateProductType,
-  fetchCategoriesByType,
   fetchTagSuggestions,
-  createCategory as apiCreateCategory,
 } from "@/lib/api";
 
 // ============================================================
@@ -89,26 +87,14 @@ interface ProductImage {
 }
 
 interface ProductVariant {
+  id?: string;
   size?: string;
   color?: string;
+  model?: string;
   sku: string;
-  stockQuantity: number;
-  priceModifier: number;
-}
-
-interface ProductCategory {
-  id: string;
-  name: string;
-  slug: string;
-  productTypeId?: string | null;
-}
-
-interface ProductTypeT {
-  id: string;
-  name: string;
-  slug: string;
-  description?: string | null;
-  _count?: { categories: number; products: number };
+  price?: number | string;
+  stockQuantity?: number | string;
+  images?: ProductImage[];
 }
 
 interface Product {
@@ -117,11 +103,6 @@ interface Product {
   slug: string;
   description?: string;
   shortDescription?: string;
-  productTypeId?: string;
-  productType?: { id: string; name: string; slug: string };
-  categoryId?: string;
-  categorySlug?: string;
-  category?: ProductCategory;
   brand?: string;
   price: number;
   offerPrice?: number;
@@ -139,21 +120,37 @@ interface Product {
   updatedAt: string;
 }
 
+// Product type options for the dropdown
+const PRODUCT_TYPES = [
+  "Helmet",
+  "Jacket",
+  "Gloves",
+  "Boots",
+  "Riding Pants",
+  "Guards & Armor",
+  "Rain Gear",
+  "Accessories",
+  "Parts",
+  "Lubricants & Chemicals",
+  "Tools",
+  "Other",
+];
+
 interface FormData {
   name: string;
   description: string;
   shortDescription: string;
   brand: string;
   sku: string;
-  productTypeId: string;
-  categoryId: string;
-  categorySlug: string;
+  productType: string;
   tagChips: string[];
   tagInput: string;
   price: string;
   offerPrice: string;
+  discountPercent: string;
   costPrice: string;
   stockQuantity: string;
+  hasVariants: boolean;
   isFeatured: boolean;
   isActive: boolean;
   images: ProductImage[];
@@ -166,15 +163,15 @@ const emptyForm: FormData = {
   shortDescription: "",
   brand: "",
   sku: "",
-  productTypeId: "",
-  categoryId: "",
-  categorySlug: "",
+  productType: "",
   tagChips: [],
   tagInput: "",
   price: "",
   offerPrice: "",
+  discountPercent: "",
   costPrice: "",
   stockQuantity: "0",
+  hasVariants: false,
   isFeatured: false,
   isActive: true,
   images: [],
@@ -188,17 +185,12 @@ const emptyForm: FormData = {
 const AdminProducts = () => {
   // Data state
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<ProductCategory[]>([]);
-  const [allCategories, setAllCategories] = useState<ProductCategory[]>([]);
-  const [productTypes, setProductTypes] = useState<ProductTypeT[]>([]);
   const [pagination, setPagination] = useState({ page: 1, total: 0, totalPages: 1 });
   const [isLoading, setIsLoading] = useState(true);
 
   // Filter state
   const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [typeFilter, setTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
   // Dialog state
@@ -208,17 +200,12 @@ const AdminProducts = () => {
   const [productToDelete, setProductToDelete] = useState<Product | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [variantUploadingIndex, setVariantUploadingIndex] = useState<number | null>(null);
 
   // Tag suggestions
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [showTagSuggestions, setShowTagSuggestions] = useState(false);
   const tagInputRef = useRef<HTMLInputElement>(null);
-
-  // Add new type/category inline
-  const [showNewTypeInput, setShowNewTypeInput] = useState(false);
-  const [newTypeName, setNewTypeName] = useState("");
-  const [showNewCatInput, setShowNewCatInput] = useState(false);
-  const [newCatName, setNewCatName] = useState("");
 
   // Form state
   const [formData, setFormData] = useState<FormData>({ ...emptyForm });
@@ -235,9 +222,7 @@ const AdminProducts = () => {
         limit: 15,
       };
       if (searchQuery.trim()) params.search = searchQuery.trim();
-      if (categoryFilter !== "all") params.category = categoryFilter;
       if (statusFilter !== "all") params.status = statusFilter;
-      if (typeFilter !== "all") params.productTypeId = typeFilter;
 
       const data = await fetchAdminProducts(params as any);
       setProducts(data.products || []);
@@ -248,40 +233,11 @@ const AdminProducts = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, searchQuery, categoryFilter, statusFilter, typeFilter]);
+  }, [currentPage, searchQuery, statusFilter]);
 
   useEffect(() => {
     loadProducts();
   }, [loadProducts]);
-
-  // Fetch categories + product types once
-  useEffect(() => {
-    fetchCategories()
-      .then((data) => {
-        const cats = data.categories || data || [];
-        const catArr = Array.isArray(cats) ? cats : [];
-        setCategories(catArr);
-        setAllCategories(catArr);
-      })
-      .catch(() => { });
-
-    fetchProductTypes()
-      .then((data) => setProductTypes(data.productTypes || []))
-      .catch(() => { });
-  }, []);
-
-  // Reload categories when form type changes
-  const loadFormCategories = useCallback(async (typeId: string) => {
-    try {
-      const data = typeId
-        ? await fetchCategoriesByType(typeId)
-        : await fetchCategories();
-      const cats = data.categories || data || [];
-      setCategories(Array.isArray(cats) ? cats : []);
-    } catch {
-      setCategories(allCategories);
-    }
-  }, [allCategories]);
 
   // --------------------------------
   // Search debounce
@@ -301,36 +257,74 @@ const AdminProducts = () => {
   const openAddForm = () => {
     setEditingProduct(null);
     setFormData({ ...emptyForm });
-    setCategories(allCategories);
     setIsFormOpen(true);
   };
 
   const openEditForm = (product: Product) => {
     setEditingProduct(product);
-    const typeId = product.productTypeId || "";
+    const hasVariants = (product.variants?.length || 0) > 0;
+    const price = product.price;
+    const offerPrice = product.offerPrice;
+    let discountPercent = "";
+    if (offerPrice && price > 0 && offerPrice < price) {
+      discountPercent = String(Math.round(((price - offerPrice) / price) * 100));
+    }
     setFormData({
       name: product.name,
       description: product.description || "",
       shortDescription: product.shortDescription || "",
       brand: product.brand || "",
       sku: product.sku || "",
-      productTypeId: typeId,
-      categoryId: product.categoryId || "",
-      categorySlug: product.categorySlug || "",
+      productType: "",
       tagChips: product.tags || [],
       tagInput: "",
       price: String(product.price),
       offerPrice: product.offerPrice ? String(product.offerPrice) : "",
+      discountPercent,
       costPrice: product.costPrice ? String(product.costPrice) : "",
       stockQuantity: String(product.stockQuantity),
+      hasVariants,
       isFeatured: product.isFeatured,
       isActive: product.isActive,
       images: product.images || [],
       variants: product.variants || [],
     });
-    if (typeId) loadFormCategories(typeId);
-    else setCategories(allCategories);
     setIsFormOpen(true);
+  };
+
+  // --------------------------------
+  // Discount auto-calculation
+  // --------------------------------
+  const handlePriceChange = (value: string) => {
+    const price = parseFloat(value);
+    const pct = parseFloat(formData.discountPercent);
+    let offerPrice = formData.offerPrice;
+    if (!isNaN(price) && !isNaN(pct) && pct > 0 && pct < 100) {
+      offerPrice = String(Math.round(price * (1 - pct / 100)));
+    }
+    setFormData({ ...formData, price: value, offerPrice });
+  };
+
+  const handleOfferPriceChange = (value: string) => {
+    const price = parseFloat(formData.price);
+    const offer = parseFloat(value);
+    let discountPercent = "";
+    if (!isNaN(price) && !isNaN(offer) && price > 0 && offer < price) {
+      discountPercent = String(Math.round(((price - offer) / price) * 100));
+    }
+    setFormData({ ...formData, offerPrice: value, discountPercent });
+  };
+
+  const handleDiscountPercentChange = (value: string) => {
+    const price = parseFloat(formData.price);
+    const pct = parseFloat(value);
+    let offerPrice = formData.offerPrice;
+    if (!isNaN(price) && !isNaN(pct) && pct > 0 && pct < 100) {
+      offerPrice = String(Math.round(price * (1 - pct / 100)));
+    } else {
+      offerPrice = "";
+    }
+    setFormData({ ...formData, discountPercent: value, offerPrice });
   };
 
   // --------------------------------
@@ -347,11 +341,15 @@ const AdminProducts = () => {
       toast.error("Price must be greater than 0");
       return;
     }
-    const stock = parseInt(formData.stockQuantity) || 0;
-    if (stock < 0) {
-      toast.error("Stock cannot be negative");
-      return;
+
+    if (!formData.hasVariants) {
+      const stock = parseInt(formData.stockQuantity) || 0;
+      if (stock < 0) {
+        toast.error("Stock cannot be negative");
+        return;
+      }
     }
+
     if (formData.images.length === 0) {
       toast.error("At least one image is required");
       return;
@@ -363,25 +361,39 @@ const AdminProducts = () => {
       return;
     }
 
+    // Variant validation
+    if (formData.hasVariants && formData.variants.length === 0) {
+      toast.error("Add at least one variant or disable variants");
+      return;
+    }
+
     setIsSaving(true);
     try {
+      // Calculate total stock from variants
+      const variantTotalStock = formData.hasVariants
+        ? formData.variants.reduce((sum, v) => sum + (Number(v.stockQuantity) || 0), 0)
+        : parseInt(formData.stockQuantity) || 0;
+
       const payload: Record<string, unknown> = {
         name: formData.name.trim(),
         description: formData.description.trim() || null,
         shortDescription: formData.shortDescription.trim() || null,
         brand: formData.brand.trim() || null,
         sku: formData.sku.trim() || undefined,
-        productTypeId: formData.productTypeId || null,
-        categoryId: formData.categoryId || null,
-        categorySlug: formData.categorySlug || null,
         price,
         offerPrice,
-        stockQuantity: stock,
+        stockQuantity: variantTotalStock,
         tags: formData.tagChips,
         isFeatured: formData.isFeatured,
         isActive: formData.isActive,
         images: formData.images,
-        variants: formData.variants,
+        variants: formData.hasVariants
+          ? formData.variants.map(v => ({
+              ...v,
+              price: v.price !== "" && v.price != null ? Number(v.price) : null,
+              stockQuantity: v.stockQuantity !== "" && v.stockQuantity != null ? Number(v.stockQuantity) : 0,
+            }))
+          : [],
       };
 
       if (editingProduct) {
@@ -395,10 +407,6 @@ const AdminProducts = () => {
       setIsFormOpen(false);
       setEditingProduct(null);
       loadProducts();
-      // Refresh product types counts
-      fetchProductTypes()
-        .then((data) => setProductTypes(data.productTypes || []))
-        .catch(() => { });
     } catch (err: any) {
       toast.error(err?.message || "Failed to save product");
     } finally {
@@ -479,7 +487,7 @@ const AdminProducts = () => {
       ...prev,
       variants: [
         ...prev.variants,
-        { size: "", color: "", sku: "", stockQuantity: 0, priceModifier: 0 },
+        { size: "", color: "", model: "", sku: "", price: "", stockQuantity: "0", images: [] },
       ],
     }));
   };
@@ -500,37 +508,47 @@ const AdminProducts = () => {
     }));
   };
 
-  // --------------------------------
-  // Helpers
-  // --------------------------------
-  const formatPrice = (n: number) =>
-    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
-
-  const getProductImage = (product: Product) => {
-    const primary = product.images?.find((i) => i.isPrimary);
-    return primary?.url || product.images?.[0]?.url || "";
+  // Per-variant image upload
+  const handleVariantImageUpload = async (variantIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    const inputEl = e.target; // save ref before async
+    if (!files || files.length === 0) return;
+    setVariantUploadingIndex(variantIndex);
+    try {
+      const uploaded = await uploadImages(Array.from(files));
+      const newImages: ProductImage[] = uploaded.map((f) => ({
+        url: f.url,
+        alt: formData.variants[variantIndex]?.color || "Variant image",
+        isPrimary: false,
+      }));
+      setFormData((prev) => ({
+        ...prev,
+        variants: prev.variants.map((v, i) =>
+          i === variantIndex ? { ...v, images: [...(v.images || []), ...newImages] } : v
+        ),
+      }));
+      toast.success(`${uploaded.length} image(s) uploaded for variant`);
+    } catch (err: any) {
+      console.error("Variant image upload error:", err);
+      toast.error(err?.message || "Failed to upload variant images");
+    } finally {
+      setVariantUploadingIndex(null);
+      if (inputEl) inputEl.value = "";
+    }
   };
 
-  const handleCategoryChange = (catId: string) => {
-    const cat = categories.find((c) => c.id === catId);
+  const removeVariantImage = (variantIndex: number, imageIndex: number) => {
     setFormData((prev) => ({
       ...prev,
-      categoryId: catId,
-      categorySlug: cat?.slug || "",
+      variants: prev.variants.map((v, i) =>
+        i === variantIndex ? { ...v, images: (v.images || []).filter((_, j) => j !== imageIndex) } : v
+      ),
     }));
   };
 
-  const handleProductTypeChange = (typeId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      productTypeId: typeId,
-      categoryId: "",
-      categorySlug: "",
-    }));
-    loadFormCategories(typeId);
-  };
-
-  // ---- Tag chip helpers ----
+  // --------------------------------
+  // Tag chip helpers
+  // --------------------------------
   const normalizeTagForChip = (raw: string) => raw.replace(/^#/, "").trim();
 
   const addTagChip = (raw: string) => {
@@ -577,41 +595,21 @@ const AdminProducts = () => {
     }
   };
 
-  // ---- Inline create helpers ----
-  const handleCreateTypeInline = async () => {
-    if (!newTypeName.trim()) return;
-    try {
-      const data = await apiCreateProductType({ name: newTypeName.trim() });
-      const newType = data.productType;
-      setProductTypes((prev) => [...prev, newType]);
-      setFormData((prev) => ({ ...prev, productTypeId: newType.id, categoryId: "", categorySlug: "" }));
-      loadFormCategories(newType.id);
-      setNewTypeName("");
-      setShowNewTypeInput(false);
-      toast.success(`Type "${newType.name}" created`);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to create type");
-    }
+  // --------------------------------
+  // Computed values
+  // --------------------------------
+  const formatPrice = (n: number) =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
+
+  const getProductImage = (product: Product) => {
+    const primary = product.images?.find((i) => i.isPrimary);
+    return primary?.url || product.images?.[0]?.url || "";
   };
 
-  const handleCreateCategoryInline = async () => {
-    if (!newCatName.trim()) return;
-    try {
-      const data = await apiCreateCategory({
-        name: newCatName.trim(),
-        productTypeId: formData.productTypeId || undefined,
-      });
-      const newCat = data.category;
-      setCategories((prev) => [...prev, newCat]);
-      setAllCategories((prev) => [...prev, newCat]);
-      setFormData((prev) => ({ ...prev, categoryId: newCat.id, categorySlug: newCat.slug }));
-      setNewCatName("");
-      setShowNewCatInput(false);
-      toast.success(`Category "${newCat.name}" created`);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to create category");
-    }
-  };
+  const variantTotalStock = useMemo(() => {
+    if (!formData.hasVariants) return 0;
+    return formData.variants.reduce((sum, v) => sum + (Number(v.stockQuantity) || 0), 0);
+  }, [formData.hasVariants, formData.variants]);
 
   // ============================================================
   // RENDER
@@ -641,38 +639,12 @@ const AdminProducts = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or SKU..."
+                  placeholder="Search by name, SKU, or tag..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-9"
                 />
               </div>
-              <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setCurrentPage(1); }}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  {productTypes.map((pt) => (
-                    <SelectItem key={pt.id} value={pt.id}>
-                      {pt.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v); setCurrentPage(1); }}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Category" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {allCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.slug}>
-                      {cat.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
               <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="Status" />
@@ -717,10 +689,9 @@ const AdminProducts = () => {
                         <TableHead className="w-16">Image</TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>SKU</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Category</TableHead>
                         <TableHead className="text-right">Price</TableHead>
                         <TableHead className="text-right">Offer</TableHead>
+                        <TableHead className="text-center">Variants</TableHead>
                         <TableHead className="text-center">Stock</TableHead>
                         <TableHead className="text-center">Status</TableHead>
                         <TableHead className="text-center">Flags</TableHead>
@@ -754,34 +725,49 @@ const AdminProducts = () => {
                           <TableCell className="font-mono text-xs text-muted-foreground">
                             {p.sku}
                           </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {p.productType?.name || "—"}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {p.category?.name || "—"}
-                          </TableCell>
                           <TableCell className="text-right font-medium text-sm">
                             {formatPrice(p.price)}
                           </TableCell>
                           <TableCell className="text-right text-sm">
                             {p.offerPrice ? (
-                              <span className="text-green-400">{formatPrice(p.offerPrice)}</span>
+                              <div>
+                                <span className="text-green-400">{formatPrice(p.offerPrice)}</span>
+                                <div className="text-[10px] text-green-400/70">
+                                  {Math.round(((p.price - p.offerPrice) / p.price) * 100)}% off
+                                </div>
+                              </div>
                             ) : (
                               <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {(p.variants?.length || 0) > 0 ? (
+                              <Badge variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/40">
+                                {p.variants.length}
+                              </Badge>
+                            ) : (
+                              <span className="text-muted-foreground text-xs">—</span>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
                             <Badge
                               variant="outline"
                               className={
-                                p.stockQuantity === 0
-                                  ? "bg-red-500/10 text-red-400 border-red-500/40"
-                                  : p.stockQuantity <= 10
-                                    ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/40"
-                                    : "bg-green-500/10 text-green-400 border-green-500/40"
+                                (() => {
+                                  const totalStock = (p.variants?.length || 0) > 0
+                                    ? p.variants.reduce((sum: number, v: any) => sum + (v.stockQuantity || 0), 0)
+                                    : p.stockQuantity;
+                                  return totalStock === 0
+                                    ? "bg-red-500/10 text-red-400 border-red-500/40"
+                                    : totalStock <= 10
+                                      ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/40"
+                                      : "bg-green-500/10 text-green-400 border-green-500/40";
+                                })()
                               }
                             >
-                              {p.stockQuantity}
+                              {(p.variants?.length || 0) > 0
+                                ? p.variants.reduce((sum: number, v: any) => sum + (v.stockQuantity || 0), 0)
+                                : p.stockQuantity}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-center">
@@ -884,15 +870,21 @@ const AdminProducts = () => {
 
           <ScrollArea className="flex-1 px-6 overflow-y-auto">
             <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="w-full grid grid-cols-5 mb-4">
-                <TabsTrigger value="basic">Basic</TabsTrigger>
-                <TabsTrigger value="pricing">Pricing</TabsTrigger>
-                <TabsTrigger value="images">Images</TabsTrigger>
-                <TabsTrigger value="variants">Variants</TabsTrigger>
-                <TabsTrigger value="flags">Flags</TabsTrigger>
+              <TabsList className="w-full grid grid-cols-4 mb-4">
+                <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                <TabsTrigger value="pricing">Pricing & Stock</TabsTrigger>
+                <TabsTrigger value="images">Media</TabsTrigger>
+                <TabsTrigger value="variants">
+                  Variants
+                  {formData.hasVariants && formData.variants.length > 0 && (
+                    <Badge variant="secondary" className="ml-1.5 text-[10px] px-1.5 py-0">
+                      {formData.variants.length}
+                    </Badge>
+                  )}
+                </TabsTrigger>
               </TabsList>
 
-              {/* Basic Info Tab */}
+              {/* ── BASIC INFO TAB ── */}
               <TabsContent value="basic" className="space-y-4 pb-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Product Name *</Label>
@@ -944,98 +936,28 @@ const AdminProducts = () => {
                     />
                   </div>
                 </div>
+
                 {/* Product Type */}
                 <div className="space-y-2">
                   <Label>Product Type</Label>
-                  {showNewTypeInput ? (
-                    <div className="flex gap-2">
-                      <Input
-                        value={newTypeName}
-                        onChange={(e) => setNewTypeName(e.target.value)}
-                        placeholder="New type name…"
-                        onKeyDown={(e) => e.key === "Enter" && handleCreateTypeInline()}
-                      />
-                      <Button size="sm" onClick={handleCreateTypeInline} className="shrink-0">Add</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setShowNewTypeInput(false)} className="shrink-0">
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Select
-                        value={formData.productTypeId || "__none__"}
-                        onValueChange={(v) => handleProductTypeChange(v === "__none__" ? "" : v)}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select a type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">— No type —</SelectItem>
-                          {productTypes.map((pt) => (
-                            <SelectItem key={pt.id} value={pt.id}>
-                              {pt.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="shrink-0"
-                        title="Add new type"
-                        onClick={() => setShowNewTypeInput(true)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
+                  <Select
+                    value={formData.productType || "__none__"}
+                    onValueChange={(v) => setFormData({ ...formData, productType: v === "__none__" ? "" : v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Product Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">— Select Type —</SelectItem>
+                      {PRODUCT_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-                {/* Category (optional, filtered by type) */}
-                <div className="space-y-2">
-                  <Label>Category</Label>
-                  {showNewCatInput ? (
-                    <div className="flex gap-2">
-                      <Input
-                        value={newCatName}
-                        onChange={(e) => setNewCatName(e.target.value)}
-                        placeholder="New category name…"
-                        onKeyDown={(e) => e.key === "Enter" && handleCreateCategoryInline()}
-                      />
-                      <Button size="sm" onClick={handleCreateCategoryInline} className="shrink-0">Add</Button>
-                      <Button size="sm" variant="ghost" onClick={() => setShowNewCatInput(false)} className="shrink-0">
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <Select
-                        value={formData.categoryId || "__none__"}
-                        onValueChange={(v) => handleCategoryChange(v === "__none__" ? "" : v)}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue placeholder="Select a category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">— No category —</SelectItem>
-                          {categories.map((cat) => (
-                            <SelectItem key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        className="shrink-0"
-                        title="Add new category"
-                        onClick={() => setShowNewCatInput(true)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
+
                 {/* Tags — chip editor */}
                 <div className="space-y-2">
                   <Label>Tags</Label>
@@ -1080,81 +1002,149 @@ const AdminProducts = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Flags (Active/Featured) */}
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="isActive">Active</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Product is visible on the shop
+                    </p>
+                  </div>
+                  <Switch
+                    id="isActive"
+                    checked={formData.isActive}
+                    onCheckedChange={(v) => setFormData({ ...formData, isActive: v })}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="isFeatured">Featured</Label>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Show on homepage featured section
+                    </p>
+                  </div>
+                  <Switch
+                    id="isFeatured"
+                    checked={formData.isFeatured}
+                    onCheckedChange={(v) => setFormData({ ...formData, isFeatured: v })}
+                  />
+                </div>
               </TabsContent>
 
-              {/* Pricing & Stock Tab */}
-              <TabsContent value="pricing" className="space-y-4 pb-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="price">Price (₹) *</Label>
-                    <Input
-                      id="price"
-                      type="number"
-                      min="0"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      placeholder="0"
-                    />
+              {/* ── PRICING & STOCK TAB ── */}
+              <TabsContent value="pricing" className="space-y-5 pb-4">
+                {/* Price Section */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Percent className="h-4 w-4" /> Pricing
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="price">Base Price (₹) *</Label>
+                      <Input
+                        id="price"
+                        type="number"
+                        min="0"
+                        value={formData.price}
+                        onChange={(e) => handlePriceChange(e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="discountPercent">Discount %</Label>
+                      <Input
+                        id="discountPercent"
+                        type="number"
+                        min="0"
+                        max="99"
+                        value={formData.discountPercent}
+                        onChange={(e) => handleDiscountPercentChange(e.target.value)}
+                        placeholder="e.g. 15"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="offerPrice">Offer Price (₹)</Label>
+                      <Input
+                        id="offerPrice"
+                        type="number"
+                        min="0"
+                        value={formData.offerPrice}
+                        onChange={(e) => handleOfferPriceChange(e.target.value)}
+                        placeholder="Auto-calculated"
+                      />
+                    </div>
                   </div>
+                  {/* Discount preview */}
+                  {formData.price && formData.offerPrice && parseFloat(formData.offerPrice) < parseFloat(formData.price) && (
+                    <div className="rounded-lg bg-green-500/10 border border-green-500/30 p-3 text-sm flex items-center gap-3">
+                      <Tag className="h-4 w-4 text-green-400 flex-shrink-0" />
+                      <div>
+                        <span className="text-green-400 font-semibold">
+                          {Math.round(
+                            ((parseFloat(formData.price) - parseFloat(formData.offerPrice)) /
+                              parseFloat(formData.price)) *
+                            100
+                          )}% discount
+                        </span>
+                        <span className="text-green-400/70">
+                          {" "}— Customer pays {formatPrice(parseFloat(formData.offerPrice))}{" "}
+                          (saves {formatPrice(parseFloat(formData.price) - parseFloat(formData.offerPrice))})
+                        </span>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
-                    <Label htmlFor="offerPrice">Offer Price (₹)</Label>
-                    <Input
-                      id="offerPrice"
-                      type="number"
-                      min="0"
-                      value={formData.offerPrice}
-                      onChange={(e) => setFormData({ ...formData, offerPrice: e.target.value })}
-                      placeholder="Leave blank if no offer"
-                    />
-                  </div>
-                </div>
-                {formData.price && formData.offerPrice && (
-                  <div className="rounded-md bg-green-500/10 border border-green-500/30 p-3 text-sm">
-                    <span className="text-green-400 font-medium">
-                      {Math.round(
-                        ((parseFloat(formData.price) - parseFloat(formData.offerPrice)) /
-                          parseFloat(formData.price)) *
-                        100
-                      )}
-                      % discount
-                    </span>{" "}
-                    — Customer saves{" "}
-                    {formatPrice(
-                      parseFloat(formData.price) - parseFloat(formData.offerPrice)
-                    )}
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="costPrice">Cost Price (₹)</Label>
+                    <Label htmlFor="costPrice">Cost Price (₹) <span className="text-muted-foreground text-xs">(internal only)</span></Label>
                     <Input
                       id="costPrice"
                       type="number"
                       min="0"
                       value={formData.costPrice}
                       onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
-                      placeholder="Optional"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="stockQuantity">Stock Quantity *</Label>
-                    <Input
-                      id="stockQuantity"
-                      type="number"
-                      min="0"
-                      value={formData.stockQuantity}
-                      onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })}
+                      placeholder="Optional — your purchase cost"
                     />
                   </div>
                 </div>
+
+                <Separator />
+
+                {/* Stock Section */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Layers className="h-4 w-4" /> Inventory
+                  </h3>
+
+                  {formData.hasVariants ? (
+                    <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 p-3 text-sm flex items-center gap-3">
+                      <Info className="h-4 w-4 text-blue-400 flex-shrink-0" />
+                      <span className="text-blue-400">
+                        Stock is managed per variant. Total across variants:{" "}
+                        <span className="font-bold">{variantTotalStock} units</span>
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="stockQuantity">Stock Quantity *</Label>
+                      <Input
+                        id="stockQuantity"
+                        type="number"
+                        min="0"
+                        value={formData.stockQuantity}
+                        onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })}
+                      />
+                    </div>
+                  )}
+                </div>
               </TabsContent>
 
-              {/* Images Tab */}
+              {/* ── MEDIA TAB ── */}
               <TabsContent value="images" className="space-y-4 pb-4">
                 <div className="space-y-2">
                   <Label>Product Images *</Label>
                   <p className="text-xs text-muted-foreground">
-                    Upload up to 5 images. Click the star to set the primary image.
+                    Upload up to 5 images. Click the star to set the primary/thumbnail image.
                   </p>
                 </div>
                 <input
@@ -1202,7 +1192,7 @@ const AdminProducts = () => {
                           <button
                             type="button"
                             className="rounded-full p-1.5 bg-black/60 text-yellow-400 hover:bg-yellow-400 hover:text-black transition-colors"
-                            title="Set as primary"
+                            title="Set as thumbnail"
                             onClick={() => setPrimaryImage(i)}
                           >
                             <Star className="h-3.5 w-3.5" />
@@ -1218,7 +1208,7 @@ const AdminProducts = () => {
                         </div>
                         {img.isPrimary && (
                           <div className="absolute top-1 left-1 rounded-full bg-yellow-400 px-1.5 py-0.5 text-[10px] font-bold text-black">
-                            PRIMARY
+                            THUMBNAIL
                           </div>
                         )}
                       </div>
@@ -1227,113 +1217,182 @@ const AdminProducts = () => {
                 )}
               </TabsContent>
 
-              {/* Variants Tab */}
+              {/* ── VARIANTS TAB ── */}
               <TabsContent value="variants" className="space-y-4 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Product Variants</Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Add size, color, or model variations.
-                    </p>
+                {/* Has Variants Toggle */}
+                <div className="flex items-center justify-between p-4 rounded-lg border border-border bg-muted/30">
+                  <div className="flex items-center gap-3">
+                    <Layers className="h-5 w-5 text-primary" />
+                    <div>
+                      <Label htmlFor="hasVariants" className="text-sm font-medium">
+                        This product has variants
+                      </Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Enable for products with different sizes, colors, or models
+                      </p>
+                    </div>
                   </div>
-                  <Button size="sm" variant="outline" onClick={addVariant}>
-                    <Plus className="mr-1 h-3.5 w-3.5" />
-                    Add Variant
-                  </Button>
+                  <Switch
+                    id="hasVariants"
+                    checked={formData.hasVariants}
+                    onCheckedChange={(v) => {
+                      setFormData({ ...formData, hasVariants: v });
+                      if (!v) {
+                        // When disabling variants, optionally keep them in case user re-enables
+                      }
+                    }}
+                  />
                 </div>
-                {formData.variants.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground text-sm border border-dashed border-border rounded-lg">
-                    No variants added yet. Click "Add Variant" to create one.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {formData.variants.map((variant, i) => (
-                      <div
-                        key={i}
-                        className="border border-border rounded-lg p-3 space-y-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-muted-foreground">
-                            Variant #{i + 1}
-                          </span>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-6 w-6 text-muted-foreground hover:text-destructive"
-                            onClick={() => removeVariant(i)}
+
+                {formData.hasVariants ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          Each variant = one combination (e.g. Black/M, Black/L, Red/M).
+                          Set price override per variant or leave blank to use base price.
+                        </p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={addVariant}>
+                        <Plus className="mr-1 h-3.5 w-3.5" />
+                        Add Variant
+                      </Button>
+                    </div>
+
+                    {formData.variants.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground text-sm border border-dashed border-border rounded-lg">
+                        No variants added yet. Click &quot;Add Variant&quot; to create one.
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {formData.variants.map((variant, i) => (
+                          <div
+                            key={i}
+                            className="border border-border rounded-lg p-3 space-y-3"
                           >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                          <Input
-                            placeholder="Size"
-                            value={variant.size || ""}
-                            onChange={(e) => updateVariant(i, "size", e.target.value)}
-                          />
-                          <Input
-                            placeholder="Color"
-                            value={variant.color || ""}
-                            onChange={(e) => updateVariant(i, "color", e.target.value)}
-                          />
-                          <Input
-                            placeholder="SKU"
-                            value={variant.sku}
-                            onChange={(e) => updateVariant(i, "sku", e.target.value)}
-                          />
-                          <Input
-                            placeholder="Stock"
-                            type="number"
-                            min="0"
-                            value={variant.stockQuantity}
-                            onChange={(e) =>
-                              updateVariant(i, "stockQuantity", parseInt(e.target.value) || 0)
-                            }
-                          />
-                          <Input
-                            placeholder="Price ±"
-                            type="number"
-                            value={variant.priceModifier}
-                            onChange={(e) =>
-                              updateVariant(i, "priceModifier", parseFloat(e.target.value) || 0)
-                            }
-                          />
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-medium text-muted-foreground">
+                                Variant #{i + 1}
+                                {variant.color && <span className="ml-1 text-primary"> — {variant.color}</span>}
+                                {variant.size && <span className="ml-1 text-blue-400"> / {variant.size}</span>}
+                              </span>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6 text-muted-foreground hover:text-destructive"
+                                onClick={() => removeVariant(i)}
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-4 gap-2">
+                              <Input
+                                placeholder="Color (e.g. Black)"
+                                value={variant.color || ""}
+                                onChange={(e) => updateVariant(i, "color", e.target.value)}
+                              />
+                              <Input
+                                placeholder="Size (e.g. M, L)"
+                                value={variant.size || ""}
+                                onChange={(e) => updateVariant(i, "size", e.target.value)}
+                              />
+                              <Input
+                                placeholder="Model"
+                                value={variant.model || ""}
+                                onChange={(e) => updateVariant(i, "model", e.target.value)}
+                              />
+                              <Input
+                                placeholder="SKU (auto)"
+                                value={variant.sku}
+                                onChange={(e) => updateVariant(i, "sku", e.target.value)}
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-1">
+                                <Label className="text-xs">Price Override (₹)</Label>
+                                <Input
+                                  type="number"
+                                  placeholder={`Base: ${formData.price || "—"}`}
+                                  value={variant.price ?? ""}
+                                  onChange={(e) => updateVariant(i, "price", e.target.value ? Number(e.target.value) : "")}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Stock Quantity *</Label>
+                                <Input
+                                  type="number"
+                                  min={0}
+                                  value={variant.stockQuantity ?? 0}
+                                  onChange={(e) => updateVariant(i, "stockQuantity", Number(e.target.value) || 0)}
+                                />
+                              </div>
+                            </div>
+
+                            {/* Per-Variant Image Upload */}
+                            <div className="space-y-2 pt-2 border-t border-border/60">
+                              <div className="flex items-center justify-between">
+                                <Label className="text-xs">
+                                  Variant Images
+                                  {variant.color && <span className="text-primary"> ({variant.color})</span>}
+                                </Label>
+                                <label className="cursor-pointer">
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                    onChange={(e) => handleVariantImageUpload(i, e)}
+                                    disabled={variantUploadingIndex === i}
+                                  />
+                                  <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-border hover:bg-accent transition-colors">
+                                    {variantUploadingIndex === i ? (
+                                      <><Loader2 className="h-3 w-3 animate-spin" /> Uploading...</>
+                                    ) : (
+                                      <><ImageUp className="h-3 w-3" /> Upload</>
+                                    )}
+                                  </span>
+                                </label>
+                              </div>
+                              {(variant.images && variant.images.length > 0) && (
+                                <div className="flex flex-wrap gap-2">
+                                  {variant.images.map((img, j) => (
+                                    <div key={j} className="relative group h-16 w-16 rounded-md overflow-hidden border border-border">
+                                      <img src={img.url} alt={img.alt || "variant"} className="h-full w-full object-cover" />
+                                      <button
+                                        type="button"
+                                        className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                        onClick={() => removeVariantImage(i, j)}
+                                      >
+                                        <X className="h-3.5 w-3.5 text-red-400" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {(!variant.images || variant.images.length === 0) && (
+                                <p className="text-xs text-muted-foreground italic">No images — will use product default images</p>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+
+                        {/* Variant stock summary */}
+                        <div className="rounded-lg bg-muted/50 border border-border p-3 text-sm">
+                          <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Total Stock (all variants)</span>
+                            <span className="font-bold text-foreground">{variantTotalStock} units</span>
+                          </div>
                         </div>
                       </div>
-                    ))}
+                    )}
+                  </>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Layers className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">Variants are disabled for this product.</p>
+                    <p className="text-xs mt-1">Enable the toggle above to add size, color, or model variations.</p>
                   </div>
                 )}
-              </TabsContent>
-
-              {/* Flags Tab */}
-              <TabsContent value="flags" className="space-y-6 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="isActive">Active</Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Product is visible on the shop
-                    </p>
-                  </div>
-                  <Switch
-                    id="isActive"
-                    checked={formData.isActive}
-                    onCheckedChange={(v) => setFormData({ ...formData, isActive: v })}
-                  />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label htmlFor="isFeatured">Featured</Label>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Show on homepage featured section
-                    </p>
-                  </div>
-                  <Switch
-                    id="isFeatured"
-                    checked={formData.isFeatured}
-                    onCheckedChange={(v) => setFormData({ ...formData, isFeatured: v })}
-                  />
-                </div>
               </TabsContent>
             </Tabs>
           </ScrollArea>
