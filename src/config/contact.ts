@@ -52,7 +52,7 @@ export const contactConfig: ContactDetails = {
         link: "mailto:blackpistongarages@gmail.com",
     },
     social: {
-        instagram: "https://instagram.com/blackpistongarage",
+        instagram: "https://www.instagram.com/blackpistongarages?igsh=MW56aGpiOGFxZWJjbg==",
         facebook: "https://facebook.com/blackpistongarage",
         youtube: "https://youtube.com/@blackpistongarage",
     },

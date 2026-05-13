@@ -57,10 +57,10 @@ const getPaymentStatusColor = (status: PaymentStatus) => {
     }
 };
 
-// Get product summary from order items
+// Get product summary from order products
 const getProductSummary = (order: Order): string => {
-    if (!order.items) return "No items";
-    return order.items.map(item => `${item.productName.split(' ').slice(0, 2).join(' ')} ×${item.quantity}`).join(', ');
+    if (!order.products || order.products.length === 0) return "No items";
+    return order.products.map(item => `${item.name.split(' ').slice(0, 2).join(' ')} ×${item.quantity}`).join(', ');
 };
 
 // Determine payment method from order (mock logic)
@@ -105,9 +105,9 @@ const AdminOrderHistory = () => {
             const query = searchQuery.toLowerCase();
             filtered = filtered.filter(
                 (o) =>
-                    o.id.toLowerCase().includes(query) ||
-                    o.userName.toLowerCase().includes(query) ||
-                    o.userEmail.toLowerCase().includes(query)
+                    (o.orderNumber || o.id).toLowerCase().includes(query) ||
+                    (o.userName || o.user?.name || '').toLowerCase().includes(query) ||
+                    (o.userEmail || o.user?.email || '').toLowerCase().includes(query)
             );
         }
 
@@ -365,11 +365,11 @@ const AdminOrderHistory = () => {
                                             const paymentMethod = getPaymentMethod(order);
                                             return (
                                                 <TableRow key={order.id} className="hover:bg-muted/50">
-                                                    <TableCell className="font-mono text-xs">{order.id}</TableCell>
+                                                    <TableCell className="font-mono text-xs">{order.orderNumber || order.id}</TableCell>
                                                     <TableCell>
                                                         <div>
-                                                            <p className="font-medium">{order.userName}</p>
-                                                            <p className="text-xs text-muted-foreground">{order.userEmail}</p>
+                                                            <p className="font-medium">{order.userName || order.user?.name || 'N/A'}</p>
+                                                            <p className="text-xs text-muted-foreground">{order.userEmail || order.user?.email || ''}</p>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="max-w-[200px]">
@@ -477,30 +477,34 @@ const AdminOrderHistory = () => {
 
                                     <div>
                                         <h4 className="text-sm font-medium mb-2">Shipping Address</h4>
+                                        {selectedOrder.shippingAddress ? (
                                         <p className="text-sm text-muted-foreground">
                                             {selectedOrder.shippingAddress.name}<br />
-                                            {selectedOrder.shippingAddress.line1}<br />
+                                            {selectedOrder.shippingAddress.street}<br />
                                             {selectedOrder.shippingAddress.city}, {selectedOrder.shippingAddress.state}{" "}
-                                            {selectedOrder.shippingAddress.postalCode}<br />
+                                            {selectedOrder.shippingAddress.pincode}<br />
                                             {selectedOrder.shippingAddress.phone}
                                         </p>
+                                        ) : (
+                                        <p className="text-sm text-muted-foreground">No address provided</p>
+                                        )}
                                     </div>
 
                                     <div>
                                         <h4 className="text-sm font-medium mb-2">Items Ordered</h4>
                                         <div className="space-y-2">
-                                            {selectedOrder.items.map((item) => (
+                                            {(selectedOrder.products || []).map((item, idx) => (
                                                 <div
-                                                    key={item.id}
+                                                    key={item.productId || idx}
                                                     className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
                                                 >
                                                     <div>
-                                                        <p className="text-sm font-medium">{item.productName}</p>
+                                                        <p className="text-sm font-medium">{item.name}</p>
                                                         <p className="text-xs text-muted-foreground">
-                                                            Qty: {item.quantity} × ₹{item.price.toLocaleString()}
+                                                            Qty: {item.quantity} × ₹{item.unitPrice.toLocaleString()}
                                                         </p>
                                                     </div>
-                                                    <p className="font-medium">₹{item.total.toLocaleString()}</p>
+                                                    <p className="font-medium">₹{item.totalPrice.toLocaleString()}</p>
                                                 </div>
                                             ))}
                                         </div>

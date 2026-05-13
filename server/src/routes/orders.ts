@@ -3,6 +3,7 @@ import prisma from '../config/database.js';
 import jwt from 'jsonwebtoken';
 import { emitStockUpdate } from '../socketManager.js';
 import { sendOrderConfirmation, sendOrderStatusUpdate } from '../utils/emailService.js';
+import { ObjectId } from 'bson';
 
 const router = Router();
 
@@ -249,6 +250,47 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
                 }]
             }
         });
+
+        // ── Auto-save address to User Profile ──
+        try {
+            const user = await prisma.user.findUnique({ where: { id: userId } });
+            if (user) {
+                const isAddressSaved = user.savedAddresses?.some(addr => 
+                    addr.fullName === shippingAddress.name &&
+                    addr.phone === shippingAddress.phone &&
+                    addr.addressLine1 === shippingAddress.street &&
+                    addr.city === shippingAddress.city &&
+                    addr.pincode === shippingAddress.pincode
+                );
+                
+                if (!isAddressSaved) {
+                    const newAddress = {
+                        id: new ObjectId().toString(),
+                        label: user.savedAddresses?.length === 0 ? 'Home' : 'Other',
+                        fullName: shippingAddress.name || user.name,
+                        phone: shippingAddress.phone || user.phone || '',
+                        addressLine1: shippingAddress.street || '',
+                        addressLine2: '',
+                        city: shippingAddress.city || '',
+                        state: shippingAddress.state || '',
+                        pincode: shippingAddress.pincode || '',
+                        country: shippingAddress.country || 'India',
+                        landmark: '',
+                        isDefault: user.savedAddresses?.length === 0
+                    };
+                    
+                    await prisma.user.update({
+                        where: { id: userId },
+                        data: {
+                            savedAddresses: { push: newAddress }
+                        }
+                    });
+                }
+            }
+        } catch (addrErr) {
+            console.error("Failed to auto-save address:", addrErr);
+            // Non-blocking error
+        }
 
         // Create payment record
         await prisma.payment.create({

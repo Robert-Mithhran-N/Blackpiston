@@ -137,6 +137,10 @@ const formatDateTime = (dateString: string) => {
 const formatPrice = (n: number) =>
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
 
+// PDF-safe price formatter — jsPDF's default fonts can't render ₹
+const formatPricePDF = (n: number) =>
+    "Rs. " + new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
+
 // ============================================================
 // Helper: Normalize order from API (handles field name mismatches)
 // ============================================================
@@ -280,8 +284,8 @@ function generateInvoicePDF(order: Order) {
         const variant = [item.variantColor, item.variantSize].filter(Boolean).join(" / ");
         doc.text(variant || "—", 90, y);
         doc.text(String(item.quantity), 130, y, { align: "center" });
-        doc.text(`₹${item.unitPrice.toLocaleString()}`, 155, y, { align: "right" });
-        doc.text(`₹${item.totalPrice.toLocaleString()}`, pageWidth - 14, y, { align: "right" });
+        doc.text(formatPricePDF(item.unitPrice), 155, y, { align: "right" });
+        doc.text(formatPricePDF(item.totalPrice), pageWidth - 14, y, { align: "right" });
         y += 7;
     });
 
@@ -292,29 +296,29 @@ function generateInvoicePDF(order: Order) {
     // Totals
     const totalsX = pageWidth - 14;
     doc.text("Subtotal:", totalsX - 50, y);
-    doc.text(formatPrice(order.subtotal), totalsX, y, { align: "right" });
+    doc.text(formatPricePDF(order.subtotal), totalsX, y, { align: "right" });
     y += 6;
     if (order.shippingCost > 0) {
         doc.text("Shipping:", totalsX - 50, y);
-        doc.text(formatPrice(order.shippingCost), totalsX, y, { align: "right" });
+        doc.text(formatPricePDF(order.shippingCost), totalsX, y, { align: "right" });
         y += 6;
     }
     if (order.taxAmount > 0) {
         doc.text("Tax:", totalsX - 50, y);
-        doc.text(formatPrice(order.taxAmount), totalsX, y, { align: "right" });
+        doc.text(formatPricePDF(order.taxAmount), totalsX, y, { align: "right" });
         y += 6;
     }
     if (order.discountAmount > 0) {
         doc.text("Discount:", totalsX - 50, y);
         doc.setTextColor(0, 150, 0);
-        doc.text(`-${formatPrice(order.discountAmount)}`, totalsX, y, { align: "right" });
+        doc.text(`-${formatPricePDF(order.discountAmount)}`, totalsX, y, { align: "right" });
         doc.setTextColor(0);
         y += 6;
     }
     doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.text("Total:", totalsX - 50, y);
-    doc.text(formatPrice(order.totalAmount), totalsX, y, { align: "right" });
+    doc.text(formatPricePDF(order.totalAmount), totalsX, y, { align: "right" });
 
     // Footer
     y += 20;

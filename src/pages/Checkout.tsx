@@ -11,9 +11,12 @@ import { verifyStock, placeOrder, applyCoupon } from "@/lib/api";
 import { toast } from "sonner";
 import { MapPin, CreditCard, CheckCircle2, Package, Loader2, Tag } from "lucide-react";
 
+import { useUserAuth } from "@/context/UserAuthContext";
+
 const Checkout = () => {
   const navigate = useNavigate();
   const { cartItems, cartCount, cartTotal, clearCart } = useCart();
+  const { user } = useUserAuth();
   
   // State
   const [isProcessing, setIsProcessing] = useState(false);
@@ -26,14 +29,30 @@ const Checkout = () => {
 
   // Form State
   const [formData, setFormData] = useState({
-    fullName: "",
-    email: "",
-    phone: "",
+    fullName: user?.name || "",
+    email: user?.email || "",
+    phone: user?.phone || "",
     addressLine: "",
     city: "",
     state: "",
     pincode: "",
   });
+
+  // Pre-fill default address
+  useEffect(() => {
+    if (user?.savedAddresses && user.savedAddresses.length > 0) {
+      const defaultAddr = user.savedAddresses.find((a: any) => a.isDefault) || user.savedAddresses[0];
+      setFormData(prev => ({
+        ...prev,
+        fullName: defaultAddr.fullName || user.name || "",
+        phone: defaultAddr.phone || user.phone || "",
+        addressLine: defaultAddr.addressLine1 || "",
+        city: defaultAddr.city || "",
+        state: defaultAddr.state || "",
+        pincode: defaultAddr.pincode || ""
+      }));
+    }
+  }, [user]);
 
   // Redirect if cart is empty
   useEffect(() => {
@@ -176,9 +195,35 @@ const Checkout = () => {
             {/* Address Form */}
             <Card>
               <CardContent className="p-6">
-                <div className="flex items-center gap-2 mb-6 text-xl font-semibold">
-                  <MapPin className="text-primary h-6 w-6" />
-                  <h2>Shipping Address</h2>
+                <div className="flex items-center justify-between mb-6 border-b pb-4">
+                  <div className="flex items-center gap-2 text-xl font-semibold">
+                    <MapPin className="text-primary h-6 w-6" />
+                    <h2>Shipping Address</h2>
+                  </div>
+                  {user?.savedAddresses && user.savedAddresses.length > 0 && (
+                    <select 
+                      className="text-sm border rounded p-1 bg-background"
+                      onChange={(e) => {
+                        const addr = user.savedAddresses.find((a: any) => a.id === e.target.value);
+                        if (addr) {
+                          setFormData(prev => ({
+                            ...prev,
+                            fullName: addr.fullName,
+                            phone: addr.phone,
+                            addressLine: addr.addressLine1,
+                            city: addr.city,
+                            state: addr.state,
+                            pincode: addr.pincode
+                          }));
+                        }
+                      }}
+                    >
+                      <option value="">-- Select Saved Address --</option>
+                      {user.savedAddresses.map((addr: any) => (
+                        <option key={addr.id} value={addr.id}>{addr.label} - {addr.addressLine1}, {addr.city}</option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 
                 <form id="checkout-form" onSubmit={handlePlaceOrder} className="grid gap-4 sm:grid-cols-2">
