@@ -53,7 +53,6 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
                 price: true,
                 offerPrice: true,
                 images: true,
-                category: true,
                 inStock: true,
             }
         });

@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useUserAuth } from "@/context/UserAuthContext";
 import { useCart } from "@/context/CartContext";
-import logo from "@/assets/logo.png";
+// import logo from "@/assets/logo.png";
+const logo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/logo";
 
 const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);

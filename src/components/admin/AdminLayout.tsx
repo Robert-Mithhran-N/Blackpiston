@@ -1,7 +1,8 @@
 import { ReactNode, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useAdminAuth } from "@/context/AdminAuthContext";
-import logo from "@/assets/logo.png";
+// import logo from "@/assets/logo.png";
+const logo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/logo";
 import {
   LayoutDashboard,
   CalendarClock,

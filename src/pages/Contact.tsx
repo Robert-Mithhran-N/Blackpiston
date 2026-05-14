@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -13,16 +14,58 @@ import {
   Clock,
   Send,
   MessageCircle,
+  Loader2,
 } from "lucide-react";
 import { contactConfig } from "@/config/contact";
 import { toast } from "sonner";
+import { createRequest } from "@/lib/api";
 
 const Contact = () => {
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    subject: "",
+    message: ""
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success("Message sent successfully!", {
-      description: "We'll get back to you within 24 hours.",
-    });
+    setIsSubmitting(true);
+
+    try {
+      await createRequest({
+        userName: formData.name,
+        userEmail: formData.email,
+        userPhone: formData.phone,
+        productName: formData.subject, // Store subject here
+        message: formData.message,
+        requestType: "OTHER", // General contact message
+      });
+
+      toast.success("Message sent successfully!", {
+        description: "We'll get back to you within 24 hours.",
+      });
+      
+      setFormData({
+        name: "",
+        phone: "",
+        email: "",
+        subject: "",
+        message: ""
+      });
+    } catch (error: any) {
+      toast.error("Failed to send message", {
+        description: error.message || "Please try again later.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -144,25 +187,54 @@ const Contact = () => {
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Name</label>
-                        <Input placeholder="Your name" required />
+                        <Input 
+                          name="name"
+                          placeholder="Your name" 
+                          value={formData.name}
+                          onChange={handleChange}
+                          required 
+                        />
                       </div>
                       <div className="space-y-2">
                         <label className="text-sm font-medium">Phone</label>
-                        <Input type="tel" placeholder="Your phone number" required />
+                        <Input 
+                          name="phone"
+                          type="tel" 
+                          placeholder="Your phone number" 
+                          value={formData.phone}
+                          onChange={handleChange}
+                          required 
+                        />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Email</label>
-                      <Input type="email" placeholder="your.email@example.com" required />
+                      <Input 
+                        name="email"
+                        type="email" 
+                        placeholder="your.email@example.com" 
+                        value={formData.email}
+                        onChange={handleChange}
+                        required 
+                      />
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Subject</label>
-                      <Input placeholder="How can we help you?" required />
+                      <Input 
+                        name="subject"
+                        placeholder="How can we help you?" 
+                        value={formData.subject}
+                        onChange={handleChange}
+                        required 
+                      />
                     </div>
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Message</label>
                       <Textarea
+                        name="message"
                         placeholder="Tell us about your requirements..."
+                        value={formData.message}
+                        onChange={handleChange}
                         rows={5}
                         required
                       />
@@ -170,10 +242,20 @@ const Contact = () => {
                     <Button
                       type="submit"
                       size="lg"
+                      disabled={isSubmitting}
                       className="w-full bg-gradient-to-r from-primary to-orange-500 hover:opacity-90"
                     >
-                      <Send className="mr-2 h-4 w-4" />
-                      Send Message
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          Send Message
+                        </>
+                      )}
                     </Button>
                   </form>
                 </CardContent>

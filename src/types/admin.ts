@@ -137,12 +137,17 @@ export type RequestStatus = 'PENDING' | 'IN_PROGRESS' | 'RESPONDED' | 'COMPLETED
 
 export interface ProductRequest {
     id: string;
-    productName: string;
-    requestedBy: string;
-    userEmail: string;
-    userPhone: string;
-    requestDate: string;
-    status: RequestStatus;
+    productName?: string;
+    requestedBy?: string; // Legacy
+    userName?: string; // Backend
+    userEmail?: string;
+    userPhone?: string;
+    requestDate?: string; // Legacy
+    createdAt?: string; // Backend
+    status?: RequestStatus; // Legacy
+    requestStatus?: RequestStatus; // Backend
+    requestType?: string; // Backend
+    message?: string; // Backend
     notes?: string;
 }
 

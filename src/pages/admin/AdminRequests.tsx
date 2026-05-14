@@ -80,7 +80,33 @@ const RequestCard = ({
     onDelete,
     loading,
 }: RequestCardProps) => {
-    const { id, productName, requestedBy, userPhone, requestDate, status } = request;
+    // Fallback to older mock field names if backend hasn't updated them
+    const id = request.id;
+    const title = request.productName || request.message || "General Request";
+    const requestedBy = request.userName || request.requestedBy || "Unknown";
+    const userPhone = request.userPhone || "No Phone";
+    const requestDate = request.createdAt ? new Date(request.createdAt).toLocaleDateString() : request.requestDate || "Unknown Date";
+    const status = request.requestStatus || request.status || "PENDING";
+    const type = request.requestType || "PRODUCT_INQUIRY";
+    const message = request.message || "";
+
+    const getTypeColor = (reqType: string) => {
+        switch (reqType) {
+            case "PRODUCT_INQUIRY": return "bg-blue-500/20 text-blue-400";
+            case "CUSTOM_ORDER": return "bg-purple-500/20 text-purple-400";
+            case "BULK_ORDER": return "bg-amber-500/20 text-amber-400";
+            default: return "bg-gray-500/20 text-gray-400";
+        }
+    };
+
+    const getTypeLabel = (reqType: string) => {
+        switch (reqType) {
+            case "PRODUCT_INQUIRY": return "Product Request";
+            case "CUSTOM_ORDER": return "Build & Fit / Custom";
+            case "BULK_ORDER": return "Bulk Order";
+            default: return "Service Request";
+        }
+    };
 
     return (
         <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-lg border-2 border-border hover:border-primary/30 flex flex-col">
@@ -97,16 +123,26 @@ const RequestCard = ({
                     </div>
                 ) : (
                     <>
-                        {/* Icon */}
-                        <div className="h-12 w-12 rounded-xl flex items-center justify-center mb-4 bg-purple-500/10">
-                            <MessageSquare className="h-6 w-6 text-purple-500" />
+                        {/* Icon and Type */}
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="h-12 w-12 rounded-xl flex items-center justify-center bg-primary/10">
+                                <MessageSquare className="h-6 w-6 text-primary" />
+                            </div>
+                            <Badge className={`${getTypeColor(type)} border-none`}>
+                                {getTypeLabel(type)}
+                            </Badge>
                         </div>
 
-                        {/* Product Name */}
-                        <h3 className="font-semibold text-lg mb-3 line-clamp-2">{productName}</h3>
+                        {/* Title / Product Name */}
+                        <h3 className="font-semibold text-lg mb-2 line-clamp-2">{title}</h3>
+                        
+                        {/* Message Preview */}
+                        {message && (
+                            <p className="text-sm text-muted-foreground mb-4 line-clamp-2 italic">"{message}"</p>
+                        )}
 
                         {/* Requested By */}
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2 mt-auto">
                             <User className="h-4 w-4" />
                             <span>{requestedBy}</span>
                         </div>
@@ -125,8 +161,8 @@ const RequestCard = ({
 
                         {/* Status Badge */}
                         <div className="mb-4">
-                            <Badge className={`${getStatusColor(status)} flex items-center gap-1.5 w-fit`}>
-                                {getStatusIcon(status)}
+                            <Badge className={`${getStatusColor(status as RequestStatus)} flex items-center gap-1.5 w-fit`}>
+                                {getStatusIcon(status as RequestStatus)}
                                 {status}
                             </Badge>
                         </div>
@@ -148,7 +184,7 @@ const RequestCard = ({
                                 >
                                     <SelectTrigger
                                         className="flex-1 h-9 text-sm"
-                                        aria-label={`Change status for ${productName}`}
+                                        aria-label={`Change status for request`}
                                     >
                                         <SelectValue placeholder="Update Status" />
                                     </SelectTrigger>
@@ -187,7 +223,7 @@ const RequestCard = ({
                                 size="sm"
                                 className="w-full text-red-500 border-red-500/30 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/50"
                                 onClick={() => onDelete(id)}
-                                aria-label={`Delete request for ${productName}`}
+                                aria-label={`Delete request`}
                             >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete Request
@@ -195,7 +231,7 @@ const RequestCard = ({
                         </div>
 
                         {/* Bottom accent line */}
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-purple-500 opacity-30" />
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary opacity-30" />
                     </>
                 )}
             </CardContent>

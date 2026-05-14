@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Facebook, Instagram, Youtube, Twitter, Mail, Phone, MapPin } from "lucide-react";
-import logo from "@/assets/logo.png";
+// import logo from "@/assets/logo.png";
+const logo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/logo";
 import { contactConfig } from "@/config/contact";
 
 const Footer = () => {

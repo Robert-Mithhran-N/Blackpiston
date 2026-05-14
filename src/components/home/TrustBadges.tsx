@@ -1,18 +1,18 @@
 import { BrandLogo } from "@/types/user";
 
-// Import brand logos from assets
-import axorLogo from "@/assets/homeBrandLogos/AXOR_NEW_LOGO.webp";
-import mtHelmetsLogo from "@/assets/homeBrandLogos/MT helmets.svg";
-import smkLogo from "@/assets/homeBrandLogos/SMK-LOGO-2.webp";
-import vegaLogo from "@/assets/homeBrandLogos/Vega_LOGO.webp";
-import motulLogo from "@/assets/homeBrandLogos/Motul_logo.svg.png";
-import liquiMolyLogo from "@/assets/homeBrandLogos/liqui molly logo.svg";
-import agvLogo from "@/assets/homeBrandLogos/AGV logo.svg";
-import daineseLogo from "@/assets/homeBrandLogos/Dainese logo.svg";
-import rcbLogo from "@/assets/homeBrandLogos/RCB logo.svg";
-import bremboLogo from "@/assets/homeBrandLogos/brembo Logo_White 1x.svg";
-import insta360Logo from "@/assets/homeBrandLogos/insta 360logo-black.svg";
-import planetDsgLogo from "@/assets/homeBrandLogos/planet_dsg_logo.avif";
+// Import brand logos from Cloudinary
+const axorLogo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/homeBrandLogos_AXOR_NEW_LOGO";
+const mtHelmetsLogo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/homeBrandLogos_MT_helmets";
+const smkLogo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/homeBrandLogos_SMK-LOGO-2";
+const vegaLogo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/homeBrandLogos_Vega_LOGO";
+const motulLogo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/homeBrandLogos_Motul_logo_svg";
+const liquiMolyLogo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/homeBrandLogos_liqui_molly_logo";
+const agvLogo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/homeBrandLogos_AGV_logo";
+const daineseLogo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/homeBrandLogos_Dainese_logo";
+const rcbLogo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/homeBrandLogos_RCB_logo";
+const bremboLogo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/homeBrandLogos_brembo_Logo_White_1x";
+const insta360Logo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/homeBrandLogos_insta_360logo-black";
+const planetDsgLogo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/homeBrandLogos_planet_dsg_logo";
 
 // Brand data with actual logo images
 const brandLogos: BrandLogo[] = [

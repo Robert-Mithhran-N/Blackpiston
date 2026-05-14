@@ -27,34 +27,7 @@ async function main() {
     console.log('✅ Admin user created:', admin.email);
 
     // Create categories
-    const categories = [
-        { name: 'Helmets', slug: 'helmets', description: 'Premium motorcycle helmets for maximum protection', sortOrder: 1 },
-        { name: 'Jackets', slug: 'jackets', description: 'Riding jackets for comfort and safety', sortOrder: 2 },
-        { name: 'Boots', slug: 'boots', description: 'Motorcycle boots for grip and protection', sortOrder: 3 },
-        { name: 'Gloves', slug: 'gloves', description: 'Riding gloves for better grip and safety', sortOrder: 4 },
-        { name: 'Accessories', slug: 'accessories', description: 'Essential motorcycle accessories', sortOrder: 5 },
-        { name: 'Parts', slug: 'parts', description: 'High-quality motorcycle parts', sortOrder: 6 }
-    ];
-
-    for (const cat of categories) {
-        await prisma.productCategory.upsert({
-            where: { slug: cat.slug },
-            update: {},
-            create: {
-                name: cat.name,
-                slug: cat.slug,
-                description: cat.description,
-                sortOrder: cat.sortOrder,
-                isActive: true
-            }
-        });
-    }
-    console.log('✅ Categories created');
-
-    // Get category IDs
-    const helmetCategory = await prisma.productCategory.findUnique({ where: { slug: 'helmets' } });
-    const jacketCategory = await prisma.productCategory.findUnique({ where: { slug: 'jackets' } });
-    const bootsCategory = await prisma.productCategory.findUnique({ where: { slug: 'boots' } });
+    // Categories are now managed via tags
 
     // Create sample products
     const products = [
@@ -63,7 +36,6 @@ async function main() {
             slug: 'steelbird-sba-7-road-helmet',
             description: 'Full face helmet with dual visor and aerodynamic design',
             shortDescription: 'Premium full face helmet',
-            categoryId: helmetCategory?.id,
             categorySlug: 'helmets',
             brand: 'Steelbird',
             price: 3499,
@@ -92,7 +64,6 @@ async function main() {
             slug: 'royal-enfield-riding-jacket',
             description: 'Premium leather jacket with CE approved armor',
             shortDescription: 'Premium riding jacket',
-            categoryId: jacketCategory?.id,
             categorySlug: 'jackets',
             brand: 'Royal Enfield',
             price: 12999,
@@ -119,7 +90,6 @@ async function main() {
             slug: 'adventure-pro-racing-boots',
             description: 'High-performance racing boots with advanced protection',
             shortDescription: 'Professional racing boots',
-            categoryId: bootsCategory?.id,
             categorySlug: 'boots',
             brand: 'Adventure Pro',
             price: 8999,

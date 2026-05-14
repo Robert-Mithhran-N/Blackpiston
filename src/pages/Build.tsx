@@ -13,8 +13,10 @@ import {
   Shield,
   Truck,
   Headphones,
+  PackageSearch
 } from "lucide-react";
 import { buildKits } from "@/config/services";
+import { ProductRequestModal } from "@/components/shared/ProductRequestModal";
 
 const Build = () => {
   return (
@@ -49,6 +51,12 @@ const Build = () => {
                     Browse Shop
                   </Button>
                 </Link>
+                <ProductRequestModal defaultProduct="Custom Build / Product Inquiry">
+                  <Button size="lg" variant="secondary" className="bg-background/50 backdrop-blur-md border-primary/20 hover:bg-primary/10 transition-all">
+                    Request a Product
+                    <PackageSearch className="ml-2 h-5 w-5" />
+                  </Button>
+                </ProductRequestModal>
               </div>
             </div>
           </div>

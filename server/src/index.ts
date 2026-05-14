@@ -16,6 +16,7 @@ import serviceRoutes from './routes/services.js';
 import buildRoutes from './routes/builds.js';
 import couponRoutes from './routes/coupons.js';
 import wishlistRoutes from './routes/wishlist.js';
+import requestRoutes from './routes/requests.js';
 import { initSocketServer } from './socketManager.js';
 
 // Load environment variables (resolve path relative to this file, not CWD)
@@ -76,6 +77,7 @@ app.use('/api/admin/builds', buildRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api/requests', requestRoutes);
 // Search and tag suggestion routes are inside products router
 
 // Database connection check
