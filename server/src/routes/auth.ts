@@ -38,10 +38,13 @@ router.post('/register', async (req: Request, res: Response) => {
             savedAddresses.push({
                 id: new ObjectId().toHexString(),
                 label: 'Home',
-                street: address.line1,
-                city: address.city,
-                state: address.state,
-                pincode: address.pincode,
+                fullName: name || '',
+                phone: phone || '',
+                addressLine1: address.line1,
+                addressLine2: '',
+                city: address.city || '',
+                state: address.state || '',
+                pincode: address.pincode || '',
                 country: 'India',
                 isDefault: true
             });

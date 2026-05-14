@@ -14,7 +14,9 @@ async function run() {
     savedAddresses.push({
       id: new ObjectId().toHexString(),
       label: 'Home',
-      street: '123 Test Street',
+      fullName: 'Test Tester',
+      phone: '1234567890',
+      addressLine1: '123 Test Street',
       city: 'Test City',
       state: 'Test State',
       pincode: '123456',

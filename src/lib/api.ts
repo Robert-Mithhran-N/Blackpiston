@@ -337,6 +337,26 @@ export async function updateRequest(
     return res.json();
 }
 
+export async function createRequest(data: {
+    userName?: string;
+    userEmail?: string;
+    userPhone?: string;
+    requestType?: string;
+    productName?: string;
+    message?: string;
+}) {
+    const res = await fetch(`${API_BASE}/requests`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to submit request");
+    }
+    return res.json();
+}
+
 export async function fetchLowStockProducts() {
     const res = await fetch(`${API_BASE}/admin/inventory/low-stock`, {
         headers: getAuthHeaders(),

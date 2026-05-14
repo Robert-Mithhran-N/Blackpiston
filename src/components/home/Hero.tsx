@@ -2,8 +2,8 @@ import { Link } from "react-router-dom";
 import { ArrowRight, Wrench, Truck, RotateCcw, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-// Import hero image
-import heroImage from "@/assets/hero-gear.jpg";
+// import heroImage from "@/assets/hero-gear.jpg";
+const heroImage = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/hero-gear";
 
 const Hero = () => {
   return (

@@ -14,9 +14,11 @@ import {
   Phone,
   MapPin,
   Star,
+  PackageSearch
 } from "lucide-react";
 import { services } from "@/config/services";
 import { contactConfig } from "@/config/contact";
+import { ProductRequestModal } from "@/components/shared/ProductRequestModal";
 
 const Garage = () => {
   return (
@@ -51,6 +53,12 @@ const Garage = () => {
                     Custom Builds
                   </Button>
                 </Link>
+                <ProductRequestModal>
+                  <Button size="lg" variant="secondary" className="bg-background/50 backdrop-blur-md border-primary/20 hover:bg-primary/10 transition-all">
+                    Request a Product
+                    <PackageSearch className="ml-2 h-5 w-5" />
+                  </Button>
+                </ProductRequestModal>
               </div>
             </div>
           </div>
