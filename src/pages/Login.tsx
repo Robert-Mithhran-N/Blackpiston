@@ -37,12 +37,14 @@ const Login = () => {
   const userAuth = useUserAuth();
   const navigate = useNavigate();
 
-  // Redirect if already logged in as a user
+  // Redirect if already logged in
   useEffect(() => {
-    if (userAuth.isAuthenticated) {
+    if (adminAuth.isAuthenticated) {
+      navigate("/admin", { replace: true });
+    } else if (userAuth.isAuthenticated) {
       navigate("/", { replace: true });
     }
-  }, [userAuth.isAuthenticated, navigate]);
+  }, [adminAuth.isAuthenticated, userAuth.isAuthenticated, navigate]);
 
   // ─── Google Login ───────────────────────────────────────────
   const [googleLoading, setGoogleLoading] = useState(false);

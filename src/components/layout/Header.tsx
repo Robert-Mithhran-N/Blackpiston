@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useUserAuth } from "@/context/UserAuthContext";
+import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useCart } from "@/context/CartContext";
 // import logo from "@/assets/logo.png";
 const logo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/logo";
@@ -15,6 +16,7 @@ const Header = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, logout } = useUserAuth();
+  const { isAuthenticated: isAdminAuth } = useAdminAuth();
   const navigate = useNavigate();
   const { cartCount } = useCart();
   const { pathname } = useLocation();
@@ -122,7 +124,18 @@ const Header = () => {
           </Button>
 
           {/* Account */}
-          {isAuthenticated && user ? (
+          {isAdminAuth ? (
+            <Link to="/admin">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-metal-light hover:text-primary hover:bg-transparent"
+                title="Admin Dashboard"
+              >
+                <Settings className="h-5 w-5" />
+              </Button>
+            </Link>
+          ) : isAuthenticated && user ? (
             <div className="relative" ref={userMenuRef}>
               <Button
                 variant="ghost"
