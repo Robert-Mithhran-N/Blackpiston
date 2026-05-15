@@ -8,7 +8,6 @@ import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Shop from "./pages/Shop";
-// ShopCategory removed - categories feature removed
 import ProductDetail from "./pages/ProductDetail";
 import Garage from "./pages/Garage";
 import Build from "./pages/Build";
@@ -48,7 +47,6 @@ import AdminBuilds from "./pages/admin/AdminBuilds";
 import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminServices from "./pages/admin/AdminServices";
 import AdminMessages from "./pages/admin/AdminMessages";
-// AdminTopOffers removed - using dynamic discount-based system
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminSettings from "./pages/admin/AdminSettings";
 import AdminUsers from "./pages/admin/AdminUsers";
@@ -82,7 +80,6 @@ const App = () => {
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/shop" element={<Shop />} />
-                  {/* /shop/:category route removed - categories feature removed */}
                   <Route path="/product/:productId" element={<ProductDetail />} />
                   <Route path="/garage" element={<Garage />} />
                   <Route path="/build" element={<Build />} />
@@ -112,7 +109,6 @@ const App = () => {
                   <Route path="/admin" element={<AdminRoute />}>
                     <Route index element={<AdminDashboard />} />
                     <Route path="products" element={<AdminProducts />} />
-                    {/* top-offers route removed - using dynamic discount system */}
                     <Route path="payments" element={<AdminPayments />} />
                     <Route path="orders" element={<AdminOrders />} />
                     <Route path="orders/history" element={<AdminOrderHistory />} />

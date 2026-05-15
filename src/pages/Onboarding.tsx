@@ -86,10 +86,8 @@ const Onboarding = () => {
       }
 
       userAuth.login(data.token, data.user);
-      console.log("✅ User registered and logged in successfully:", data.user?.email);
       navigate("/", { replace: true });
     } catch (err) {
-      console.error("Registration error:", err);
       if (err instanceof TypeError && err.message === "Failed to fetch") {
         setError("Could not connect to the server. Please ensure the backend is running.");
       } else {

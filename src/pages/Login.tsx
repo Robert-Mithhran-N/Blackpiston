@@ -67,10 +67,8 @@ const Login = () => {
         }
 
         userAuth.login(data.token, data.user);
-        console.log("✅ Google login successful:", data.user.email);
         navigate("/", { replace: true });
       } catch (error) {
-        console.error("Google login error:", error);
         if (error instanceof TypeError && error.message === "Failed to fetch") {
           setGoogleError("Could not connect to the server. Please try again later.");
         } else {
@@ -113,16 +111,13 @@ const Login = () => {
       }
 
       if (data.isNewUser) {
-        console.log("New user detected, redirecting to onboarding...");
         navigate("/onboarding", { state: { email: userEmail, password: userPassword } });
         return;
       }
 
       userAuth.login(data.token, data.user);
-      console.log("✅ User login successful:", data.user?.email);
       navigate("/", { replace: true });
     } catch (error) {
-      console.error("User login error:", error);
       if (error instanceof TypeError && error.message === "Failed to fetch") {
         setUserError("Could not connect to the server. Please ensure the backend is running.");
       } else {
@@ -162,10 +157,8 @@ const Login = () => {
 
       // Use the admin auth context to store state
       adminAuth.loginWithData(data.token, data.user);
-      console.log("✅ Admin login successful:", data.user.email);
       navigate("/admin", { replace: true });
     } catch (error) {
-      console.error("Admin login error:", error);
       if (error instanceof TypeError && error.message === "Failed to fetch") {
         setAdminError("Could not connect to the server. Please ensure the backend is running.");
       } else {

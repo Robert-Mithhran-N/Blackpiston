@@ -27,18 +27,6 @@ export function getSocket(): Socket {
             reconnectionDelayMax: 10000,
             autoConnect: true,
         });
-
-        socket.on('connect', () => {
-            console.log('🔌 Socket.IO connected:', socket?.id);
-        });
-
-        socket.on('disconnect', (reason) => {
-            console.log('🔌 Socket.IO disconnected:', reason);
-        });
-
-        socket.on('connect_error', (err) => {
-            console.warn('🔌 Socket.IO connection error:', err.message);
-        });
     }
 
     return socket;

@@ -32,10 +32,8 @@ export function initSocketServer(httpServer: HttpServer): Server {
     });
 
     io.on('connection', (socket: Socket) => {
-        console.log(`🔌 Client connected: ${socket.id}`);
-
-        socket.on('disconnect', (reason) => {
-            console.log(`🔌 Client disconnected: ${socket.id} (${reason})`);
+        socket.on('disconnect', (_reason) => {
+            // no-op
         });
     });
 
@@ -68,6 +66,5 @@ export function emitStockUpdate(data: {
         console.warn('Socket.IO not initialized — skipping stockUpdate emit');
         return;
     }
-    console.log(`📡 Emitting stockUpdate: product=${data.productId} stock=${data.newStock} inStock=${data.inStock}`);
     io.emit('stockUpdate', data);
 }
