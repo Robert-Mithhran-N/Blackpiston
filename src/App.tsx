@@ -64,6 +64,24 @@ const queryClient = new QueryClient({
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
+import { useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAdminAuth } from "./context/AdminAuthContext";
+
+const AdminRedirectEnforcer = () => {
+  const { isAuthenticated } = useAdminAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (isAuthenticated && !location.pathname.startsWith("/admin")) {
+      navigate("/admin", { replace: true });
+    }
+  }, [isAuthenticated, location.pathname, navigate]);
+
+  return null;
+};
+
 const App = () => {
   return (
   <>
@@ -77,6 +95,7 @@ const App = () => {
           <UserAuthProvider>
             <AdminAuthProvider>
               <CartProvider>
+                <AdminRedirectEnforcer />
                 <Routes>
                   <Route path="/" element={<Index />} />
                   <Route path="/shop" element={<Shop />} />
