@@ -48,7 +48,6 @@ router.post('/image', authenticateUpload, (req: Request, res: Response, next: Ne
         }
 
         const uploaded = formatUploadedFile(req.file);
-        console.log(`📸 Image uploaded: ${uploaded.public_id}`);
 
         res.json({
             message: 'Image uploaded successfully',
@@ -71,7 +70,6 @@ router.post('/images', authenticateUpload, (req: Request, res: Response, next: N
         }
 
         const files = (req.files as Express.Multer.File[]).map(formatUploadedFile);
-        console.log(`📸 ${files.length} images uploaded:`, files.map(f => f.public_id));
 
         res.json({
             message: 'Images uploaded successfully',

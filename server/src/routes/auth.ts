@@ -329,7 +329,6 @@ router.post('/google', async (req: Request, res: Response) => {
                     lastLogin: new Date()
                 }
             });
-            console.log('✅ Google OAuth: Existing user signed in:', email);
         } else {
             // Create new user from Google profile
             user = await prisma.user.create({
@@ -344,7 +343,6 @@ router.post('/google', async (req: Request, res: Response) => {
                     isEmailVerified: email_verified
                 }
             });
-            console.log('✅ Google OAuth: New user created:', email);
             
             // ── Send Welcome Email for New Google Signups ──
             sendWelcomeEmail(user.email, user.name).catch(err => console.error("Google Welcome Email failed", err));

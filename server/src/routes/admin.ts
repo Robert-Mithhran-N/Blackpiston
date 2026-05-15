@@ -201,14 +201,10 @@ const createProductSchema = z.object({
 // Create product
 router.post('/products', authenticateAdmin, async (req: Request, res: Response) => {
     try {
-        console.log('📦 [POST /products] Request received from user:', (req as any).userId);
-        console.log('📦 [POST /products] Body keys:', Object.keys(req.body));
-
         // Validate with Zod
         const parseResult = createProductSchema.safeParse(req.body);
         if (!parseResult.success) {
             const errors = parseResult.error.issues.map(i => `${i.path.join('.')}: ${i.message} `);
-            console.log('📦 [POST /products] Validation failed:', errors);
             return res.status(400).json({ error: 'Validation failed', details: errors });
         }
 
@@ -241,7 +237,6 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
         const safeWeight = data.weight != null ? Number(data.weight) : undefined;
         const safeDimensions = data.dimensions && typeof data.dimensions === 'object' ? data.dimensions : undefined;
 
-        console.log('📦 [POST /products] Creating product:', data.name, 'with', data.images.length, 'images');
 
         const product = await prisma.product.create({
             data: {
@@ -273,7 +268,6 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
             // include: { category: true } removed
         });
 
-        console.log('✅ [POST /products] Product created:', product.id, product.name);
         res.status(201).json({ message: 'Product created', product });
     } catch (error: any) {
         console.error('❌ [POST /products] Create product error:', error);
@@ -287,7 +281,6 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
         const { id } = req.params;
         const body = req.body;
 
-        console.log('📦 [PUT /products/:id] Update request for:', id);
 
         // Helper: convert to number or null
         const toFloatOrNull = (v: any): number | null => {
@@ -368,7 +361,6 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
             }));
         }
 
-        console.log('📦 [PUT /products/:id] Sanitized update keys:', Object.keys(updateData));
 
         const product = await prisma.product.update({
             where: { id },
@@ -376,7 +368,6 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
             // include: { category: true } removed
         });
 
-        console.log('✅ [PUT /products/:id] Product updated:', product.id, product.name);
 
         // Emit real-time stock update if stock-related fields changed
         if ('stockQuantity' in body || 'variants' in body || 'inStock' in body) {
@@ -412,7 +403,6 @@ router.delete('/products/:id', authenticateAdmin, async (req: Request, res: Resp
         // Delete images from Cloudinary
         const imageCleanups = (product.images || []).map(async (img: any) => {
             if (img.public_id) {
-                console.log(`🗑️  Cleaning Cloudinary image: ${img.public_id} for product: ${product.name} `);
                 await deleteFromCloudinary(img.public_id);
             }
         });
@@ -420,7 +410,6 @@ router.delete('/products/:id', authenticateAdmin, async (req: Request, res: Resp
 
         await prisma.product.delete({ where: { id } });
 
-        console.log(`✅ Product deleted: ${id} (${product.name})`);
         res.json({ message: 'Product deleted' });
     } catch (error) {
         console.error('Delete product error:', error);
