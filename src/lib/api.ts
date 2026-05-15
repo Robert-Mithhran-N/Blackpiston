@@ -696,51 +696,6 @@ export async function deleteService(id: string) {
 }
 
 // ============================================================
-// Admin - Builds
-// ============================================================
-
-export async function fetchAdminBuilds(params?: { page?: number; limit?: number; search?: string; status?: string }) {
-    const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.set("page", String(params.page));
-    if (params?.limit) searchParams.set("limit", String(params.limit));
-    if (params?.search) searchParams.set("search", params.search);
-    if (params?.status) searchParams.set("status", params.status);
-
-    const res = await fetch(`${API_BASE}/admin/builds?${searchParams.toString()}`, { headers: getAuthHeaders() });
-    if (!res.ok) throw new Error("Failed to fetch builds");
-    return res.json();
-}
-
-export async function createBuild(data: any) {
-    const res = await fetch(`${API_BASE}/admin/builds`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error("Failed to create build");
-    return res.json();
-}
-
-export async function updateBuild(id: string, data: any) {
-    const res = await fetch(`${API_BASE}/admin/builds/${id}`, {
-        method: "PUT",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error("Failed to update build");
-    return res.json();
-}
-
-export async function deleteBuild(id: string) {
-    const res = await fetch(`${API_BASE}/admin/builds/${id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-    });
-    if (!res.ok) throw new Error("Failed to delete build");
-    return res.json();
-}
-
-// ============================================================
 // Admin - Requests (Messages) & Payments & Appointments
 // ============================================================
 

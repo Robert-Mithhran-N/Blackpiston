@@ -9,9 +9,7 @@ import { Product } from "@/types/user";
 // Map API product to the Product type expected by ProductCard
 function mapProduct(p: any): Product {
     // Images come from DB as { url, alt, isPrimary } objects
-    const primaryImg = p.images?.find((i: any) => i.isPrimary);
-    const firstImg = p.images?.[0];
-    const imageUrl = primaryImg?.url || firstImg?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
+    const imageUrl = p.thumbnailUrl || p.images?.find((i: any) => i.isPrimary)?.url || p.images?.[0]?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
 
     return {
         id: p.id,

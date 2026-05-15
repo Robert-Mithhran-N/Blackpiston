@@ -10,7 +10,6 @@ import NotFound from "./pages/NotFound";
 import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetail";
 import Garage from "./pages/Garage";
-import Build from "./pages/Build";
 import About from "./pages/About";
 import Blog from "./pages/Blog";
 import Contact from "./pages/Contact";
@@ -43,7 +42,6 @@ import AdminOrderHistory from "./pages/admin/AdminOrderHistory";
 import AdminLowStock from "./pages/admin/AdminLowStock";
 import AdminRequests from "./pages/admin/AdminRequests";
 import AdminBlog from "./pages/admin/AdminBlog";
-import AdminBuilds from "./pages/admin/AdminBuilds";
 import AdminAppointments from "./pages/admin/AdminAppointments";
 import AdminServices from "./pages/admin/AdminServices";
 import AdminMessages from "./pages/admin/AdminMessages";
@@ -101,7 +99,6 @@ const App = () => {
                   <Route path="/shop" element={<Shop />} />
                   <Route path="/product/:productId" element={<ProductDetail />} />
                   <Route path="/garage" element={<Garage />} />
-                  <Route path="/build" element={<Build />} />
                   <Route path="/about" element={<About />} />
                   <Route path="/blog" element={<Blog />} />
                   <Route path="/contact" element={<Contact />} />
@@ -134,7 +131,6 @@ const App = () => {
                     <Route path="low-stock" element={<AdminLowStock />} />
                     <Route path="requests" element={<AdminRequests />} />
                     <Route path="blog" element={<AdminBlog />} />
-                    <Route path="builds" element={<AdminBuilds />} />
                     <Route path="appointments" element={<AdminAppointments />} />
                     <Route path="services" element={<AdminServices />} />
                     <Route path="messages" element={<AdminMessages />} />

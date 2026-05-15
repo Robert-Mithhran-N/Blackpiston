@@ -210,6 +210,8 @@ model Product {
   totalReviews     Int                    @default(0)
   tags             String[]
   tagStrings       String[]
+  thumbnailUrl     String?
+  thumbnailPublicId String?
   isFeatured       Boolean                @default(false)
   isActive         Boolean                @default(true)
   inStock          Boolean                @default(true)
@@ -692,22 +694,6 @@ model Service {
   updatedAt   DateTime @updatedAt
 
   @@map("services")
-}
-
-model Build {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  slug        String   @unique
-  description String?
-  components  String[]
-  price       Float
-  images      ProductImage[]
-  isFeatured  Boolean  @default(false)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("builds")
 }
 
 // ==================== NEW FEATURES ==================== //

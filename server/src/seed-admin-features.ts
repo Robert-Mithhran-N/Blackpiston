@@ -107,58 +107,10 @@ Each helmet offers unique features and benefits. Visit our store to try them on!
     });
     console.log('✅ Service created:', service3.name);
 
-    // Create sample builds
-    const build1 = await prisma.build.upsert({
-      where: { slug: 'custom-r1-track' },
-      update: {},
-      create: {
-        name: 'Custom Yamaha R1 - Track Edition',
-        slug: 'custom-r1-track',
-        description: 'Track-ready custom build with performance upgrades. Features include engine tuning, exhaust system, suspension upgrade, and custom paint.',
-        components: [
-          'Engine ECU remap',
-          'Akrapovic full exhaust system',
-          'Ohlins suspension (front & rear)',
-          'Carbon fiber bodywork',
-          'Custom paint job',
-          'Racing slicks',
-        ],
-        price: 350000,
-        images: [],
-        isFeatured: true,
-        isActive: true,
-      },
-    });
-    console.log('✅ Build created:', build1.name);
-
-    const build2 = await prisma.build.upsert({
-      where: { slug: 'cafe-racer-classic' },
-      update: {},
-      create: {
-        name: 'Cafe Racer Classic',
-        slug: 'cafe-racer-classic',
-        description: 'Vintage-inspired cafe racer build. Perfect blend of classic style and modern performance.',
-        components: [
-          'Custom seat and tank',
-          'Clip-on handlebars',
-          'Upgraded brakes',
-          'LED lighting',
-          'Custom exhaust',
-          'Retro paint scheme',
-        ],
-        price: 180000,
-        images: [],
-        isFeatured: false,
-        isActive: true,
-      },
-    });
-    console.log('✅ Build created:', build2.name);
-
     console.log('\n✅ Admin features seeded successfully!');
     console.log('\nYou can now:');
     console.log('- View blog posts at /admin/blog');
     console.log('- Manage services at /admin/services');
-    console.log('- View builds at /admin/builds');
     
   } catch (error) {
     console.error('❌ Seeding failed:', error);

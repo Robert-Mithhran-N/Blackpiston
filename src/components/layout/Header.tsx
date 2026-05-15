@@ -40,7 +40,6 @@ const Header = () => {
       home: pathname === "/",
       shop: pathname.startsWith("/shop"),
       garage: pathname.startsWith("/garage"),
-      build: pathname.startsWith("/build"),
       about: pathname.startsWith("/about"),
       blog: pathname.startsWith("/blog"),
     }),
@@ -82,13 +81,6 @@ const Header = () => {
             className={({ isActive }) => navClass(isActive || navState.garage)}
           >
             Garage & Services
-          </NavLink>
-
-          <NavLink
-            to="/build"
-            className={({ isActive }) => navClass(isActive || navState.build)}
-          >
-            Build & Fit
           </NavLink>
 
           <NavLink
@@ -286,20 +278,6 @@ const Header = () => {
                     }
                   >
                     Garage & Services
-                  </NavLink>
-                  <NavLink
-                    to="/build"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={({ isActive }) =>
-                      [
-                        "block py-2 font-medium transition-colors",
-                        isActive || navState.build
-                          ? "text-primary"
-                          : "text-metal-light hover:text-primary",
-                      ].join(" ")
-                    }
-                  >
-                    Build & Fit
                   </NavLink>
                   <NavLink
                     to="/about"

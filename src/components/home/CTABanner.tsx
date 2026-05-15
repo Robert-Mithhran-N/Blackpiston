@@ -24,7 +24,7 @@ const CTABanner = () => {
                 <span className="text-gradient-flame">APPOINTMENT TODAY</span>
               </h2>
               <p className="text-metal-light mb-6">
-                From simple oil changes to complete custom builds — our certified mechanics are ready to work on your machine. Same-day appointments available.
+                From simple oil changes to complete restorations — our certified mechanics are ready to work on your machine. Same-day appointments available.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <Link to="/garage">

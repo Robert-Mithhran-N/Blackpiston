@@ -48,11 +48,6 @@ const Garage = () => {
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Button>
                 </Link>
-                <Link to="/build">
-                  <Button size="lg" variant="outline">
-                    Custom Builds
-                  </Button>
-                </Link>
                 <ProductRequestModal>
                   <Button size="lg" variant="secondary" className="bg-background/50 backdrop-blur-md border-primary/20 hover:bg-primary/10 transition-all">
                     Request a Product
@@ -116,7 +111,7 @@ const Garage = () => {
                 Our <span className="text-primary">Services</span>
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                From basic maintenance to custom builds, we offer comprehensive services
+                From basic maintenance to full performance upgrades, we offer comprehensive services
                 to keep your ride performing at its best.
               </p>
             </div>

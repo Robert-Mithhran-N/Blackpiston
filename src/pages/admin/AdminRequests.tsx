@@ -102,7 +102,7 @@ const RequestCard = ({
     const getTypeLabel = (reqType: string) => {
         switch (reqType) {
             case "PRODUCT_INQUIRY": return "Product Request";
-            case "CUSTOM_ORDER": return "Build & Fit / Custom";
+            case "CUSTOM_ORDER": return "Custom Order";
             case "BULK_ORDER": return "Bulk Order";
             default: return "Service Request";
         }

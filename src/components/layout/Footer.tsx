@@ -81,7 +81,7 @@ const Footer = () => {
             </h4>
             <ul className="space-y-2">
               {[
-                "Custom Builds",
+                "General Service",
                 "ECU Tuning",
                 "Suspension Setup",
                 "Lighting Install",

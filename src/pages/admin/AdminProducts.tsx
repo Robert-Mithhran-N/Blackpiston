@@ -82,6 +82,7 @@ import {
 
 interface ProductImage {
   url: string;
+  public_id?: string;
   alt?: string;
   isPrimary?: boolean;
 }
@@ -107,6 +108,8 @@ interface Product {
   price: number;
   offerPrice?: number;
   costPrice?: number;
+  thumbnailUrl?: string | null;
+  thumbnailPublicId?: string | null;
   images: ProductImage[];
   variants: ProductVariant[];
   stockQuantity: number;
@@ -153,6 +156,8 @@ interface FormData {
   hasVariants: boolean;
   isFeatured: boolean;
   isActive: boolean;
+  thumbnailUrl: string | null;
+  thumbnailPublicId: string | null;
   images: ProductImage[];
   variants: ProductVariant[];
 }
@@ -174,6 +179,8 @@ const emptyForm: FormData = {
   hasVariants: false,
   isFeatured: false,
   isActive: true,
+  thumbnailUrl: null,
+  thumbnailPublicId: null,
   images: [],
   variants: [],
 };
@@ -286,6 +293,8 @@ const AdminProducts = () => {
       hasVariants,
       isFeatured: product.isFeatured,
       isActive: product.isActive,
+      thumbnailUrl: product.thumbnailUrl || null,
+      thumbnailPublicId: product.thumbnailPublicId || null,
       images: product.images || [],
       variants: product.variants || [],
     });
@@ -386,6 +395,8 @@ const AdminProducts = () => {
         tags: formData.tagChips,
         isFeatured: formData.isFeatured,
         isActive: formData.isActive,
+        thumbnailUrl: formData.thumbnailUrl,
+        thumbnailPublicId: formData.thumbnailPublicId,
         images: formData.images,
         variants: formData.hasVariants
           ? formData.variants.map(v => ({
@@ -440,15 +451,29 @@ const AdminProducts = () => {
     setIsUploading(true);
     try {
       const uploaded = await uploadImages(Array.from(files));
-      const newImages: ProductImage[] = uploaded.map((f, i) => ({
+      const newImages: ProductImage[] = uploaded.map((f: any, i: number) => ({
         url: f.url,
+        public_id: f.public_id,
         alt: formData.name || "Product image",
         isPrimary: formData.images.length === 0 && i === 0,
       }));
-      setFormData((prev) => ({
-        ...prev,
-        images: [...prev.images, ...newImages],
-      }));
+      setFormData((prev) => {
+        const updatedImages = [...prev.images, ...newImages];
+        let newThumbUrl = prev.thumbnailUrl;
+        let newThumbId = prev.thumbnailPublicId;
+        
+        if (prev.images.length === 0 && newImages.length > 0) {
+          newThumbUrl = newImages[0].url;
+          newThumbId = newImages[0].public_id || null;
+        }
+        
+        return {
+          ...prev,
+          images: updatedImages,
+          thumbnailUrl: newThumbUrl,
+          thumbnailPublicId: newThumbId,
+        };
+      });
       toast.success(`${uploaded.length} image(s) uploaded`);
     } catch {
       toast.error("Failed to upload images");
@@ -461,22 +486,44 @@ const AdminProducts = () => {
   const removeImage = (index: number) => {
     setFormData((prev) => {
       const images = prev.images.filter((_, i) => i !== index);
+      let newThumbUrl = prev.thumbnailUrl;
+      let newThumbId = prev.thumbnailPublicId;
+      
+      const removedImage = prev.images[index];
+      
       // If removed image was primary, make first remaining primary
-      if (images.length > 0 && !images.some((img) => img.isPrimary)) {
-        images[0].isPrimary = true;
+      if (removedImage.url === prev.thumbnailUrl || removedImage.isPrimary) {
+        if (images.length > 0) {
+          images[0].isPrimary = true;
+          newThumbUrl = images[0].url;
+          newThumbId = images[0].public_id || null;
+        } else {
+          newThumbUrl = null;
+          newThumbId = null;
+        }
       }
-      return { ...prev, images };
+      return { 
+        ...prev, 
+        images,
+        thumbnailUrl: newThumbUrl,
+        thumbnailPublicId: newThumbId
+      };
     });
   };
 
   const setPrimaryImage = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      images: prev.images.map((img, i) => ({
-        ...img,
-        isPrimary: i === index,
-      })),
-    }));
+    setFormData((prev) => {
+      const selectedImg = prev.images[index];
+      return {
+        ...prev,
+        thumbnailUrl: selectedImg.url,
+        thumbnailPublicId: selectedImg.public_id || null,
+        images: prev.images.map((img, i) => ({
+          ...img,
+          isPrimary: i === index,
+        })),
+      };
+    });
   };
 
   // --------------------------------
@@ -602,8 +649,7 @@ const AdminProducts = () => {
     new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
 
   const getProductImage = (product: Product) => {
-    const primary = product.images?.find((i) => i.isPrimary);
-    return primary?.url || product.images?.[0]?.url || "";
+    return product.thumbnailUrl || product.images?.find((i) => i.isPrimary)?.url || product.images?.[0]?.url || "";
   };
 
   const variantTotalStock = useMemo(() => {

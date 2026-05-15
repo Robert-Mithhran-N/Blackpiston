@@ -94,9 +94,7 @@ const ProductDetail = () => {
         fetchProductById(productId)
             .then((data) => {
                 const p = data.product || data;
-                const primaryImg = p.images?.find((i: any) => i.isPrimary);
-                const firstImg = p.images?.[0];
-                const mainImageUrl = primaryImg?.url || firstImg?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop";
+                const mainImageUrl = p.thumbnailUrl || p.images?.find((i: any) => i.isPrimary)?.url || p.images?.[0]?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop";
                 const imageUrls: string[] = (p.images || []).map((i: any) => i.url || i).filter(Boolean);
 
                 // Parse variants from raw API data
@@ -139,9 +137,7 @@ const ProductDetail = () => {
                             .filter((r: any) => r.id !== p.id)
                             .slice(0, 6)
                             .map((r: any): Product => {
-                                const rPrimary = r.images?.find((i: any) => i.isPrimary);
-                                const rFirst = r.images?.[0];
-                                const rImg = rPrimary?.url || rFirst?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
+                                const rImg = r.thumbnailUrl || r.images?.find((i: any) => i.isPrimary)?.url || r.images?.[0]?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
                                 return {
                                     id: r.id,
                                     name: r.name,

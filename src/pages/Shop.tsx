@@ -115,12 +115,7 @@ const SORT_OPTIONS = [
 // ============================================================
 
 function mapProduct(p: any): Product {
-  const primaryImg = p.images?.find((i: any) => i.isPrimary);
-  const firstImg = p.images?.[0];
-  const imageUrl =
-    primaryImg?.url ||
-    firstImg?.url ||
-    "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
+  const imageUrl = p.thumbnailUrl || p.images?.find((i: any) => i.isPrimary)?.url || p.images?.[0]?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
 
   return {
     id: p.id,

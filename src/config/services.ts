@@ -1,8 +1,8 @@
 // Static business configuration data
-// Services offered by BlackPiston Garage and curated build kits
+// Services offered by BlackPiston Garage
 // These are managed by the business and not user-generated content
 
-import { Service, BuildKit } from '@/types/user';
+import { Service } from '@/types/user';
 
 // ============================================================
 // Garage Services
@@ -55,38 +55,5 @@ export const services: Service[] = [
         description: 'Custom vinyl wraps and graphics installation',
         image: 'https://images.unsplash.com/photo-1558981359-219d6364c9c8?w=400&h=300&fit=crop',
         duration: '1-2 days',
-    },
-];
-
-// ============================================================
-// Curated Build Kits (reference product IDs from the database)
-// ============================================================
-export const buildKits: BuildKit[] = [
-    {
-        id: 'KIT-001',
-        name: 'Racing Starter Kit',
-        description: 'Complete racing setup with helmet, jacket, gloves, and boots',
-        products: ['PRD-004', 'PRD-008', 'PRD-013', 'PRD-014'],
-        totalPrice: 129996,
-        discountedPrice: 109999,
-        image: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop',
-    },
-    {
-        id: 'KIT-002',
-        name: 'Pro Racer Bundle',
-        description: 'Premium gear for serious track enthusiasts',
-        products: ['PRD-001', 'PRD-006', 'PRD-010', 'PRD-015'],
-        totalPrice: 296997,
-        discountedPrice: 249999,
-        image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&h=400&fit=crop',
-    },
-    {
-        id: 'KIT-003',
-        name: 'Touring Comfort Pack',
-        description: 'Essential gear for long-distance touring',
-        products: ['PRD-003', 'PRD-009', 'PRD-011', 'PRD-016'],
-        totalPrice: 156996,
-        discountedPrice: 134999,
-        image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&h=400&fit=crop',
     },
 ];

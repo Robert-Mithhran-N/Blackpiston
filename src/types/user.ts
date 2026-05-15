@@ -61,19 +61,6 @@ export interface Service {
 }
 
 // ============================================================
-// Build Kit Types
-// ============================================================
-export interface BuildKit {
-    id: string;
-    name: string;
-    description: string;
-    products: string[];
-    totalPrice: number;
-    discountedPrice: number;
-    image: string;
-}
-
-// ============================================================
 // Cart Item Types
 // ============================================================
 export interface CartItem {

@@ -157,6 +157,8 @@ const createProductSchema = z.object({
     offerPrice: z.coerce.number().positive().optional().nullable(),
     costPrice: z.coerce.number().optional().nullable(),     // frontend sends this
     images: z.array(productImageSchema).optional().default([]),
+    thumbnailUrl: z.string().optional().nullable(),
+    thumbnailPublicId: z.string().optional().nullable(),
     tags: z.array(z.string()).optional().default([]),
     sku: z.string().optional().nullable(),
     isFeatured: z.boolean().optional().default(false),
@@ -254,6 +256,8 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
                 stockQuantity: data.stockQuantity,
                 inStock: data.stockQuantity > 0,
                 images: data.images,
+                thumbnailUrl: data.thumbnailUrl,
+                thumbnailPublicId: data.thumbnailPublicId,
                 tags: data.tags,
                 tagStrings,
                 isFeatured: data.isFeatured,
@@ -334,6 +338,8 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
 
         // Array fields
         if ('images' in body && Array.isArray(body.images)) updateData.images = body.images;
+        if ('thumbnailUrl' in body) updateData.thumbnailUrl = body.thumbnailUrl;
+        if ('thumbnailPublicId' in body) updateData.thumbnailPublicId = body.thumbnailPublicId;
         if ('tags' in body && Array.isArray(body.tags)) {
             updateData.tags = body.tags;
             updateData.tagStrings = body.tags.map((t: string) => t.replace(/^#/, '').trim().toLowerCase()).filter(Boolean);
