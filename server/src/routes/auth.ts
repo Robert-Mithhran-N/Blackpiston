@@ -33,7 +33,7 @@ router.post('/register', async (req: Request, res: Response) => {
         // Hash password
         const passwordHash = await bcrypt.hash(password, 12);
 
-        const savedAddresses = [];
+        const savedAddresses: any[] = [];
         if (address && address.line1) {
             savedAddresses.push({
                 id: new ObjectId().toHexString(),

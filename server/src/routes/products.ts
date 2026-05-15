@@ -532,7 +532,7 @@ router.get('/:idOrSlug', async (req: Request, res: Response) => {
     try {
         const { idOrSlug } = req.params;
 
-        let product = null;
+        let product: any = null;
 
         // Check if it looks like an ObjectId
         if (/^[0-9a-fA-F]{24}$/.test(idOrSlug)) {
