@@ -6,12 +6,12 @@ const questions = [
     a: "Yes. We can handle installs, tuning, and post-install checks. Share your bike and parts list and we’ll schedule you.",
   },
   {
-    q: "How long do builds take?",
-    a: "Simple installs can be same-day. Full builds depend on sourcing and scope. We’ll share timelines up front.",
+    q: "How long does a service take?",
+    a: "Simple installs can be same-day. Larger jobs depend on parts availability and scope. We’ll share timelines up front.",
   },
   {
-    q: "Can you help with fitment?",
-    a: "Absolutely. We verify fitment before ordering so you avoid returns and downtime.",
+    q: "Can you help me choose the right parts?",
+    a: "Absolutely. We verify compatibility before ordering so you avoid returns and downtime.",
   },
   {
     q: "Do you ship parts?",

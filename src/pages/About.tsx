@@ -58,7 +58,7 @@ const About = () => {
             Our Vision
           </h2>
           <p className="text-lg text-metal-light font-ui leading-relaxed">
-            We're here to create a community-driven platform where riders can explore, shop, and maintain their bikes with confidence. Whether you're building your dream machine or simply keeping your two-wheeler in peak condition, BlackPiston Garage is your trusted partner on and off the road.
+            We're here to create a community-driven platform where riders can explore, shop, and maintain their bikes with confidence. Whether you're upgrading your ride or simply keeping your two-wheeler in peak condition, BlackPiston Garage is your trusted partner on and off the road.
           </p>
         </section>
 
