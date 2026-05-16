@@ -57,7 +57,7 @@ const Hero = () => {
                   className="border-metal text-metal-light hover:bg-white hover:text-black hover:scale-105 transition-all duration-300 text-base font-ui font-semibold px-6 py-5 group rounded-md"
                 >
                   <Wrench className="mr-2 h-4 w-4 group-hover:text-black transition-colors duration-300" />
-                  Book Service
+                  Explore Garage
                 </Button>
               </Link>
             </div>

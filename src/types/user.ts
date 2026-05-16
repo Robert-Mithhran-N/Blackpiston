@@ -58,6 +58,11 @@ export interface Service {
     description: string;
     image: string;
     duration: string;
+    highlights?: string[];
+    included?: string[];
+    benefits?: string[];
+    process?: string[];
+    supportedBikes?: string;
 }
 
 // ============================================================
