@@ -49,7 +49,7 @@ router.get('/', authenticateToken, async (req: Request, res: Response) => {
             select: {
                 id: true,
                 name: true,
-                description: true,
+                shortDescription: true,
                 price: true,
                 offerPrice: true,
                 images: true,
