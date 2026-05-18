@@ -15,6 +15,12 @@ export interface ProductVariant {
     priceModifier?: number;
     images?: ProductVariantImage[];
 }
+export interface ProductSection {
+    id?: string;
+    title: string;
+    content: string;
+    order?: number;
+}
 
 export interface Product {
     id: string;
@@ -33,6 +39,7 @@ export interface Product {
     specifications?: { label: string; value: string }[];
     variants?: ProductVariant[];
     stockQuantity?: number;
+    sections?: ProductSection[];
 }
 
 export type ProductCategory = string;

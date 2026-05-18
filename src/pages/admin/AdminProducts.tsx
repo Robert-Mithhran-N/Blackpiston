@@ -98,12 +98,19 @@ interface ProductVariant {
   images?: ProductImage[];
 }
 
+interface ProductSection {
+  id?: string;
+  title: string;
+  content: string;
+  order?: number;
+}
+
 interface Product {
   id: string;
   name: string;
   slug: string;
-  description?: string;
   shortDescription?: string;
+  sections?: ProductSection[];
   brand?: string;
   price: number;
   offerPrice?: number;
@@ -141,8 +148,8 @@ const PRODUCT_TYPES = [
 
 interface FormData {
   name: string;
-  description: string;
   shortDescription: string;
+  sections: ProductSection[];
   brand: string;
   sku: string;
   productType: string;
@@ -164,8 +171,8 @@ interface FormData {
 
 const emptyForm: FormData = {
   name: "",
-  description: "",
   shortDescription: "",
+  sections: [],
   brand: "",
   sku: "",
   productType: "",
@@ -278,8 +285,8 @@ const AdminProducts = () => {
     }
     setFormData({
       name: product.name,
-      description: product.description || "",
       shortDescription: product.shortDescription || "",
+      sections: product.sections || [],
       brand: product.brand || "",
       sku: product.sku || "",
       productType: "",
@@ -351,6 +358,11 @@ const AdminProducts = () => {
       return;
     }
 
+    if (formData.sections.some(s => !s.title.trim() || !s.content.trim())) {
+      toast.error("All product sections must have a title and content");
+      return;
+    }
+
     if (!formData.hasVariants) {
       const stock = parseInt(formData.stockQuantity) || 0;
       if (stock < 0) {
@@ -385,8 +397,8 @@ const AdminProducts = () => {
 
       const payload: Record<string, unknown> = {
         name: formData.name.trim(),
-        description: formData.description.trim() || null,
         shortDescription: formData.shortDescription.trim() || null,
+        sections: formData.sections.map((s, idx) => ({ title: s.title.trim(), content: s.content.trim(), order: idx })),
         brand: formData.brand.trim() || null,
         sku: formData.sku.trim() || undefined,
         price,
@@ -916,8 +928,9 @@ const AdminProducts = () => {
 
           <ScrollArea className="flex-1 px-6 overflow-y-auto">
             <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="w-full grid grid-cols-4 mb-4">
+              <TabsList className="w-full grid grid-cols-5 mb-4">
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                <TabsTrigger value="sections">Sections</TabsTrigger>
                 <TabsTrigger value="pricing">Pricing & Stock</TabsTrigger>
                 <TabsTrigger value="images">Media</TabsTrigger>
                 <TabsTrigger value="variants">
@@ -939,16 +952,6 @@ const AdminProducts = () => {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g. AGV K6 S Helmet"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    rows={4}
-                    value={formData.description}
-                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    placeholder="Full product description..."
                   />
                 </div>
                 <div className="space-y-2">
@@ -1077,6 +1080,121 @@ const AdminProducts = () => {
                     onCheckedChange={(v) => setFormData({ ...formData, isFeatured: v })}
                   />
                 </div>
+              </TabsContent>
+
+              {/* ── SECTIONS TAB ── */}
+              <TabsContent value="sections" className="space-y-4 pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                      <Layers className="h-4 w-4" /> Dynamic Sections
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Add multiple informational sections (e.g. Material Used, Manufacturer Details).
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        sections: [...formData.sections, { title: "", content: "" }]
+                      });
+                    }}
+                  >
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    Add Section
+                  </Button>
+                </div>
+
+                {formData.sections.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg bg-card/20">
+                    <p className="text-sm">No sections added yet.</p>
+                    <p className="text-xs mt-1">Click &quot;Add Section&quot; to create dynamic product content.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {formData.sections.map((section, idx) => (
+                      <div key={idx} className="border border-border rounded-lg p-4 space-y-4 bg-card/40">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Section #{idx + 1}</span>
+                          <div className="flex items-center gap-1">
+                            {idx > 0 && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 text-muted-foreground"
+                                onClick={() => {
+                                  const newSections = [...formData.sections];
+                                  const temp = newSections[idx - 1];
+                                  newSections[idx - 1] = newSections[idx];
+                                  newSections[idx] = temp;
+                                  setFormData({ ...formData, sections: newSections });
+                                }}
+                              >
+                                ↑
+                              </Button>
+                            )}
+                            {idx < formData.sections.length - 1 && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 text-muted-foreground"
+                                onClick={() => {
+                                  const newSections = [...formData.sections];
+                                  const temp = newSections[idx + 1];
+                                  newSections[idx + 1] = newSections[idx];
+                                  newSections[idx] = temp;
+                                  setFormData({ ...formData, sections: newSections });
+                                }}
+                              >
+                                ↓
+                              </Button>
+                            )}
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              onClick={() => {
+                                const newSections = [...formData.sections];
+                                newSections.splice(idx, 1);
+                                setFormData({ ...formData, sections: newSections });
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Topic / Heading *</Label>
+                          <Input
+                            placeholder="e.g. Product Description, Dimensions"
+                            value={section.title}
+                            onChange={(e) => {
+                              const newSections = [...formData.sections];
+                              newSections[idx].title = e.target.value;
+                              setFormData({ ...formData, sections: newSections });
+                            }}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Passage / Content *</Label>
+                          <Textarea
+                            rows={5}
+                            placeholder="Section content (supports multiple lines)..."
+                            value={section.content}
+                            onChange={(e) => {
+                              const newSections = [...formData.sections];
+                              newSections[idx].content = e.target.value;
+                              setFormData({ ...formData, sections: newSections });
+                            }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </TabsContent>
 
               {/* ── PRICING & STOCK TAB ── */}

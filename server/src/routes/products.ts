@@ -114,7 +114,7 @@ router.get('/', async (req: Request, res: Response) => {
                 andConditions.push({
                     OR: [
                         { name: { contains: q, mode: 'insensitive' } },
-                        { description: { contains: q, mode: 'insensitive' } },
+                        { sections: { some: { content: { contains: q, mode: 'insensitive' } } } },
                         { brand: { contains: q, mode: 'insensitive' } },
                         { tagStrings: { hasSome: [normalizedQ] } },
                     ],
@@ -443,7 +443,7 @@ router.get('/search', async (req: Request, res: Response) => {
             if (query) {
                 const textConditions = [
                     { name: { contains: query, mode: 'insensitive' as const } },
-                    { description: { contains: query, mode: 'insensitive' as const } },
+                    { sections: { some: { content: { contains: query, mode: 'insensitive' as const } } } },
                     { brand: { contains: query, mode: 'insensitive' as const } },
                     { tagStrings: { hasSome: [normalizeTag(query)] } },
                 ];
@@ -539,6 +539,7 @@ router.get('/:idOrSlug', async (req: Request, res: Response) => {
             product = await prisma.product.findUnique({
                 where: { id: idOrSlug },
                 include: {
+                    sections: true,
                     reviews: {
                         where: { isApproved: true },
                         take: 10,
@@ -553,6 +554,7 @@ router.get('/:idOrSlug', async (req: Request, res: Response) => {
             product = await prisma.product.findUnique({
                 where: { slug: idOrSlug },
                 include: {
+                    sections: true,
                     reviews: {
                         where: { isApproved: true },
                         take: 10,

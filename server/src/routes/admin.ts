@@ -148,7 +148,6 @@ const productImageSchema = z.object({
 const createProductSchema = z.object({
     name: z.string().min(1, 'Product name is required').trim(),
     slug: z.string().optional().nullable(),
-    description: z.string().optional().nullable(),
     shortDescription: z.string().optional().nullable(),
     // categoryId: removed with categories feature
     // categorySlug: removed with categories feature
@@ -188,6 +187,11 @@ const createProductSchema = z.object({
     rating: z.number().optional().default(0),
     totalReviews: z.number().optional().default(0),
     productType: z.string().optional().nullable(),
+    sections: z.array(z.object({
+        title: z.string(),
+        content: z.string(),
+        order: z.number().optional()
+    })).optional().default([]),
 });
 
 // ============================================================
@@ -244,7 +248,6 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
             data: {
                 name: data.name,
                 slug: data.slug || data.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-                description: data.description,
                 shortDescription: data.shortDescription,
                 // categoryId: removed with categories
                 // categorySlug: removed with categories
@@ -268,6 +271,13 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
                 specifications: data.specifications,
                 rating: data.rating,
                 totalReviews: data.totalReviews,
+                sections: {
+                    create: data.sections.map((s: any, idx: number) => ({
+                        title: s.title,
+                        content: s.content,
+                        order: s.order ?? idx
+                    }))
+                }
             }
             // include: { category: true } removed
         });
@@ -307,7 +317,6 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
         // String fields
         if ('name' in body && body.name) updateData.name = String(body.name).trim();
         if ('slug' in body) updateData.slug = body.slug || undefined;
-        if ('description' in body) updateData.description = body.description || null;
         if ('shortDescription' in body) updateData.shortDescription = body.shortDescription || null;
         if ('brand' in body) updateData.brand = body.brand || null;
         if ('sku' in body) updateData.sku = body.sku || undefined;
@@ -367,6 +376,20 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
             }));
         }
 
+
+        if ('sections' in body && Array.isArray(body.sections)) {
+            // we update by deleting old and creating new ones
+            await prisma.productSection.deleteMany({ where: { productId: id } });
+            if (body.sections.length > 0) {
+                updateData.sections = {
+                    create: body.sections.map((s: any, idx: number) => ({
+                        title: s.title,
+                        content: s.content,
+                        order: s.order ?? idx
+                    }))
+                };
+            }
+        }
 
         const product = await prisma.product.update({
             where: { id },
@@ -460,7 +483,7 @@ router.get('/products', authenticateAdmin, async (req: Request, res: Response) =
                 where,
                 skip,
                 take: limitNum,
-                include: { inventory: true } // category removed
+                include: { inventory: true, sections: true } // category removed
             }),
             prisma.product.count({ where })
         ]);

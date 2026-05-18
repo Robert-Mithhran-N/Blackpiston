@@ -194,7 +194,6 @@ model Product {
   id               String                 @id @default(auto()) @map("_id") @db.ObjectId
   name             String
   slug             String                 @unique
-  description      String?
   shortDescription String?
 
   // Category fields removed - using tags for filtering instead
@@ -223,8 +222,22 @@ model Product {
   // Relations
   inventory Inventory?
   reviews   Review[]
+  sections  ProductSection[]
 
   @@map("products")
+}
+
+model ProductSection {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  productId String   @db.ObjectId
+  product   Product  @relation(fields: [productId], references: [id])
+  title     String
+  content   String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("product_sections")
 }
 
 // ProductCategory model removed - using tags for product filtering

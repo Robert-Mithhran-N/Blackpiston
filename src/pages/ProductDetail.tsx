@@ -127,6 +127,7 @@ const ProductDetail = () => {
                     specifications: p.specifications || [],
                     variants: variants,
                     stockQuantity: p.stockQuantity,
+                    sections: p.sections || [],
                 };
                 setProduct(mapped);
 
@@ -626,13 +627,28 @@ const ProductDetail = () => {
                                     )}
                                 </div>
 
-                                {/* Description */}
-                                <div className="prose prose-sm prose-invert max-w-none">
-                                    <p className="text-muted-foreground leading-relaxed">
-                                        {product.description ||
-                                            "Premium quality product designed for maximum performance and comfort. Built with the finest materials and crafted to perfection."}
-                                    </p>
-                                </div>
+                                {/* Dynamic Sections or Legacy Description */}
+                                {product.sections && product.sections.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {product.sections.map((section, idx) => (
+                                            <div key={idx} className="border border-border/50 rounded-xl p-5 bg-card/40">
+                                                <h3 className="text-lg font-bold tracking-tight mb-2 text-foreground/90">
+                                                    {section.title}
+                                                </h3>
+                                                <div className="prose prose-sm prose-invert max-w-none text-muted-foreground whitespace-pre-line">
+                                                    {section.content}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="prose prose-sm prose-invert max-w-none">
+                                        <p className="text-muted-foreground leading-relaxed">
+                                            {product.description ||
+                                                "Premium quality product designed for maximum performance and comfort. Built with the finest materials and crafted to perfection."}
+                                        </p>
+                                    </div>
+                                )}
 
                                 {/* Quantity Selector */}
                                 <div className="flex items-center gap-4">
