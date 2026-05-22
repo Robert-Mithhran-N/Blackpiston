@@ -19,6 +19,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "prompt",
       includeAssets: ["favicon.ico", "pwa-icon-192.png", "pwa-icon-512.png"],
       manifest: {
+        id: "/",
+        scope: "/",
         name: "BlackPiston Garage",
         short_name: "BlackPiston",
         description: "Premium automotive parts & garage services — your one-stop shop for everything automotive.",

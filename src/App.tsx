@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
+import { PWAProvider } from "@/context/PWAContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PWAReloadPrompt from "@/components/PWAReloadPrompt";
 import StartupLoader from "@/components/StartupLoader";
@@ -91,71 +92,73 @@ const App = () => {
   <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <StartupLoader>
-          <OfflineIndicator />
-          <Sonner />
-          <PWAInstallPrompt />
-          <PWAReloadPrompt />
-          <BrowserRouter>
-            <UserAuthProvider>
-              <AdminAuthProvider>
-                <CartProvider>
-                  <ScrollToTop />
-                  <AdminRedirectEnforcer />
-                  <MobileBottomNav />
-                  <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/shop" element={<Shop />} />
-                  <Route path="/product/:productId" element={<ProductDetail />} />
-                  <Route path="/garage" element={<Garage />} />
-                  <Route path="/about" element={<About />} />
-                  <Route path="/blog" element={<Blog />} />
-                  <Route path="/contact" element={<Contact />} />
-                  <Route path="/cart" element={<Cart />} />
-                  <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/order-success" element={<OrderSuccess />} />
-                  <Route path="/faq" element={<FAQ />} />
-                  <Route path="/shipping" element={<Shipping />} />
-                  <Route path="/warranty" element={<Warranty />} />
-                  <Route path="/privacy" element={<Privacy />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/onboarding" element={<Onboarding />} />
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
+        <PWAProvider>
+          <Toaster />
+          <StartupLoader>
+            <OfflineIndicator />
+            <Sonner />
+            <PWAInstallPrompt />
+            <PWAReloadPrompt />
+            <BrowserRouter>
+              <UserAuthProvider>
+                <AdminAuthProvider>
+                  <CartProvider>
+                    <ScrollToTop />
+                    <AdminRedirectEnforcer />
+                    <MobileBottomNav />
+                    <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/shop" element={<Shop />} />
+                    <Route path="/product/:productId" element={<ProductDetail />} />
+                    <Route path="/garage" element={<Garage />} />
+                    <Route path="/about" element={<About />} />
+                    <Route path="/blog" element={<Blog />} />
+                    <Route path="/contact" element={<Contact />} />
+                    <Route path="/cart" element={<Cart />} />
+                    <Route path="/checkout" element={<Checkout />} />
+                    <Route path="/order-success" element={<OrderSuccess />} />
+                    <Route path="/faq" element={<FAQ />} />
+                    <Route path="/shipping" element={<Shipping />} />
+                    <Route path="/warranty" element={<Warranty />} />
+                    <Route path="/privacy" element={<Privacy />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/onboarding" element={<Onboarding />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
 
-                  {/* Protected User Dashboard Routes */}
-                  <Route path="/profile" element={<ProfileLayout />}>
-                    <Route index element={<ProfileDetails />} />
-                    <Route path="orders" element={<ProfileOrders />} />
-                    <Route path="addresses" element={<ProfileAddresses />} />
-                    <Route path="settings" element={<ProfileSettings />} />
-                  </Route>
+                    {/* Protected User Dashboard Routes */}
+                    <Route path="/profile" element={<ProfileLayout />}>
+                      <Route index element={<ProfileDetails />} />
+                      <Route path="orders" element={<ProfileOrders />} />
+                      <Route path="addresses" element={<ProfileAddresses />} />
+                      <Route path="settings" element={<ProfileSettings />} />
+                    </Route>
 
-                  <Route path="/admin" element={<AdminRoute />}>
-                    <Route index element={<AdminDashboard />} />
-                    <Route path="products" element={<AdminProducts />} />
-                    <Route path="payments" element={<AdminPayments />} />
-                    <Route path="orders" element={<AdminOrders />} />
-                    <Route path="orders/history" element={<AdminOrderHistory />} />
-                    <Route path="low-stock" element={<AdminLowStock />} />
-                    <Route path="requests" element={<AdminRequests />} />
-                    <Route path="blog" element={<AdminBlog />} />
-                    <Route path="appointments" element={<AdminAppointments />} />
-                    <Route path="services" element={<AdminServices />} />
-                    <Route path="messages" element={<AdminMessages />} />
-                    <Route path="users" element={<AdminUsers />} />
-                    <Route path="settings" element={<AdminSettings />} />
-                  </Route>
+                    <Route path="/admin" element={<AdminRoute />}>
+                      <Route index element={<AdminDashboard />} />
+                      <Route path="products" element={<AdminProducts />} />
+                      <Route path="payments" element={<AdminPayments />} />
+                      <Route path="orders" element={<AdminOrders />} />
+                      <Route path="orders/history" element={<AdminOrderHistory />} />
+                      <Route path="low-stock" element={<AdminLowStock />} />
+                      <Route path="requests" element={<AdminRequests />} />
+                      <Route path="blog" element={<AdminBlog />} />
+                      <Route path="appointments" element={<AdminAppointments />} />
+                      <Route path="services" element={<AdminServices />} />
+                      <Route path="messages" element={<AdminMessages />} />
+                      <Route path="users" element={<AdminUsers />} />
+                      <Route path="settings" element={<AdminSettings />} />
+                    </Route>
 
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </CartProvider>
-            </AdminAuthProvider>
-          </UserAuthProvider>
-        </BrowserRouter>
-        </StartupLoader>
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </CartProvider>
+              </AdminAuthProvider>
+            </UserAuthProvider>
+          </BrowserRouter>
+          </StartupLoader>
+        </PWAProvider>
       </TooltipProvider>
     </QueryClientProvider>
   </GoogleOAuthProvider>

@@ -1,12 +1,13 @@
 import { useMemo, useState, useRef, useEffect } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, Home, LogOut, Settings, MapPin, Package as PackageIcon } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, Home, LogOut, Settings, MapPin, Package as PackageIcon, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useUserAuth } from "@/context/UserAuthContext";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useCart } from "@/context/CartContext";
+import { usePWA } from "@/context/PWAContext";
 // import logo from "@/assets/logo.png";
 const logo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/logo";
 
@@ -19,6 +20,7 @@ const Header = () => {
   const navigate = useNavigate();
   const { cartCount } = useCart();
   const { pathname } = useLocation();
+  const { isInstallable, installApp, isMobile, isIOS } = usePWA();
 
   // Close user menu on outside click
   useEffect(() => {
@@ -92,6 +94,18 @@ const Header = () => {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+
+          {/* Desktop Install App Button */}
+          {isInstallable && !isMobile && !isIOS && (
+            <Button
+              onClick={installApp}
+              className="hidden lg:flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white border-0 hover:opacity-90 font-bold shadow-lg shadow-amber-500/20"
+              size="sm"
+            >
+              <Download className="h-4 w-4" />
+              Install App
+            </Button>
+          )}
 
           {/* Account */}
           {isAdminAuth ? (
