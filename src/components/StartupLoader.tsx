@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import axios from "axios";
+import { API } from "@/lib/api";
 
 const StartupLoader = ({ children }: { children: React.ReactNode }) => {
   const [isReady, setIsReady] = useState(false);
@@ -10,9 +10,8 @@ const StartupLoader = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     const checkHealth = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-        // Simple health check ping
-        const res = await axios.get(`${apiUrl}/api/health`, { timeout: 15000 });
+        // Use the centralized API client which correctly handles Vercel / Render URLs
+        const res = await API.get(`/api/health`, { timeout: 15000 });
         if (res.status === 200) {
           setIsReady(true);
         }
@@ -22,8 +21,7 @@ const StartupLoader = ({ children }: { children: React.ReactNode }) => {
         let retries = 5;
         const interval = setInterval(async () => {
           try {
-            const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
-            const res = await axios.get(`${apiUrl}/api/health`, { timeout: 10000 });
+            const res = await API.get(`/api/health`, { timeout: 10000 });
             if (res.status === 200) {
               clearInterval(interval);
               setIsReady(true);
