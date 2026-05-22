@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import ScrollToTop from "@/components/layout/ScrollToTop";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Shop from "./pages/Shop";
@@ -93,6 +94,7 @@ const App = () => {
           <UserAuthProvider>
             <AdminAuthProvider>
               <CartProvider>
+                <ScrollToTop />
                 <AdminRedirectEnforcer />
                 <Routes>
                   <Route path="/" element={<Index />} />

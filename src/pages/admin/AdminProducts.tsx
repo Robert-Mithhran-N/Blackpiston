@@ -845,10 +845,14 @@ const AdminProducts = () => {
                           <TableCell className="text-center">
                             <div className="flex items-center justify-center gap-1">
                               {p.isFeatured && (
-                                <Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" title="Featured" />
+                                <span title="Featured">
+                                  <Star className="h-3.5 w-3.5 text-yellow-400 fill-yellow-400" />
+                                </span>
                               )}
                               {p.offerPrice && (
-                                <Tag className="h-3.5 w-3.5 text-green-400" title="Has Offer" />
+                                <span title="Has Offer">
+                                  <Tag className="h-3.5 w-3.5 text-green-400" />
+                                </span>
                               )}
                             </div>
                           </TableCell>
