@@ -188,61 +188,78 @@ router.get('/', async (req: Request, res: Response) => {
                 break;
         }
 
-        // Fetch products
-        const [products, total] = await Promise.all([
-            prisma.product.findMany({
+        // Fetch ALL matching products first if we need to post-filter, 
+        // otherwise fetch paginated to save memory.
+        const hasPostFilters = color || size || discount;
+        
+        let products;
+        let total = 0;
+        
+        if (hasPostFilters) {
+            // Fetch all matching products
+            products = await prisma.product.findMany({
                 where,
                 orderBy,
-                skip,
-                take: limitNum,
-            }),
-            prisma.product.count({ where }),
-        ]);
+            });
+        } else {
+            // Fetch only the paginated slice
+            const [paged, count] = await Promise.all([
+                prisma.product.findMany({
+                    where,
+                    orderBy,
+                    skip,
+                    take: limitNum,
+                }),
+                prisma.product.count({ where }),
+            ]);
+            products = paged;
+            total = count;
+        }
 
-        // Post-filter for variant-level filters (color, size) and discount
-        // MongoDB embedded arrays can't be filtered with Prisma this way,
-        // so we do it in application code
         let filtered = products;
 
-        // Color filter (matches variant colors)
-        if (color) {
-            const colors = (color as string).split(',').map(c => c.trim().toLowerCase());
-            filtered = filtered.filter(p =>
-                p.variants.some(v => v.color && colors.includes(v.color.toLowerCase()))
-            );
-        }
-
-        // Size filter (matches variant sizes)
-        if (size) {
-            const sizes = (size as string).split(',').map(s => s.trim().toUpperCase());
-            filtered = filtered.filter(p =>
-                p.variants.some(v => v.size && sizes.includes(v.size.toUpperCase()))
-            );
-        }
-
-        // Discount filter (minimum discount %)
-        if (discount) {
-            const minDiscount = parseInt(discount as string);
-            if (!isNaN(minDiscount) && minDiscount > 0) {
-                filtered = filtered.filter(p => {
-                    if (!p.offerPrice || p.offerPrice >= p.price) return false;
-                    const pct = Math.round(((p.price - p.offerPrice) / p.price) * 100);
-                    return pct >= minDiscount;
-                });
+        // Post-filter for variant-level filters (color, size) and discount
+        if (hasPostFilters) {
+            // Color filter (matches variant colors)
+            if (color) {
+                const colors = (color as string).split(',').map(c => c.trim().toLowerCase());
+                filtered = filtered.filter(p =>
+                    p.variants.some(v => v.color && colors.includes(v.color.toLowerCase()))
+                );
             }
-        }
 
-        // Adjust total count for post-filters
-        const hasPostFilters = color || size || discount;
-        const adjustedTotal = hasPostFilters ? filtered.length : total;
+            // Size filter (matches variant sizes)
+            if (size) {
+                const sizes = (size as string).split(',').map(s => s.trim().toUpperCase());
+                filtered = filtered.filter(p =>
+                    p.variants.some(v => v.size && sizes.includes(v.size.toUpperCase()))
+                );
+            }
+
+            // Discount filter (minimum discount %)
+            if (discount) {
+                const minDiscount = parseInt(discount as string);
+                if (!isNaN(minDiscount) && minDiscount > 0) {
+                    filtered = filtered.filter(p => {
+                        if (!p.offerPrice || p.offerPrice >= p.price) return false;
+                        const pct = Math.round(((p.price - p.offerPrice) / p.price) * 100);
+                        return pct >= minDiscount;
+                    });
+                }
+            }
+            
+            // Set adjusted total and slice the paginated result
+            total = filtered.length;
+            filtered = filtered.slice(skip, skip + limitNum);
+        }
 
         res.json({
             products: filtered,
             pagination: {
                 page: pageNum,
                 limit: limitNum,
-                total: adjustedTotal,
-                totalPages: Math.ceil(adjustedTotal / limitNum),
+                total: total,
+                totalPages: Math.ceil(total / limitNum),
             },
         });
     } catch (error) {

@@ -11,7 +11,6 @@ import { useCart } from "@/context/CartContext";
 const logo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/logo";
 
 const Header = () => {
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -65,7 +64,7 @@ const Header = () => {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-6">
+        <nav className="hidden lg:flex flex-1 justify-center items-center gap-8">
           {/* Home */}
           <NavLink to="/" className={({ isActive }) => navClass(isActive)}>
             Home
@@ -91,29 +90,8 @@ const Header = () => {
           </NavLink>
         </nav>
 
-        {/* Search Bar - Desktop */}
-        <div className="hidden md:flex flex-1 max-w-md mx-4">
-          <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search gear, parts, services..."
-              className="w-full pl-10 bg-secondary border-border focus:border-primary"
-            />
-          </div>
-        </div>
-
         {/* Right Actions */}
         <div className="flex items-center gap-2">
-          {/* Mobile Search Toggle */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden text-metal-light hover:text-primary hover:bg-transparent"
-            onClick={() => setIsSearchOpen(!isSearchOpen)}
-          >
-            <Search className="h-5 w-5" />
-          </Button>
 
           {/* Account */}
           {isAdminAuth ? (
@@ -307,20 +285,6 @@ const Header = () => {
         </div>
       </div>
 
-      {/* Mobile Search Bar */}
-      {isSearchOpen && (
-        <div className="md:hidden px-4 pb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="search"
-              placeholder="Search gear, parts, services..."
-              className="w-full pl-10 bg-secondary border-border focus:border-primary"
-              autoFocus
-            />
-          </div>
-        </div>
-      )}
     </header>
   );
 };

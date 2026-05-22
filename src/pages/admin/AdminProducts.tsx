@@ -132,18 +132,18 @@ interface Product {
 
 // Product type options for the dropdown
 const PRODUCT_TYPES = [
-  "Helmet",
-  "Jacket",
-  "Gloves",
-  "Boots",
-  "Riding Pants",
-  "Guards & Armor",
-  "Rain Gear",
-  "Accessories",
-  "Parts",
-  "Lubricants & Chemicals",
-  "Tools",
-  "Other",
+  { id: "helmet", label: "Helmets" },
+  { id: "jacket", label: "Jackets" },
+  { id: "gloves", label: "Gloves" },
+  { id: "boots", label: "Boots" },
+  { id: "riding-pants", label: "Riding Pants" },
+  { id: "guards", label: "Guards & Armor" },
+  { id: "rain-gear", label: "Rain Gear" },
+  { id: "accessories", label: "Accessories" },
+  { id: "parts", label: "Parts" },
+  { id: "lubricants", label: "Lubricants & Chemicals" },
+  { id: "tools", label: "Tools" },
+  { id: "other", label: "Other" },
 ];
 
 interface FormData {
@@ -283,14 +283,17 @@ const AdminProducts = () => {
     if (offerPrice && price > 0 && offerPrice < price) {
       discountPercent = String(Math.round(((price - offerPrice) / price) * 100));
     }
+    const productType = PRODUCT_TYPES.find(pt => product.tags?.includes(pt.id))?.id || "";
+    const tagChips = (product.tags || []).filter(t => t !== productType);
+    
     setFormData({
       name: product.name,
       shortDescription: product.shortDescription || "",
       sections: product.sections || [],
       brand: product.brand || "",
       sku: product.sku || "",
-      productType: "",
-      tagChips: product.tags || [],
+      productType,
+      tagChips,
       tagInput: "",
       price: String(product.price),
       offerPrice: product.offerPrice ? String(product.offerPrice) : "",
@@ -404,7 +407,7 @@ const AdminProducts = () => {
         price,
         offerPrice,
         stockQuantity: variantTotalStock,
-        tags: formData.tagChips,
+        tags: formData.productType ? [...formData.tagChips.filter(t => t !== formData.productType), formData.productType] : formData.tagChips,
         isFeatured: formData.isFeatured,
         isActive: formData.isActive,
         thumbnailUrl: formData.thumbnailUrl,
@@ -999,8 +1002,8 @@ const AdminProducts = () => {
                     <SelectContent>
                       <SelectItem value="__none__">— Select Type —</SelectItem>
                       {PRODUCT_TYPES.map((type) => (
-                        <SelectItem key={type} value={type}>
-                          {type}
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
