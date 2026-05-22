@@ -16,7 +16,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: "prompt",
       includeAssets: ["favicon.ico", "pwa-icon-192.png", "pwa-icon-512.png"],
       manifest: {
         name: "BlackPiston Garage",
@@ -50,8 +50,13 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         // Cache pages and assets for fast loading
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,woff,ttf}"],
-        // Runtime caching for API calls — network-first so data is always fresh
+        // Runtime caching
         runtimeCaching: [
+          {
+            // Do not cache sensitive API routes
+            urlPattern: /^https?:\/\/.*\/api\/(checkout|payments|admin).*/i,
+            handler: "NetworkOnly",
+          },
           {
             urlPattern: /^https?:\/\/.*\/api\/.*/i,
             handler: "NetworkFirst",

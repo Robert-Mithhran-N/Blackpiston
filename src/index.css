@@ -105,6 +105,15 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    overscroll-behavior-y: none; /* Prevent pull-to-refresh bounce in PWA */
+    -webkit-tap-highlight-color: transparent; /* Remove default tap highlight on mobile */
+  }
+  
+  /* Make buttons and links feel native */
+  a, button, [role="button"] {
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
   }
   
   h1, h2, h3, h4, h5, h6 {
