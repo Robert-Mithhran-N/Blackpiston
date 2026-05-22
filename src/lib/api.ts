@@ -3,16 +3,41 @@
 
 import axios from 'axios';
 
-const getApiBaseUrl = () => {
-  const envUrl = import.meta.env.VITE_API_URL;
-  if (envUrl && !envUrl.includes("localhost")) return envUrl;
-  return `${window.location.protocol}//${window.location.hostname}:3001/api`;
+// Helper to detect if we're on a local network or localhost
+const isLocalEnv = () => {
+  const hostname = window.location.hostname;
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.');
 };
 
-const getApiHostUrl = () => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL;
-  if (envUrl && !envUrl.includes("localhost")) return envUrl;
-  return `${window.location.protocol}//${window.location.hostname}:3001`;
+export const getApiHostUrl = () => {
+  // 1. Try exact VITE_API_BASE_URL first
+  const envBaseUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envBaseUrl) return envBaseUrl;
+  
+  // 2. Try deriving from VITE_API_URL if it exists
+  const envApiUrl = import.meta.env.VITE_API_URL;
+  if (envApiUrl) {
+    // Strip trailing /api or /api/
+    return envApiUrl.replace(/\/api\/?$/, '');
+  }
+  
+  // 3. Fallbacks
+  if (isLocalEnv()) {
+    // Local development (handles mobile testing on same wifi via IP)
+    return `${window.location.protocol}//${window.location.hostname}:3001`;
+  }
+  
+  // 4. Production fallback - assume API is proxied on the same domain
+  return `${window.location.protocol}//${window.location.hostname}`;
+};
+
+export const getApiBaseUrl = () => {
+  // 1. Try exact VITE_API_URL first
+  const envApiUrl = import.meta.env.VITE_API_URL;
+  if (envApiUrl) return envApiUrl;
+
+  // 2. Derive from base
+  return `${getApiHostUrl()}/api`;
 };
 
 const API_BASE = getApiBaseUrl();

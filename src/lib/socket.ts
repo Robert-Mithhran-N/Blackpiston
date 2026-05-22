@@ -3,12 +3,8 @@
 
 import { io, Socket } from 'socket.io-client';
 
-// Derive the WS URL from the API base (strip /api suffix)
-const getApiHostUrl = () => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL;
-  if (envUrl && !envUrl.includes("localhost")) return envUrl;
-  return `${window.location.protocol}//${window.location.hostname}:3001`;
-};
+import { getApiHostUrl } from './api';
+
 const WS_URL = getApiHostUrl();
 
 let socket: Socket | null = null;
