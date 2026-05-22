@@ -21,7 +21,7 @@ const MobileBottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-[50] flex h-16 items-center justify-around border-t border-white/10 bg-zinc-950 pb-safe pt-1 md:hidden">
+    <div className="fixed bottom-0 left-0 right-0 z-[50] flex h-16 items-center justify-around border-t border-white/10 bg-zinc-950 pb-safe pt-1 lg:hidden">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = location.pathname === item.path || 
@@ -31,7 +31,7 @@ const MobileBottomNav = () => {
           <NavLink
             key={item.name}
             to={item.path}
-            className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${
+            className={`flex flex-col items-center justify-center w-full h-full min-h-[44px] gap-1 transition-colors ${
               isActive ? "text-amber-500" : "text-zinc-400 hover:text-white"
             }`}
           >

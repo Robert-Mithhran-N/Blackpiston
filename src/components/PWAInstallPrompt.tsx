@@ -21,7 +21,7 @@ const PWAInstallPrompt = () => {
     <>
       {/* Premium Mobile Install Banner */}
       {showMobileBanner && !showIOSGuide && (
-        <div className="fixed bottom-0 left-0 right-0 z-[9999] animate-in slide-in-from-bottom duration-500">
+        <div className="fixed bottom-20 lg:bottom-0 left-0 right-0 z-[60] animate-in slide-in-from-bottom duration-500">
           <div className="mx-auto max-w-lg p-3">
             <div className="rounded-2xl border border-white/10 bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 p-4 shadow-2xl shadow-black/50 backdrop-blur-xl">
               <div className="flex items-start gap-3">
@@ -79,7 +79,7 @@ const PWAInstallPrompt = () => {
 
       {/* iOS Instructions Modal */}
       {showIOSGuide && (
-        <div className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 backdrop-blur-sm">
           <div className="w-full max-w-lg animate-in slide-in-from-bottom duration-300">
             <div className="rounded-t-3xl bg-zinc-900 border-t border-white/10 p-6 shadow-2xl">
               <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-zinc-700" />

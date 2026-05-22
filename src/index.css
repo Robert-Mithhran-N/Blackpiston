@@ -153,6 +153,45 @@
   .text-metal-light {
     @apply text-[hsl(var(--metal-light))];
   }
+
+  /* Safe area utilities for PWA / notched devices */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .mb-safe {
+    margin-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Responsive heading scale */
+  .heading-hero {
+    @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight;
+  }
+
+  .heading-page {
+    @apply text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight;
+  }
+
+  .heading-section {
+    @apply text-xl sm:text-2xl md:text-3xl font-bold tracking-tight;
+  }
+
+  .heading-card {
+    @apply text-lg sm:text-xl font-bold;
+  }
+
+  /* Responsive section spacing */
+  .section-y {
+    @apply py-8 sm:py-12 md:py-16 lg:py-20;
+  }
+
+  .section-y-sm {
+    @apply py-6 sm:py-8 md:py-12;
+  }
 }
 
 /* Prevent logo from being obscured by highlighting */
@@ -168,5 +207,125 @@
   /* Remove orange background hover on header buttons and links */
   header .hover\:bg-transparent:hover {
     background-color: transparent;
+  }
+
+  /* Admin table responsive scroll wrapper */
+  .table-scroll-wrapper {
+    @apply overflow-x-auto -mx-4 px-4;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Custom scrollbar for scroll areas */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+}
+
+/* ================================================
+   PWA Standalone Mode — Safe Area Handling
+   ================================================ */
+@media (display-mode: standalone) {
+  body {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+/* ================================================
+   Hero Section Animations (moved from inline <style>)
+   ================================================ */
+@keyframes hero-cross-light-sweep {
+  0% {
+    transform: translateX(-150%) translateY(-150%) rotate(45deg) scaleY(0.5);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.8;
+    transform: translateX(-100%) translateY(-100%) rotate(45deg) scaleY(0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: translateX(0%) translateY(0%) rotate(45deg) scaleY(1.2);
+  }
+  85% {
+    opacity: 0.8;
+    transform: translateX(100%) translateY(100%) rotate(45deg) scaleY(0.7);
+  }
+  100% {
+    transform: translateX(150%) translateY(150%) rotate(45deg) scaleY(0.5);
+    opacity: 0;
+  }
+}
+
+.hero-cross-light-sweep {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    transparent 35%,
+    rgba(255, 255, 255, 0.03) 40%,
+    rgba(255, 255, 255, 0.08) 45%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.08) 55%,
+    rgba(255, 255, 255, 0.03) 60%,
+    transparent 65%,
+    transparent 100%
+  );
+  width: 300%;
+  height: 300%;
+  top: -100%;
+  left: -100%;
+  animation: hero-cross-light-sweep 10s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.hero-caption-gradient {
+  background: linear-gradient(
+    135deg,
+    #f97316 0%,
+    #fb923c 25%,
+    #ffffff 50%,
+    #fb923c 75%,
+    #f97316 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: hero-gradient-shift 6s ease-in-out infinite;
+  text-shadow: none;
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 30px rgba(249, 115, 22, 0.3));
+  letter-spacing: 0.05em;
+}
+
+@keyframes hero-gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .hero-cross-light-sweep {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+/* Simplify effects on smaller screens */
+@media (max-width: 1024px) {
+  .hero-cross-light-sweep {
+    animation-duration: 12s;
   }
 }

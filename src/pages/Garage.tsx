@@ -137,7 +137,7 @@ const ServiceDetailModal = ({ service, onClose }: { service: Service; onClose: (
       />
       
       {/* Modal Content */}
-      <div className="relative w-full max-w-4xl max-h-[90vh] bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col md:flex-row animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-4xl max-h-[90vh] bg-zinc-950 border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col lg:flex-row animate-in fade-in zoom-in-95 duration-200">
         
         {/* Left Side: Image & Hero */}
         <div className="relative w-full md:w-2/5 h-64 md:h-auto bg-black flex-shrink-0">

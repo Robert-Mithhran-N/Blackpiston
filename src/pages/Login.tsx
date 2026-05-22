@@ -178,7 +178,7 @@ const Login = () => {
       <Header />
       <main className="container py-16">
         <BackButton />
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-2xl mx-auto space-y-8">
           <div className="space-y-3 text-center">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-primary">
               Access

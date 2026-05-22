@@ -11,49 +11,59 @@ import StartupLoader from "@/components/StartupLoader";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import ScrollToTop from "@/components/layout/ScrollToTop";
+import { lazy, Suspense, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+
+// Eagerly load the home page (most common entry point)
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-import Shop from "./pages/Shop";
-import ProductDetail from "./pages/ProductDetail";
-import Garage from "./pages/Garage";
-import About from "./pages/About";
-import Blog from "./pages/Blog";
-import Contact from "./pages/Contact";
-import Cart from "./pages/Cart";
-import Checkout from "./pages/Checkout";
-import OrderSuccess from "./pages/OrderSuccess";
-import FAQ from "./pages/FAQ";
-import Shipping from "./pages/Shipping";
-import Warranty from "./pages/Warranty";
-import Privacy from "./pages/Privacy";
-import Login from "./pages/Login";
-import Onboarding from "./pages/Onboarding";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
 
-import ProfileLayout from "./pages/user/ProfileLayout";
-import ProfileDetails from "./pages/user/ProfileDetails";
-import ProfileOrders from "./pages/user/ProfileOrders";
-import ProfileAddresses from "./pages/user/ProfileAddresses";
-import ProfileSettings from "./pages/user/ProfileSettings";
+// Lazy-loaded public pages
+const Shop = lazy(() => import("./pages/Shop"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const Garage = lazy(() => import("./pages/Garage"));
+const About = lazy(() => import("./pages/About"));
+const Blog = lazy(() => import("./pages/Blog"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Cart = lazy(() => import("./pages/Cart"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const OrderSuccess = lazy(() => import("./pages/OrderSuccess"));
+const FAQ = lazy(() => import("./pages/FAQ"));
+const Shipping = lazy(() => import("./pages/Shipping"));
+const Warranty = lazy(() => import("./pages/Warranty"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Login = lazy(() => import("./pages/Login"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+
+// Lazy-loaded user profile pages
+const ProfileLayout = lazy(() => import("./pages/user/ProfileLayout"));
+const ProfileDetails = lazy(() => import("./pages/user/ProfileDetails"));
+const ProfileOrders = lazy(() => import("./pages/user/ProfileOrders"));
+const ProfileAddresses = lazy(() => import("./pages/user/ProfileAddresses"));
+const ProfileSettings = lazy(() => import("./pages/user/ProfileSettings"));
+
+// Lazy-loaded admin pages
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const AdminProducts = lazy(() => import("./pages/admin/AdminProducts"));
+const AdminOrders = lazy(() => import("./pages/admin/AdminOrders"));
+const AdminOrderHistory = lazy(() => import("./pages/admin/AdminOrderHistory"));
+const AdminLowStock = lazy(() => import("./pages/admin/AdminLowStock"));
+const AdminRequests = lazy(() => import("./pages/admin/AdminRequests"));
+const AdminBlog = lazy(() => import("./pages/admin/AdminBlog"));
+const AdminAppointments = lazy(() => import("./pages/admin/AdminAppointments"));
+const AdminServices = lazy(() => import("./pages/admin/AdminServices"));
+const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
+const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
+const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
 
 import AdminRoute from "./routes/AdminRoute";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
 import { UserAuthProvider } from "./context/UserAuthContext";
 import { CartProvider } from "./context/CartContext";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import AdminProducts from "./pages/admin/AdminProducts";
-import AdminOrders from "./pages/admin/AdminOrders";
-import AdminOrderHistory from "./pages/admin/AdminOrderHistory";
-import AdminLowStock from "./pages/admin/AdminLowStock";
-import AdminRequests from "./pages/admin/AdminRequests";
-import AdminBlog from "./pages/admin/AdminBlog";
-import AdminAppointments from "./pages/admin/AdminAppointments";
-import AdminServices from "./pages/admin/AdminServices";
-import AdminMessages from "./pages/admin/AdminMessages";
-import AdminPayments from "./pages/admin/AdminPayments";
-import AdminSettings from "./pages/admin/AdminSettings";
-import AdminUsers from "./pages/admin/AdminUsers";
+import { useAdminAuth } from "./context/AdminAuthContext";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -68,9 +78,12 @@ const queryClient = new QueryClient({
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
 
-import { useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
-import { useAdminAuth } from "./context/AdminAuthContext";
+// Route-level loading fallback
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh]">
+    <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent" />
+  </div>
+);
 
 const AdminRedirectEnforcer = () => {
   const { isAuthenticated } = useAdminAuth();
@@ -106,6 +119,7 @@ const App = () => {
                     <ScrollToTop />
                     <AdminRedirectEnforcer />
                     <MobileBottomNav />
+                    <Suspense fallback={<PageLoader />}>
                     <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/shop" element={<Shop />} />
@@ -153,6 +167,7 @@ const App = () => {
                     {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                  </Suspense>
                 </CartProvider>
               </AdminAuthProvider>
             </UserAuthProvider>
@@ -167,4 +182,3 @@ const App = () => {
 };
 
 export default App;
-

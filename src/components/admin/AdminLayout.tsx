@@ -72,7 +72,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-64 border-r border-border bg-gradient-to-b from-background to-muted/20">
+      <aside className="hidden lg:flex w-64 border-r border-border bg-gradient-to-b from-background to-muted/20">
         <div className="flex h-full flex-col">
           <div className="flex items-center gap-3 px-6 py-4 border-b border-border/60">
             <Link to="/admin" className="flex items-center gap-2">
@@ -153,11 +153,11 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
       {/* Mobile sidebar / header */}
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-border bg-background/80 px-4 py-3 backdrop-blur md:px-6">
+        <header className="flex items-center justify-between border-b border-border bg-background/80 px-4 py-3 backdrop-blur lg:px-6">
           <div className="flex items-center gap-3">
             <button
               type="button"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted/40 md:hidden"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border text-muted-foreground hover:bg-muted/40 lg:hidden"
               onClick={() => setMobileOpen((o) => !o)}
             >
               {mobileOpen ? (
@@ -212,7 +212,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
         {/* Mobile nav drawer */}
         {mobileOpen && (
-          <div className="border-b border-border bg-background/95 px-3 py-3 md:hidden">
+          <div className="border-b border-border bg-background/95 px-3 py-3 lg:hidden">
             <nav className="space-y-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -243,7 +243,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           </div>
         )}
 
-        <main className="flex-1 px-4 py-5 md:px-8 md:py-8">
+        <main className="flex-1 px-4 py-5 lg:px-8 lg:py-8">
           <div className="mx-auto max-w-6xl">
             {children}
           </div>

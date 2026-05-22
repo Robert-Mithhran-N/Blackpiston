@@ -774,7 +774,7 @@ const Shop = () => {
                     )}
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-[320px] p-0">
+                <SheetContent side="left" className="w-[min(320px,85vw)] p-0">
                   <SheetHeader className="px-4 py-3 border-b border-border">
                     <SheetTitle>Filters</SheetTitle>
                   </SheetHeader>
@@ -798,7 +798,7 @@ const Shop = () => {
                 value={filters.sort}
                 onValueChange={(v) => updateFilters({ sort: v, page: 1 })}
               >
-                <SelectTrigger className="w-[170px] h-10">
+                <SelectTrigger className="w-[170px] min-w-0 h-10">
                   <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
@@ -878,7 +878,7 @@ const Shop = () => {
                 <div
                   className={
                     viewMode === "grid"
-                      ? "grid gap-3 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
+                      ? "grid gap-3 grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
                       : "space-y-4"
                   }
                 >

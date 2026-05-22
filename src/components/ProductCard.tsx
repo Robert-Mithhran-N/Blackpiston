@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ const ProductCard = ({ product, variant = "default", onAddToCart }: ProductCardP
             <Card
                 className={`relative overflow-hidden transition-all duration-500 ease-out border-2 bg-card
           ${isHovered
-                        ? "border-primary/60 shadow-xl shadow-primary/15 scale-[1.02]"
+                        ? "border-primary/60 shadow-xl shadow-primary/15 scale-[1.01]"
                         : "border-border shadow-md scale-100"
                     }
           ${variant === "featured" ? "h-full" : ""}
@@ -66,6 +66,8 @@ const ProductCard = ({ product, variant = "default", onAddToCart }: ProductCardP
                         className={`w-full h-full object-cover transition-all duration-700 ease-out
               ${isHovered ? "scale-110 brightness-90" : "scale-100 brightness-100"}
             `}
+                        loading="lazy"
+                        decoding="async"
                         onError={(e) => {
                             (e.target as HTMLImageElement).src =
                                 "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
@@ -123,7 +125,7 @@ const ProductCard = ({ product, variant = "default", onAddToCart }: ProductCardP
                     </div>
 
                     {/* Mobile: Always visible CTA (no hover on touch devices) */}
-                    <div className="md:hidden absolute bottom-3 right-3">
+                    <div className="lg:hidden absolute bottom-3 right-3">
                         <Button
                             size="sm"
                             className="bg-primary/90 backdrop-blur-sm shadow-lg"
@@ -227,4 +229,4 @@ const ProductCard = ({ product, variant = "default", onAddToCart }: ProductCardP
     );
 };
 
-export default ProductCard;
+export default memo(ProductCard);

@@ -25,14 +25,14 @@ const Hero = () => {
       </div>
 
       <div className="container relative z-10">
-        <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 items-center">
+        <div className="grid md:grid-cols-2 gap-6 lg:gap-8 items-center">
           {/* Left Content */}
           <div className="space-y-4 animate-slide-up">
             <div>
               <p className="text-primary font-ui font-semibold text-xs uppercase tracking-widest mb-2">
                 Premium Motorcycle Gear & Workshop
               </p>
-              <h1 className="font-display text-4xl sm:text-5xl lg:text-5xl xl:text-6xl text-foreground leading-tight tracking-wide mb-4">
+              <h1 className="font-display text-4xl sm:text-5xl md:text-5xl lg:text-6xl text-foreground leading-tight tracking-wide mb-4">
                 GEAR UP.<br />
                 <span className="text-gradient-flame">RIDE HARD.</span><br />
                 MODIFY SMARTER.
@@ -82,8 +82,8 @@ const Hero = () => {
           </div>
 
           {/* Right Content - Hero Image with premium effects */}
-          <div className="relative hidden lg:block">
-            <div className="relative w-full aspect-square max-w-[20rem] mx-auto">
+          <div className="relative hidden md:block">
+            <div className="relative w-full aspect-square max-w-[16rem] md:max-w-[16rem] lg:max-w-[20rem] mx-auto">
               {/* Animated parallax ring behind image */}
               <div className="absolute inset-0 -z-10 flex items-center justify-center">
                 <div className="absolute w-full h-full rounded-full border-2 border-primary/20 animate-rotate-slow" />
@@ -111,7 +111,6 @@ const Hero = () => {
                 {/* Layer 3: Cross-direction diagonal white light sweep */}
                 <div className="hero-cross-light-sweep absolute inset-0 pointer-events-none z-10" />
 
-
                 {/* Soft edge overlay */}
                 <div className="absolute inset-0 rounded-2xl shadow-[inset_0_0_80px_rgba(0,0,0,0.4)] pointer-events-none z-10" />
               </div>
@@ -119,101 +118,9 @@ const Hero = () => {
           </div>
         </div>
       </div>
-
-      {/* CSS Animations for Hero Effects */}
-      <style>{`
-        /* Cross-direction diagonal white light sweep */
-        @keyframes hero-cross-light-sweep {
-          0% {
-            transform: translateX(-150%) translateY(-150%) rotate(45deg) scaleY(0.5);
-            opacity: 0;
-          }
-          15% {
-            opacity: 0.8;
-            transform: translateX(-100%) translateY(-100%) rotate(45deg) scaleY(0.7);
-          }
-          50% {
-            opacity: 1;
-            transform: translateX(0%) translateY(0%) rotate(45deg) scaleY(1.2);
-          }
-          85% {
-            opacity: 0.8;
-            transform: translateX(100%) translateY(100%) rotate(45deg) scaleY(0.7);
-          }
-          100% {
-            transform: translateX(150%) translateY(150%) rotate(45deg) scaleY(0.5);
-            opacity: 0;
-          }
-        }
-        
-        .hero-cross-light-sweep {
-          background: linear-gradient(
-            90deg,
-            transparent 0%,
-            transparent 35%,
-            rgba(255, 255, 255, 0.03) 40%,
-            rgba(255, 255, 255, 0.08) 45%,
-            rgba(255, 255, 255, 0.12) 50%,
-            rgba(255, 255, 255, 0.08) 55%,
-            rgba(255, 255, 255, 0.03) 60%,
-            transparent 65%,
-            transparent 100%
-          );
-          width: 300%;
-          height: 300%;
-          top: -100%;
-          left: -100%;
-          animation: hero-cross-light-sweep 10s ease-in-out infinite;
-          animation-delay: 2s;
-        }
-        
-        /* Caption text gradient - smooth orange to white */
-        .hero-caption-gradient {
-          background: linear-gradient(
-            135deg,
-            #f97316 0%,
-            #fb923c 25%,
-            #ffffff 50%,
-            #fb923c 75%,
-            #f97316 100%
-          );
-          background-size: 200% 200%;
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-          animation: hero-gradient-shift 6s ease-in-out infinite;
-          text-shadow: none;
-          filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 30px rgba(249, 115, 22, 0.3));
-          letter-spacing: 0.05em;
-        }
-        
-        @keyframes hero-gradient-shift {
-          0%, 100% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-        }
-
-        
-        /* Reduce motion for accessibility */
-        @media (prefers-reduced-motion: reduce) {
-          .hero-cross-light-sweep {
-            animation: none;
-            opacity: 0;
-          }
-        }
-        
-        /* Simplify effects on smaller screens */
-        @media (max-width: 1024px) {
-          .hero-cross-light-sweep {
-            animation-duration: 12s;
-          }
-        }
-      `}</style>
     </section>
   );
 };
 
 export default Hero;
+

@@ -85,12 +85,12 @@ const Cart = () => {
     <div className="min-h-screen bg-background">
       <Header />
       <main className="container py-8">
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Shopping Cart</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Shopping Cart</h1>
             <p className="text-muted-foreground mt-1">{cartCount} item{cartCount !== 1 ? "s" : ""} in your cart</p>
           </div>
-          <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={clearCart}>
+          <Button variant="ghost" className="text-destructive hover:text-destructive self-start sm:self-auto" onClick={clearCart}>
             <Trash2 className="mr-2 h-4 w-4" />
             Clear Cart
           </Button>
@@ -115,7 +115,7 @@ const Cart = () => {
                         <img
                           src={item.product.image}
                           alt={item.product.name}
-                          className="w-24 h-24 rounded-lg object-cover border border-border"
+                          className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg object-cover border border-border"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src =
                               "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&h=200&fit=crop";
