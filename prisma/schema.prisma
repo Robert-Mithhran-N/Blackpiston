@@ -39,6 +39,10 @@ enum PaymentStatus {
   FAILED
   REFUNDED
   PARTIALLY_REFUNDED
+  COD_PENDING
+  COD_RECEIVED
+  REFUND_INITIATED
+  EXPIRED
 }
 
 enum PaymentMethod {
@@ -311,6 +315,14 @@ model Order {
   createdAt          DateTime             @default(now())
   updatedAt          DateTime             @updatedAt
 
+  // Razorpay fields
+  razorpayOrderId    String?
+  razorpayPaymentId  String?
+  razorpaySignature  String?
+  paymentCapturedAt  DateTime?
+  paymentExpiresAt   DateTime?
+  isStockReserved    Boolean              @default(false)
+
   // Relations
   payment       Payment?
   couponUsages  CouponUsage[]
@@ -355,6 +367,19 @@ model Payment {
   metadata        Json?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+
+  // Razorpay-specific fields
+  razorpayOrderId    String?
+  razorpayPaymentId  String?
+  razorpaySignature  String?
+  retryCount         Int             @default(0)
+  refundStatus       String?
+  refundAmount       Float?
+  refundId           String?
+  capturedAt         DateTime?
+  expiredAt          DateTime?
+  webhookVerified    Boolean         @default(false)
+  idempotencyKey     String?         @unique
 
   @@map("payments")
 }
@@ -791,4 +816,18 @@ model ReturnRequest {
   updatedAt     DateTime     @updatedAt
 
   @@map("return_requests")
+}
+
+// ==================== WEBHOOK EVENTS ====================
+
+model WebhookEvent {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  eventId       String    @unique
+  eventType     String
+  payload       Json
+  processed     Boolean   @default(false)
+  processedAt   DateTime?
+  createdAt     DateTime  @default(now())
+
+  @@map("webhook_events")
 }

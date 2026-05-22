@@ -857,3 +857,69 @@ export async function removeFromWishlist(productId: string) {
     return res.json();
 }
 
+// ============================================================
+// Razorpay Payments
+// ============================================================
+
+export async function getRazorpayConfig(): Promise<{ key_id: string }> {
+    const res = await fetch(`${API_BASE}/payments/config`);
+    if (!res.ok) throw new Error("Payment gateway not available");
+    return res.json();
+}
+
+export async function createPaymentOrder(data: {
+    items: { productId: string; variantId?: string; quantity: number }[];
+    shippingAddress: Record<string, string>;
+    billingAddress?: Record<string, string>;
+    couponCode?: string;
+}) {
+    const res = await fetch(`${API_BASE}/payments/create-order`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || err.details?.join(', ') || "Failed to create payment order");
+    }
+    return res.json();
+}
+
+export async function verifyPayment(data: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    order_id: string;
+}) {
+    const res = await fetch(`${API_BASE}/payments/verify`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Payment verification failed");
+    }
+    return res.json();
+}
+
+export async function getPaymentStatus(orderId: string) {
+    const res = await fetch(`${API_BASE}/payments/status/${orderId}`, {
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to get payment status");
+    return res.json();
+}
+
+export async function retryPayment(orderId: string) {
+    const res = await fetch(`${API_BASE}/payments/retry/${orderId}`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to retry payment");
+    }
+    return res.json();
+}
+

@@ -16,7 +16,9 @@ import serviceRoutes from './routes/services.js';
 import couponRoutes from './routes/coupons.js';
 import wishlistRoutes from './routes/wishlist.js';
 import requestRoutes from './routes/requests.js';
+import paymentRoutes from './routes/payments.js';
 import { initSocketServer } from './socketManager.js';
+import { cleanupExpiredOrders } from './utils/paymentService.js';
 
 // Load environment variables (resolve path relative to this file, not CWD)
 const __filename = fileURLToPath(import.meta.url);
@@ -33,6 +35,10 @@ app.use(cors({
   origin: true,
   credentials: true
 }));
+
+// Raw body parser for Razorpay webhook (MUST come before express.json)
+app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -84,6 +90,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/coupons', couponRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/requests', requestRoutes);
+app.use('/api/payments', paymentRoutes);
 // Search and tag suggestion routes are inside products router
 
 // Database connection check
@@ -133,6 +140,13 @@ async function startServer() {
 }
 
 startServer();
+
+// ── Expired Payment Cleanup (every 15 minutes) ──
+setInterval(() => {
+    cleanupExpiredOrders().catch(err =>
+        console.error('Expired order cleanup failed:', err)
+    );
+}, 15 * 60 * 1000);
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
