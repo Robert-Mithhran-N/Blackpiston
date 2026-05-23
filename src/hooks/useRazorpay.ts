@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef } from "react";
 import { createPaymentOrder, verifyPayment, retryPayment } from "@/lib/api";
-import { getApiHostUrl } from "@/lib/api";
 
 // Razorpay checkout script URL
 const RAZORPAY_SCRIPT_URL = "https://checkout.razorpay.com/v1/checkout.js";
