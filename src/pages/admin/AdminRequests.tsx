@@ -311,8 +311,8 @@ const AdminRequests = () => {
     }, []);
 
     // Calculate counts
-    const pendingCount = requests.filter((r) => r.status === "PENDING").length;
-    const completedCount = requests.filter((r) => r.status === "COMPLETED").length;
+    const pendingCount = requests.filter((r) => (r.requestStatus || r.status) === "PENDING").length;
+    const completedCount = requests.filter((r) => (r.requestStatus || r.status) === "COMPLETED").length;
 
     // Handle status change
     const handleStatusChange = (id: string, newStatus: RequestStatus) => {
@@ -320,7 +320,7 @@ const AdminRequests = () => {
             .then(() => {
                 setRequests((prev) =>
                     prev.map((request) =>
-                        request.id === id ? { ...request, status: newStatus } : request
+                        request.id === id ? { ...request, status: newStatus, requestStatus: newStatus } : request
                     )
                 );
                 toast.success(`Request status updated to ${newStatus}`);

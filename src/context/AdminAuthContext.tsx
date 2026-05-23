@@ -53,7 +53,16 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     } catch { /* ignore */ }
     return null;
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.token) return true;
+      }
+    } catch { /* ignore */ }
+    return false;
+  });
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -73,6 +82,66 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       );
     }
   }, [user, token]);
+
+  // Validate token on mount
+  useEffect(() => {
+    const storedAuth = window.localStorage.getItem(STORAGE_KEY);
+    if (!storedAuth) {
+      setIsLoading(false);
+      return;
+    }
+
+    let parsedToken: string | null = null;
+    try {
+      const parsed = JSON.parse(storedAuth);
+      parsedToken = parsed?.token || null;
+    } catch { /* ignore */ }
+
+    if (!parsedToken) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate token with backend
+    fetch(`${API_BASE}/auth/me`, {
+      headers: { Authorization: `Bearer ${parsedToken}` },
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error("Invalid token");
+        return res.json();
+      })
+      .then((data) => {
+        if (!["admin", "super-admin", "ADMIN", "STAFF"].includes(data.user.role)) {
+          throw new Error("Access denied: Not an admin");
+        }
+        setUser(data.user);
+        setToken(parsedToken);
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: data.user, token: parsedToken }));
+      })
+      .catch((err) => {
+        // If it's a network error, keep current local state
+        const isNetworkError = err instanceof TypeError && err.message === "Failed to fetch";
+        if (!isNetworkError) {
+          setUser(null);
+          setToken(null);
+          window.localStorage.removeItem(STORAGE_KEY);
+        }
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  }, []);
+
+  // Listen for global admin auth error events (401 from backend)
+  useEffect(() => {
+    const handleAuthError = () => {
+      logout();
+    };
+    window.addEventListener("admin-auth-error", handleAuthError);
+    return () => {
+      window.removeEventListener("admin-auth-error", handleAuthError);
+    };
+  }, []);
 
   // Real admin login via backend API
   const login = async (email: string, password: string) => {

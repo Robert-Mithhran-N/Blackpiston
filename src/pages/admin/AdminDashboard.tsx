@@ -188,9 +188,10 @@ const AdminDashboard = () => {
     ])
       .then(([statsData, lowStockData, requestsData, paymentsData]) => {
         // Dashboard stats
-        setTotalOrders(statsData.totalOrders || 0);
-        setLowStockCount(lowStockData.length || 0);
-        setRequestsCount(requestsData.requests?.length || requestsData.total || 0);
+        const totalOrd = statsData.dashboardStats?.totalOrders || 0;
+        setTotalOrders(totalOrd);
+        setLowStockCount(lowStockData.lowStockProducts?.length || 0);
+        setRequestsCount(requestsData.pagination?.total || requestsData.requests?.length || 0);
 
         // Payment summary
         const payments = paymentsData.payments || [];
@@ -209,13 +210,13 @@ const AdminDashboard = () => {
           // Fallback placeholder sales data
           setSalesData({
             weekly: [
-              { period: "Mon", unitsSold: statsData.totalOrders ? Math.round(statsData.totalOrders / 7) : 0 },
+              { period: "Mon", unitsSold: totalOrd ? Math.round(totalOrd / 7) : 0 },
               { period: "Tue", unitsSold: 0 }, { period: "Wed", unitsSold: 0 },
               { period: "Thu", unitsSold: 0 }, { period: "Fri", unitsSold: 0 },
               { period: "Sat", unitsSold: 0 }, { period: "Sun", unitsSold: 0 },
             ],
-            monthly: [{ period: "This Month", unitsSold: statsData.totalOrders || 0 }],
-            yearly: [{ period: "This Year", unitsSold: statsData.totalOrders || 0 }],
+            monthly: [{ period: "This Month", unitsSold: totalOrd }],
+            yearly: [{ period: "This Year", unitsSold: totalOrd }],
           });
         }
       })

@@ -379,7 +379,7 @@ model Payment {
   capturedAt         DateTime?
   expiredAt          DateTime?
   webhookVerified    Boolean         @default(false)
-  idempotencyKey     String?         @unique
+  idempotencyKey     String?
 
   @@map("payments")
 }

@@ -42,6 +42,51 @@ export const getApiBaseUrl = () => {
 
 const API_BASE = getApiBaseUrl();
 
+// Intercept all fetch requests inside this file to catch 401s and emit auth error events
+const originalFetch = window.fetch;
+const fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const res = await originalFetch(input, init);
+    if (res.status === 401 && init?.headers) {
+        const headers = new Headers(init.headers);
+        const authHeader = headers.get("Authorization");
+        if (authHeader) {
+            // Check if it's the admin token
+            try {
+                const adminRaw = localStorage.getItem("blackpiston_admin_auth");
+                if (adminRaw) {
+                    const parsed = JSON.parse(adminRaw);
+                    if (parsed?.token && authHeader.includes(parsed.token)) {
+                        window.dispatchEvent(new CustomEvent("admin-auth-error"));
+                    }
+                }
+            } catch { /* ignore */ }
+
+            // Check if it's the user token
+            const userToken = localStorage.getItem("blackpiston_user_token");
+            if (userToken && authHeader.includes(userToken)) {
+                window.dispatchEvent(new CustomEvent("user-auth-error"));
+            }
+        }
+    }
+    return res;
+};
+
+// Clean search parameters to filter out internal React Query context objects
+function buildSearchParams(params?: Record<string, any>): URLSearchParams {
+    const searchParams = new URLSearchParams();
+    if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+            if (['queryKey', 'pageParam', 'signal', 'meta', 'client'].includes(key)) {
+                return;
+            }
+            if (value !== undefined && value !== null && value !== '') {
+                searchParams.set(key, String(value));
+            }
+        });
+    }
+    return searchParams;
+}
+
 // PHASE 3 — API BASE URL FIX (CRITICAL)
 export const API = axios.create({
   baseURL: getApiHostUrl()
@@ -105,15 +150,7 @@ export async function fetchProducts(params?: {
     sortBy?: string;
     sortOrder?: string;
 }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-            if (value !== undefined && value !== null && value !== "") {
-                searchParams.set(key, String(value));
-            }
-        });
-    }
-
+    const searchParams = buildSearchParams(params);
     const res = await fetch(`${API_BASE}/products?${searchParams.toString()}`);
     if (!res.ok) throw new Error("Failed to fetch products");
     return res.json();
@@ -189,14 +226,7 @@ export async function fetchAdminProducts(params?: {
     category?: string;
     status?: string;
 }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-                searchParams.set(key, String(value));
-            }
-        });
-    }
+    const searchParams = buildSearchParams(params);
     const res = await fetch(
         `${API_BASE}/admin/products?${searchParams.toString()}`,
         { headers: getAuthHeaders() }
@@ -252,14 +282,7 @@ export async function fetchAdminOrders(params?: {
     limit?: number;
     status?: string;
 }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-                searchParams.set(key, String(value));
-            }
-        });
-    }
+    const searchParams = buildSearchParams(params);
     const res = await fetch(
         `${API_BASE}/orders/admin/all?${searchParams.toString()}`,
         { headers: getAuthHeaders() }
@@ -290,14 +313,7 @@ export async function fetchAdminPayments(params?: {
     status?: string;
     method?: string;
 }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-                searchParams.set(key, String(value));
-            }
-        });
-    }
+    const searchParams = buildSearchParams(params);
     const res = await fetch(
         `${API_BASE}/admin/payments?${searchParams.toString()}`,
         { headers: getAuthHeaders() }
@@ -333,14 +349,7 @@ export async function fetchAdminRequests(params?: {
     limit?: number;
     status?: string;
 }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-                searchParams.set(key, String(value));
-            }
-        });
-    }
+    const searchParams = buildSearchParams(params);
     const res = await fetch(
         `${API_BASE}/admin/requests?${searchParams.toString()}`,
         { headers: getAuthHeaders() }
@@ -395,14 +404,7 @@ export async function fetchAdminUsers(params?: {
     limit?: number;
     search?: string;
 }) {
-    const searchParams = new URLSearchParams();
-    if (params) {
-        Object.entries(params).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-                searchParams.set(key, String(value));
-            }
-        });
-    }
+    const searchParams = buildSearchParams(params);
     const res = await fetch(
         `${API_BASE}/admin/users?${searchParams.toString()}`,
         { headers: getAuthHeaders() }
@@ -444,12 +446,7 @@ export async function searchProducts(params: {
     page?: number;
     limit?: number;
 }) {
-    const searchParams = new URLSearchParams();
-    if (params.q) searchParams.set("q", params.q);
-    if (params.tags) searchParams.set("tags", params.tags);
-    if (params.page) searchParams.set("page", String(params.page));
-    if (params.limit) searchParams.set("limit", String(params.limit));
-
+    const searchParams = buildSearchParams(params);
     const res = await fetch(
         `${API_BASE}/products/search?${searchParams.toString()}`
     );
@@ -546,10 +543,7 @@ export async function fetchMyOrders(params?: {
     page?: number;
     limit?: number;
 }) {
-    const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.set("page", String(params.page));
-    if (params?.limit) searchParams.set("limit", String(params.limit));
-
+    const searchParams = buildSearchParams(params);
     const res = await fetch(
         `${API_BASE}/orders/my-orders?${searchParams.toString()}`,
         { headers: getAuthHeaders() }
@@ -635,12 +629,7 @@ export async function verifyStock(items: {
 // ============================================================
 
 export async function fetchAdminBlog(params?: { page?: number; limit?: number; search?: string; status?: string }) {
-    const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.set("page", String(params.page));
-    if (params?.limit) searchParams.set("limit", String(params.limit));
-    if (params?.search) searchParams.set("search", params.search);
-    if (params?.status) searchParams.set("status", params.status);
-
+    const searchParams = buildSearchParams(params);
     const res = await fetch(`${API_BASE}/admin/blog?${searchParams.toString()}`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error("Failed to fetch blogs");
     return res.json();
@@ -680,12 +669,7 @@ export async function deleteBlogPost(id: string) {
 // ============================================================
 
 export async function fetchAdminServices(params?: { page?: number; limit?: number; search?: string; status?: string }) {
-    const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.set("page", String(params.page));
-    if (params?.limit) searchParams.set("limit", String(params.limit));
-    if (params?.search) searchParams.set("search", params.search);
-    if (params?.status) searchParams.set("status", params.status);
-
+    const searchParams = buildSearchParams(params);
     const res = await fetch(`${API_BASE}/admin/services?${searchParams.toString()}`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error("Failed to fetch services");
     return res.json();
@@ -744,11 +728,7 @@ export async function updatePayment(id: string, data: { paymentStatus?: string; 
 }
 
 export async function fetchAdminAppointments(params?: { page?: number; limit?: number; status?: string }) {
-    const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.set("page", String(params.page));
-    if (params?.limit) searchParams.set("limit", String(params.limit));
-    if (params?.status) searchParams.set("status", params.status);
-
+    const searchParams = buildSearchParams(params);
     const res = await fetch(`${API_BASE}/admin/appointments?${searchParams.toString()}`, { headers: getAuthHeaders() });
     if (!res.ok) throw new Error("Failed to fetch appointments");
     return res.json();

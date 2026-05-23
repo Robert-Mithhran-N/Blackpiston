@@ -86,6 +86,17 @@ export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
             });
     }, []);
 
+    // Listen for global user auth error events (401 from backend)
+    useEffect(() => {
+        const handleAuthError = () => {
+            logout();
+        };
+        window.addEventListener("user-auth-error", handleAuthError);
+        return () => {
+            window.removeEventListener("user-auth-error", handleAuthError);
+        };
+    }, [logout]);
+
     const login = useCallback((newToken: string, userData: UserData) => {
         setToken(newToken);
         setUser(userData);

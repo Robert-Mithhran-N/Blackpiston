@@ -34,16 +34,46 @@ const AdminMessages = () => {
 
   const { data, isLoading } = useQuery({
     queryKey: ["adminRequests"],
-    queryFn: () => fetchAdminRequests(),
+    queryFn: async () => {
+      const res = await fetchAdminRequests();
+      const normalizedRequests = (res?.requests || []).map((req: any) => ({
+        id: req.id,
+        name: req.userName || req.name || "Unknown",
+        email: req.userEmail || req.email || "No Email",
+        phone: req.userPhone || req.phone || "",
+        message: req.message || "",
+        createdAt: req.createdAt,
+        status: (req.requestStatus === "PENDING" || req.status === "Unread") ? "Unread" : "Read",
+        rawRequest: req
+      }));
+      return {
+        requests: normalizedRequests,
+        pagination: res.pagination
+      };
+    }
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => updateRequest(id, data),
+    mutationFn: ({ id, data }: { id: string; data: any }) => {
+      const backendStatus = data.status === "Unread" ? "PENDING" : "RESPONDED";
+      return updateRequest(id, { status: backendStatus });
+    },
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ["adminRequests"] });
-      toast.success(`Message marked as ${updated.request.status.toLowerCase()}`);
-      if (isDetailsOpen && selectedMessage?.id === updated.request.id) {
-        setSelectedMessage(updated.request);
+      const req = updated.request;
+      const normalized = {
+        id: req.id,
+        name: req.userName || req.name || "Unknown",
+        email: req.userEmail || req.email || "No Email",
+        phone: req.userPhone || req.phone || "",
+        message: req.message || "",
+        createdAt: req.createdAt,
+        status: (req.requestStatus === "PENDING" || req.status === "Unread") ? "Unread" : "Read",
+        rawRequest: req
+      };
+      toast.success(`Message marked as ${normalized.status.toLowerCase()}`);
+      if (isDetailsOpen && selectedMessage?.id === normalized.id) {
+        setSelectedMessage(normalized);
       }
     },
     onError: (err: any) => toast.error(err.message || "Failed to update message"),
