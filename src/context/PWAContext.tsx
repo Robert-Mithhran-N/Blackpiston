@@ -20,15 +20,15 @@ interface PWAContextType {
 
 const PWAContext = createContext<PWAContextType | null>(null);
 
-export const usePWA = () => {
+export function usePWA() {
   const context = useContext(PWAContext);
   if (!context) {
     throw new Error("usePWA must be used within a PWAProvider");
   }
   return context;
-};
+}
 
-export const PWAProvider = ({ children }: { children: React.ReactNode }) => {
+export function PWAProvider({ children }: { children: React.ReactNode }) {
   const [installPromptEvent, setInstallPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -87,20 +87,20 @@ export const PWAProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  const checkAndShowMobileBanner = () => {
+  function checkAndShowMobileBanner() {
     const dismissed = localStorage.getItem("pwa-mobile-dismissed");
     if (!dismissed || Date.now() - parseInt(dismissed) > 7 * 24 * 60 * 60 * 1000) {
       // Wait 3 seconds before showing the mobile banner
       setTimeout(() => setShowMobileBanner(true), 3000);
     }
-  };
+  }
 
-  const dismissMobileBanner = () => {
+  function dismissMobileBanner() {
     setShowMobileBanner(false);
     localStorage.setItem("pwa-mobile-dismissed", Date.now().toString());
-  };
+  }
 
-  const installApp = async (): Promise<boolean> => {
+  async function installApp(): Promise<boolean> {
     if (isIOS) {
       setShowIOSGuide(true);
       return false;
@@ -121,7 +121,7 @@ export const PWAProvider = ({ children }: { children: React.ReactNode }) => {
     }
     
     return false;
-  };
+  }
 
   return (
     <PWAContext.Provider

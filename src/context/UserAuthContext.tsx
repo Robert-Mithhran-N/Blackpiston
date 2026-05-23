@@ -30,10 +30,24 @@ type UserAuthContextValue = {
 
 const UserAuthContext = createContext<UserAuthContextValue | undefined>(undefined);
 
-export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
+export function UserAuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<UserData | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+
+    const login = useCallback((newToken: string, userData: UserData) => {
+        setToken(newToken);
+        setUser(userData);
+        localStorage.setItem(TOKEN_KEY, newToken);
+        localStorage.setItem(USER_KEY, JSON.stringify(userData));
+    }, []);
+
+    const logout = useCallback(() => {
+        setToken(null);
+        setUser(null);
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+    }, []);
 
     // On mount: check localStorage for existing token and validate it
     useEffect(() => {
@@ -97,20 +111,6 @@ export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
         };
     }, [logout]);
 
-    const login = useCallback((newToken: string, userData: UserData) => {
-        setToken(newToken);
-        setUser(userData);
-        localStorage.setItem(TOKEN_KEY, newToken);
-        localStorage.setItem(USER_KEY, JSON.stringify(userData));
-    }, []);
-
-    const logout = useCallback(() => {
-        setToken(null);
-        setUser(null);
-        localStorage.removeItem(TOKEN_KEY);
-        localStorage.removeItem(USER_KEY);
-    }, []);
-
     const value: UserAuthContextValue = {
         user,
         token,
@@ -125,12 +125,12 @@ export const UserAuthProvider = ({ children }: { children: ReactNode }) => {
             {children}
         </UserAuthContext.Provider>
     );
-};
+}
 
-export const useUserAuth = () => {
+export function useUserAuth() {
     const ctx = useContext(UserAuthContext);
     if (!ctx) {
         throw new Error("useUserAuth must be used within UserAuthProvider");
     }
     return ctx;
-};
+}

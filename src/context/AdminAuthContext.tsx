@@ -31,7 +31,7 @@ const getApiBaseUrl = () => {
 };
 const API_BASE = getApiBaseUrl();
 
-export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
+export function AdminAuthProvider({ children }: { children: ReactNode }) {
   // Eagerly read localStorage so auth is available on first render
   const [user, setUser] = useState<AdminUser | null>(() => {
     try {
@@ -72,6 +72,60 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
   navigateRef.current = navigate;
   const locationRef = useRef(location);
   locationRef.current = location;
+
+  const login = async (email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/auth/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Login failed");
+      }
+
+      const userData: AdminUser = {
+        id: data.user.id,
+        name: data.user.name,
+        email: data.user.email,
+        role: data.user.role,
+      };
+
+      setUser(userData);
+      setToken(data.token);
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: userData, token: data.token }));
+
+      const redirect =
+        (locationRef.current.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
+        "/admin";
+      navigateRef.current(redirect, { replace: true });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithData = (newToken: string, userData: AdminUser, opts?: { redirectTo?: string }) => {
+    setUser(userData);
+    setToken(newToken);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: userData, token: newToken }));
+
+    const redirect =
+      opts?.redirectTo ||
+      (locationRef.current.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
+      "/admin";
+    navigateRef.current(redirect, { replace: true });
+  };
+
+  const logout = () => {
+    setUser(null);
+    setToken(null);
+    window.localStorage.removeItem(STORAGE_KEY);
+    navigateRef.current("/login", { replace: true });
+  };
 
   // Persist auth changes to localStorage
   useEffect(() => {
@@ -143,61 +197,6 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
-  // Real admin login via backend API
-  const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/auth/admin/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Login failed");
-      }
-
-      const userData: AdminUser = {
-        id: data.user.id,
-        name: data.user.name,
-        email: data.user.email,
-        role: data.user.role,
-      };
-
-      setUser(userData);
-      setToken(data.token);
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: userData, token: data.token }));
-
-      const redirect =
-        (locationRef.current.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
-        "/admin";
-      navigateRef.current(redirect, { replace: true });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const loginWithData = (newToken: string, userData: AdminUser, opts?: { redirectTo?: string }) => {
-    setUser(userData);
-    setToken(newToken);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ user: userData, token: newToken }));
-
-    const redirect =
-      opts?.redirectTo ||
-      (locationRef.current.state as { from?: { pathname?: string } } | null)?.from?.pathname ||
-      "/admin";
-    navigateRef.current(redirect, { replace: true });
-  };
-
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    window.localStorage.removeItem(STORAGE_KEY);
-    navigateRef.current("/login", { replace: true });
-  };
-
   const value: AdminAuthContextValue = {
     user,
     token,
@@ -214,12 +213,12 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
       {children}
     </AdminAuthContext.Provider>
   );
-};
+}
 
-export const useAdminAuth = () => {
+export function useAdminAuth() {
   const ctx = useContext(AdminAuthContext);
   if (!ctx) {
     throw new Error("useAdminAuth must be used within AdminAuthProvider");
   }
   return ctx;
-};
+}
