@@ -42,9 +42,9 @@ export const getApiBaseUrl = () => {
 
 const API_BASE = getApiBaseUrl();
 
-// Intercept all fetch requests inside this file to catch 401s and emit auth error events
+// Intercept all fetch requests globally to catch 401s and emit auth error events
 const originalFetch = window.fetch;
-const fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
     const res = await originalFetch(input, init);
     if (res.status === 401 && init?.headers) {
         const headers = new Headers(init.headers);
