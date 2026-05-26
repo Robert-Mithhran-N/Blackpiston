@@ -82,7 +82,6 @@ const SplashScreen = ({ onComplete, minDisplayTime = 3500 }: SplashScreenProps) 
 
       {/* Logo reveal */}
       <div className="splash-logo-container">
-        <div className="splash-logo-glow" />
         <div className="splash-logo-wrapper">
           <img
             src={logo}
