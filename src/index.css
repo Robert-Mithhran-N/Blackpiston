@@ -389,3 +389,291 @@
     animation-duration: 12s;
   }
 }
+
+/* ================================================
+   SPLASH SCREEN — Premium Mobile Launch Animation
+   ================================================ */
+
+/* Main container */
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #060608;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: opacity;
+}
+
+.splash-fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Background gradient — subtle radial dark */
+.splash-bg-gradient {
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(24, 20, 16, 0.8) 0%, transparent 70%),
+    radial-gradient(ellipse 120% 80% at 50% 120%, rgba(255, 106, 0, 0.03) 0%, transparent 50%),
+    linear-gradient(180deg, #060608 0%, #0a0a0e 50%, #080808 100%);
+}
+
+/* Vignette effect */
+.splash-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 70% 70% at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
+}
+
+/* Central glow — primary amber/orange */
+.splash-center-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 300px;
+  height: 300px;
+  transform: translate(-50%, -55%);
+  background: radial-gradient(circle, rgba(255, 106, 0, 0.12) 0%, rgba(255, 106, 0, 0.04) 40%, transparent 70%);
+  border-radius: 50%;
+  animation: splash-glow-appear 2s ease-out forwards, splash-glow-pulse 3s ease-in-out 2s infinite;
+  opacity: 0;
+  filter: blur(40px);
+}
+
+.splash-center-glow-secondary {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  transform: translate(-50%, -55%);
+  background: radial-gradient(circle, rgba(255, 140, 0, 0.08) 0%, transparent 60%);
+  border-radius: 50%;
+  animation: splash-glow-appear 1.5s ease-out 0.3s forwards, splash-glow-pulse 4s ease-in-out 2.5s infinite;
+  opacity: 0;
+  filter: blur(30px);
+}
+
+/* Logo container */
+.splash-logo-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+/* Logo glow behind image */
+.splash-logo-glow {
+  position: absolute;
+  width: 140px;
+  height: 140px;
+  background: radial-gradient(circle, rgba(255, 106, 0, 0.15) 0%, transparent 60%);
+  border-radius: 50%;
+  filter: blur(20px);
+  animation: splash-glow-appear 1.8s ease-out 0.5s forwards;
+  opacity: 0;
+}
+
+/* Logo wrapper for containment of shine effect */
+.splash-logo-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  overflow: hidden;
+  border-radius: 28px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.03), rgba(0, 0, 0, 0.3));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 0 0 1px rgba(255, 106, 0, 0.05),
+    0 8px 40px rgba(0, 0, 0, 0.5),
+    0 0 60px rgba(255, 106, 0, 0.06);
+  animation: splash-logo-reveal 1s cubic-bezier(0.22, 1, 0.36, 1) 0.6s forwards;
+  opacity: 0;
+  transform: scale(0.85);
+}
+
+/* Logo image */
+.splash-logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 16px;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+}
+
+/* Metallic shine sweep */
+.splash-shine {
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 60%;
+  height: 200%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    transparent 35%,
+    rgba(255, 255, 255, 0.06) 40%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.06) 60%,
+    transparent 65%,
+    transparent 100%
+  );
+  animation: splash-shine-sweep 2.5s ease-in-out 1.5s forwards;
+  transform: skewX(-15deg);
+}
+
+/* Particles container */
+.splash-particles-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Individual floating particle */
+.splash-particle {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 140, 0, 0.6) 0%, rgba(255, 106, 0, 0.2) 50%, transparent 100%);
+  opacity: 0;
+  animation: splash-particle-float ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* Brand text */
+.splash-brand-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 24px;
+  z-index: 10;
+  animation: splash-text-appear 1s ease-out 1.2s forwards;
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.splash-brand-title {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2rem;
+  letter-spacing: 0.25em;
+  color: #fff;
+  line-height: 1;
+  text-shadow: 0 0 30px rgba(255, 106, 0, 0.15);
+}
+
+.splash-brand-subtitle {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 0.875rem;
+  letter-spacing: 0.6em;
+  color: rgba(255, 140, 0, 0.7);
+  line-height: 1;
+  margin-top: 2px;
+}
+
+/* Tagline at bottom */
+.splash-tagline {
+  position: absolute;
+  bottom: max(40px, env(safe-area-inset-bottom, 20px));
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 10;
+  animation: splash-text-appear 0.8s ease-out 2s forwards;
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.splash-tagline-line {
+  width: 24px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 106, 0, 0.3), transparent);
+}
+
+.splash-tagline-text {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.6rem;
+  letter-spacing: 0.35em;
+  color: rgba(255, 255, 255, 0.25);
+  font-weight: 500;
+}
+
+/* ===== KEYFRAME ANIMATIONS ===== */
+
+@keyframes splash-glow-appear {
+  0% { opacity: 0; transform: translate(-50%, -55%) scale(0.5); }
+  100% { opacity: 1; transform: translate(-50%, -55%) scale(1); }
+}
+
+@keyframes splash-glow-pulse {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -55%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -55%) scale(1.15); }
+}
+
+@keyframes splash-logo-reveal {
+  0% { opacity: 0; transform: scale(0.85); }
+  60% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes splash-shine-sweep {
+  0% { left: -100%; }
+  100% { left: 200%; }
+}
+
+@keyframes splash-particle-float {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.5);
+  }
+  20% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+    transform: translateY(-20px) scale(1);
+  }
+  80% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.3);
+  }
+}
+
+@keyframes splash-text-appear {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .splash-screen,
+  .splash-center-glow,
+  .splash-center-glow-secondary,
+  .splash-logo-wrapper,
+  .splash-shine,
+  .splash-particle,
+  .splash-brand-text,
+  .splash-tagline,
+  .splash-logo-glow {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .splash-logo-wrapper {
+    transform: scale(1) !important;
+  }
+  .splash-center-glow,
+  .splash-center-glow-secondary {
+    transform: translate(-50%, -55%) !important;
+  }
+}

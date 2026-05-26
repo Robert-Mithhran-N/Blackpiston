@@ -1,84 +1,38 @@
-import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
-import { API } from "@/lib/api";
+import { useState, useCallback } from "react";
+import SplashScreen from "./SplashScreen";
 
+/**
+ * StartupLoader shows the premium splash screen as an overlay on first load.
+ * 
+ * Key design decisions:
+ * - The app (children) renders IMMEDIATELY in the background — no blocking.
+ * - The splash sits on top as a z-index overlay and fades out after ~3.5s.
+ * - No health-check gating — React Query handles per-request loading states.
+ * - The splash only shows once per page load (not on in-app navigation).
+ */
 const StartupLoader = ({ children }: { children: React.ReactNode }) => {
-  const [isReady, setIsReady] = useState(false);
-  const [isWaking, setIsWaking] = useState(false);
-  const [error, setError] = useState(false);
+  // Check sessionStorage so the splash only shows once per browser session
+  // (not again on back/forward navigation or React re-renders)
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const alreadyShown = sessionStorage.getItem("bp-splash-shown");
+    if (alreadyShown) return false;
+    return true;
+  });
 
-  useEffect(() => {
-    const checkHealth = async () => {
-      try {
-        // Use the centralized API client which correctly handles Vercel / Render URLs
-        const res = await API.get(`/api/health`, { timeout: 15000 });
-        if (res.status === 200) {
-          setIsReady(true);
-        }
-      } catch (err) {
-        setIsWaking(true);
-        // Retry logic for cold start
-        let retries = 5;
-        const interval = setInterval(async () => {
-          try {
-            const res = await API.get(`/api/health`, { timeout: 10000 });
-            if (res.status === 200) {
-              clearInterval(interval);
-              setIsReady(true);
-            }
-          } catch (e) {
-            retries -= 1;
-            if (retries <= 0) {
-              clearInterval(interval);
-              setError(true);
-            }
-          }
-        }, 5000); // retry every 5s
-      }
-    };
-
-    checkHealth();
+  const handleSplashComplete = useCallback(() => {
+    setShowSplash(false);
+    sessionStorage.setItem("bp-splash-shown", "1");
   }, []);
 
-  if (isReady) return <>{children}</>;
-
   return (
-    <div className="fixed inset-0 z-[99999] flex flex-col items-center justify-center bg-black">
-      <div className="text-center">
-        {/* Simplified Logo */}
-        <div className="mb-8 flex justify-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-zinc-900 border border-white/10 shadow-xl shadow-amber-500/10">
-            <span className="font-bebas text-4xl text-amber-500">BP</span>
-          </div>
-        </div>
+    <>
+      {/* App content always renders — never blocked */}
+      {children}
 
-        {error ? (
-          <div className="text-red-500">
-            <p className="text-sm font-semibold">Failed to connect to server.</p>
-            <button 
-              onClick={() => window.location.reload()}
-              className="mt-4 rounded bg-amber-500 px-4 py-2 text-sm font-bold text-black"
-            >
-              Retry
-            </button>
-          </div>
-        ) : (
-          <>
-            <Loader2 className="mx-auto h-8 w-8 animate-spin text-amber-500" />
-            <h2 className="mt-4 font-bebas text-2xl tracking-wider text-white">
-              BLACKPISTON GARAGE
-            </h2>
-            {isWaking ? (
-              <p className="mt-2 animate-pulse text-sm text-zinc-400">
-                Starting up servers... this may take a moment.
-              </p>
-            ) : (
-              <p className="mt-2 text-sm text-zinc-400">Loading...</p>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+      {/* Splash sits ON TOP as a fixed overlay, then fades away */}
+      {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+    </>
   );
 };
 
