@@ -69,10 +69,6 @@ const SplashScreen = ({ onComplete, minDisplayTime = 3500 }: SplashScreenProps) 
       <div className="splash-bg-gradient" />
       <div className="splash-vignette" />
 
-      {/* Central glow */}
-      <div className="splash-center-glow" />
-      <div className="splash-center-glow-secondary" />
-
       {/* Floating particles */}
       <div className="splash-particles-container">
         {particles.map((p) => (
