@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -21,6 +21,19 @@ import { toast } from "sonner";
 import { createRequest } from "@/lib/api";
 
 const Contact = () => {
+  useEffect(() => {
+    document.title = "Contact Us | BlackPiston Garage";
+    
+    // Update meta description
+    let metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) {
+      metaDescription.setAttribute(
+        "content",
+        "Get in touch with BlackPiston Garage. Contact us for premium motorcycle gear purchases, custom tuning service scheduling, and physical address details."
+      );
+    }
+  }, []);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",

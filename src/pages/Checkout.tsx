@@ -995,9 +995,16 @@ const Checkout = () => {
                                         </div>
                                     )}
 
-                                    <p className="text-xs text-center text-muted-foreground mt-4">
-                                        By placing your order, you agree to our Terms of Service &
-                                        Privacy Policy.
+                                    <p className="text-xs text-center text-muted-foreground mt-4 font-ui">
+                                        By placing your order, you agree to our{" "}
+                                        <Link to="/terms" target="_blank" className="text-primary hover:underline font-semibold">
+                                            Terms & Conditions
+                                        </Link>{" "}
+                                        &{" "}
+                                        <Link to="/privacy" target="_blank" className="text-primary hover:underline font-semibold">
+                                            Privacy Policy
+                                        </Link>
+                                        .
                                     </p>
                                 </div>
 
@@ -1011,9 +1018,16 @@ const Checkout = () => {
                                             </span>
                                         </div>
                                     )}
-                                    <p className="text-[10px] text-center text-muted-foreground/60 leading-relaxed">
-                                        By placing your order, you agree to our Terms of Service &
-                                        Privacy Policy.
+                                    <p className="text-[10px] text-center text-muted-foreground/60 leading-relaxed font-ui">
+                                        By placing your order, you agree to our{" "}
+                                        <Link to="/terms" target="_blank" className="text-primary hover:underline font-semibold">
+                                            Terms & Conditions
+                                        </Link>{" "}
+                                        &{" "}
+                                        <Link to="/privacy" target="_blank" className="text-primary hover:underline font-semibold">
+                                            Privacy Policy
+                                        </Link>
+                                        .
                                     </p>
                                 </div>
                             </CardContent>

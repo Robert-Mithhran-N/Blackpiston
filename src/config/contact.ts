@@ -43,9 +43,9 @@ export const contactConfig: ContactDetails = {
         pincode: "614903",
     },
     phone: {
-        display: "+91 93610 81244",
-        raw: "+919361081244",
-        link: "tel:+919361081244",
+        display: "+91 93635 99577",
+        raw: "+919363599577",
+        link: "tel:+919363599577",
     },
     email: {
         display: "blackpistongarages@gmail.com",

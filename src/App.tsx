@@ -33,6 +33,8 @@ const FAQ = lazy(() => import("./pages/FAQ"));
 const Shipping = lazy(() => import("./pages/Shipping"));
 const Warranty = lazy(() => import("./pages/Warranty"));
 const Privacy = lazy(() => import("./pages/Privacy"));
+const TermsConditions = lazy(() => import("./pages/TermsConditions"));
+const RefundPolicy = lazy(() => import("./pages/RefundPolicy"));
 const Login = lazy(() => import("./pages/Login"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
@@ -137,6 +139,8 @@ const App = () => {
                     <Route path="/shipping" element={<Shipping />} />
                     <Route path="/warranty" element={<Warranty />} />
                     <Route path="/privacy" element={<Privacy />} />
+                    <Route path="/terms" element={<TermsConditions />} />
+                    <Route path="/refund-policy" element={<RefundPolicy />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/onboarding" element={<Onboarding />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />

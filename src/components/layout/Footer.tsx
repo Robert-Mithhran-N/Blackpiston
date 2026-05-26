@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Facebook, Instagram, Youtube, Twitter, Mail, Phone, MapPin } from "lucide-react";
+import { Facebook, Instagram, Youtube, Twitter, Mail, Phone, MapPin, Shield } from "lucide-react";
 // import logo from "@/assets/logo.png";
 const logo = "https://res.cloudinary.com/dp890nvg2/image/upload/f_auto,q_auto/v1/blackpiston/assets/logo";
 import { contactConfig } from "@/config/contact";
@@ -143,36 +143,48 @@ const Footer = () => {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-border">
+      <div className="border-t border-border bg-black/40">
         <div className="container py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-xs text-muted-foreground">
-              © {new Date().getFullYear()} BlackPiston Garage. All rights reserved.
-            </p>
-            <div className="flex gap-6">
-              <Link
-                to="/faq"
-                className="text-xs text-muted-foreground hover:text-primary transition-colors"
-              >
-                FAQ
-              </Link>
-              <Link
-                to="/shipping"
-                className="text-xs text-muted-foreground hover:text-primary transition-colors"
-              >
-                Shipping & Returns
-              </Link>
-              <Link
-                to="/warranty"
-                className="text-xs text-muted-foreground hover:text-primary transition-colors"
-              >
-                Warranty
-              </Link>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col gap-2 items-center md:items-start text-center md:text-left">
+              <p className="text-xs text-muted-foreground">
+                © {new Date().getFullYear()} BlackPiston Garage. All rights reserved.
+              </p>
+              <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/80">
+                <Shield className="h-3.5 w-3.5 text-green-500" />
+                <span>Secure Payments by Razorpay • 256-bit SSL Connection</span>
+              </div>
+            </div>
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
               <Link
                 to="/privacy"
                 className="text-xs text-muted-foreground hover:text-primary transition-colors"
               >
                 Privacy Policy
+              </Link>
+              <Link
+                to="/terms"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                Terms & Conditions
+              </Link>
+              <Link
+                to="/refund-policy"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                Refund Policy
+              </Link>
+              <Link
+                to="/shipping"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                Shipping Policy
+              </Link>
+              <Link
+                to="/contact"
+                className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              >
+                Contact Us
               </Link>
             </div>
           </div>
