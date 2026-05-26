@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { PWAProvider } from "@/context/PWAContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
-import PWAReloadPrompt from "@/components/PWAReloadPrompt";
+import UpdateModal from "@/components/UpdateModal";
 import StartupLoader from "@/components/StartupLoader";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import MobileBottomNav from "@/components/MobileBottomNav";
@@ -114,7 +114,7 @@ const App = () => {
             <OfflineIndicator />
             <Sonner />
             <PWAInstallPrompt />
-            <PWAReloadPrompt />
+            <UpdateModal />
             <BrowserRouter>
               <UserAuthProvider>
                 <AdminAuthProvider>

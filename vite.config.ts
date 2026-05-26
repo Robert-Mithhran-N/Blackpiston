@@ -2,6 +2,29 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
+import fs from "fs";
+
+// Custom Vite plugin to generate public/version.json on build/dev startup
+const generateVersionJson = () => {
+  return {
+    name: "generate-version-json",
+    buildStart() {
+      // Get version from environment variable or package.json
+      const version = process.env.VITE_APP_VERSION || "1.0.0";
+      const content = JSON.stringify({ version, timestamp: Date.now() }, null, 2);
+      const publicDir = path.resolve(__dirname, "public");
+      
+      // Ensure the directory exists
+      if (!fs.existsSync(publicDir)) {
+        fs.mkdirSync(publicDir, { recursive: true });
+      }
+      
+      // Write the file
+      fs.writeFileSync(path.join(publicDir, "version.json"), content);
+      console.log(`[PWA Version Generator] Wrote version.json: ${version}`);
+    }
+  };
+};
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -55,8 +78,8 @@ export default defineConfig(({ mode }) => ({
         // Runtime caching
         runtimeCaching: [
           {
-            // Do not cache sensitive API routes
-            urlPattern: /^https?:\/\/.*\/api\/(checkout|payments|admin).*/i,
+            // Do not cache sensitive API routes or live data
+            urlPattern: /^https?:\/\/.*\/api\/(checkout|payments|admin|orders|user\/orders|appointments|services|messages|users|settings).*/i,
             handler: "NetworkOnly",
           },
           {
@@ -110,15 +133,18 @@ export default defineConfig(({ mode }) => ({
             },
           },
         ],
-        // Skip waiting and claim clients immediately on update
-        skipWaiting: true,
+        // Clean up outdated pre-cached assets automatically
+        cleanupOutdatedCaches: true,
+        // Claim clients immediately after the new service worker activates
         clientsClaim: true,
       },
       devOptions: {
         enabled: true, // Enable in dev mode for testing
       },
     }),
+    generateVersionJson(),
   ],
+
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

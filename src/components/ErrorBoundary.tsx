@@ -23,6 +23,36 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('🚨 React Error Boundary Caught:', error);
     console.error('📍 Component Stack:', errorInfo.componentStack);
+    
+    // Check for chunk loading errors (typical when new app version deletes old pre-cached assets)
+    const isChunkError = 
+      error.name === 'ChunkLoadError' || 
+      /chunk|loading|dynamically|import/i.test(error.message);
+      
+    if (isChunkError) {
+      console.warn('Chunk loading error detected! Attempting automatic recovery...');
+      const lastReload = sessionStorage.getItem('last-chunk-error-reload');
+      const now = Date.now();
+      
+      // Throttle reloads to prevent infinite reload loops (e.g. 10s window)
+      if (!lastReload || now - parseInt(lastReload) > 10000) {
+        sessionStorage.setItem('last-chunk-error-reload', now.toString());
+        
+        // Clear Cache Storage to force clean reload
+        if ('caches' in window) {
+          caches.keys()
+            .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+            .catch((err) => console.error("Error clearing caches on chunk failure:", err))
+            .finally(() => {
+              window.location.reload();
+            });
+        } else {
+          window.location.reload();
+        }
+        return;
+      }
+    }
+
     this.setState({ error, errorInfo });
   }
 
