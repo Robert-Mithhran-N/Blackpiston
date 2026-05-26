@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import prisma from '../config/database.js';
 import { getRazorpayWebhookSecret } from '../config/razorpay.js';
 import { handlePaymentSuccess, handlePaymentFailure } from './paymentService.js';
+import { emitNewOrder } from '../socketManager.js';
 
 /**
  * Verify Razorpay webhook signature using HMAC SHA256.
@@ -131,6 +132,19 @@ async function handlePaymentCaptured(payload: any): Promise<void> {
     await prisma.payment.updateMany({
         where: { orderId: order.id },
         data: { webhookVerified: true },
+    });
+
+    // Emit realtime admin notification
+    const user = await prisma.user.findUnique({ where: { id: order.userId }, select: { name: true } });
+    emitNewOrder({
+        id: `notif-wh-${order.id}-${Date.now()}`,
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        customerName: user?.name || 'Customer',
+        totalAmount: order.totalAmount,
+        paymentMethod: 'ONLINE',
+        products: order.products.map((p: any) => ({ name: p.name, quantity: p.quantity, image: p.image })),
+        createdAt: order.createdAt.toISOString(),
     });
 
     console.log(`✅ Webhook: Payment captured for order ${order.orderNumber}`);

@@ -40,6 +40,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { AdminNotificationProvider } from "@/context/AdminNotificationContext";
+import { NotificationBell } from "./NotificationBell";
 
 type AdminLayoutProps = {
   children: ReactNode;
@@ -70,7 +72,8 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       .toUpperCase() || "AD";
 
   return (
-    <div className="flex min-h-screen bg-background text-foreground">
+    <AdminNotificationProvider>
+      <div className="flex min-h-screen bg-background text-foreground">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-64 border-r border-border bg-gradient-to-b from-background to-muted/20">
         <div className="flex h-full flex-col">
@@ -176,6 +179,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <NotificationBell />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
@@ -250,6 +254,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         </main>
       </div>
     </div>
+  </AdminNotificationProvider>
   );
 };
 

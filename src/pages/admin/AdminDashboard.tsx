@@ -52,7 +52,7 @@ import {
   fetchAdminRequests,
   fetchAdminPayments,
 } from "@/lib/api";
-import { Notification, CODPayment, SalesDataPoint } from "@/types/admin";
+import { CODPayment, SalesDataPoint } from "@/types/admin";
 
 // ============================================================
 // Dashboard Card Component
@@ -157,7 +157,6 @@ const KPICard = ({ title, value, icon: Icon, colorClass, bgColorClass, loading }
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [paymentSummary, setPaymentSummary] = useState({ onlineTotal: 0, codTotal: 0, combinedTotal: 0 });
   const [codPayments, setCodPayments] = useState<CODPayment[]>([]);
   const [isCODModalOpen, setIsCODModalOpen] = useState(false);
@@ -227,51 +226,6 @@ const AdminDashboard = () => {
       .finally(() => setIsLoading(false));
   }, []);
 
-  const unreadNotifications = notifications.filter((n) => !n.isRead).length;
-
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    if (amount >= 100000) {
-      return `₹${(amount / 100000).toFixed(2)}L`;
-    }
-    return `₹${amount.toLocaleString()}`;
-  };
-
-  // Get time ago string
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins} mins ago`;
-    if (diffHours < 24) return `${diffHours} hours ago`;
-    return `${diffDays} days ago`;
-  };
-
-  // Notification handlers
-  const handleNotificationClick = (notification: Notification) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n))
-    );
-    if (notification.orderId) {
-      navigate("/admin/orders");
-    }
-  };
-
-  const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-    toast.success("All notifications marked as read");
-  };
-
-  const handleClearAll = () => {
-    setNotifications([]);
-    toast.success("All notifications cleared");
-  };
-
   // COD Payment handler
   const handleAddCOD = () => {
     const amount = parseFloat(codForm.amount);
@@ -307,80 +261,12 @@ const AdminDashboard = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header with Notifications */}
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
             <p className="text-muted-foreground mt-1">Welcome back! Select a section to manage.</p>
           </div>
-
-          {/* Notification Bell */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="relative h-10 w-10">
-                <Bell className="h-5 w-5" />
-                {unreadNotifications > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center animate-pulse">
-                    {unreadNotifications}
-                  </span>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <div className="flex items-center justify-between p-3 border-b border-border">
-                <span className="font-semibold">Notifications</span>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={handleMarkAllRead} className="h-7 text-xs">
-                    <Check className="h-3 w-3 mr-1" />
-                    Mark all read
-                  </Button>
-                </div>
-              </div>
-              <ScrollArea className="h-72">
-                {notifications.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8">
-                    <Bell className="h-8 w-8 text-muted-foreground mb-2" />
-                    <p className="text-sm text-muted-foreground">No notifications</p>
-                  </div>
-                ) : (
-                  notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      onClick={() => handleNotificationClick(notification)}
-                      className={`p-3 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors ${!notification.isRead ? "bg-primary/5" : ""
-                        }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {!notification.isRead && (
-                          <div className="h-2 w-2 rounded-full bg-primary mt-2 flex-shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <Package className="h-4 w-4 text-primary flex-shrink-0" />
-                            <p className="text-sm font-medium truncate">{notification.title}</p>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {notification.orderId} • {notification.customerName}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {getTimeAgo(notification.createdAt)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </ScrollArea>
-              {notifications.length > 0 && (
-                <div className="p-2 border-t border-border">
-                  <Button variant="ghost" size="sm" onClick={handleClearAll} className="w-full text-xs">
-                    Clear all notifications
-                  </Button>
-                </div>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
 
         {/* Dashboard Cards Grid - Main 3 Cards */}

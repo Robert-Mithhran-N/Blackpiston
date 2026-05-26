@@ -15,6 +15,7 @@ import {
 } from '../utils/paymentService.js';
 import { verifyWebhookSignature, processWebhookEvent } from '../utils/webhookHandler.js';
 import { sendOrderConfirmation } from '../utils/emailService.js';
+import { emitNewOrder } from '../socketManager.js';
 
 const router = Router();
 
@@ -367,6 +368,18 @@ router.post('/verify', authenticateToken, async (req: Request, res: Response) =>
                 console.error('Email failed', err)
             );
         }
+
+        // ── Step 5: Emit realtime admin notification ──
+        emitNewOrder({
+            id: `notif-${updatedOrder.id}-${Date.now()}`,
+            orderId: updatedOrder.id,
+            orderNumber: updatedOrder.orderNumber,
+            customerName: user?.name || 'Customer',
+            totalAmount: updatedOrder.totalAmount,
+            paymentMethod: 'ONLINE',
+            products: updatedOrder.products.map((p: any) => ({ name: p.name, quantity: p.quantity, image: p.image })),
+            createdAt: updatedOrder.createdAt.toISOString(),
+        });
 
         res.json({
             success: true,

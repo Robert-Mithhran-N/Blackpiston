@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../config/database.js';
 import jwt from 'jsonwebtoken';
-import { emitStockUpdate } from '../socketManager.js';
+import { emitStockUpdate, emitNewOrder } from '../socketManager.js';
 import { sendOrderConfirmation, sendOrderStatusUpdate } from '../utils/emailService.js';
 import { ObjectId } from 'bson';
 import { validateCartPrices } from '../utils/paymentService.js';
@@ -358,6 +358,18 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
             // Fire and forget email
             sendOrderConfirmation(user.email, orderWithUser).catch(err => console.error("Email failed", err));
         }
+
+        // ── Step 6: Emit realtime admin notification ──
+        emitNewOrder({
+            id: `notif-${order.id}-${Date.now()}`,
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            customerName: user?.name || 'Customer',
+            totalAmount: order.totalAmount,
+            paymentMethod: paymentMethod,
+            products: orderProducts.map(p => ({ name: p.name, quantity: p.quantity, image: p.image })),
+            createdAt: order.createdAt.toISOString(),
+        });
 
         res.status(201).json({
             message: 'Order placed successfully',

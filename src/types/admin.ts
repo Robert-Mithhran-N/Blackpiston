@@ -210,6 +210,31 @@ export interface Payment {
 // ============================================================
 // Notification Types
 // ============================================================
+export type NotificationType =
+    | 'NEW_ORDER'
+    | 'PAYMENT_SUCCESS'
+    | 'LOW_STOCK'
+    | 'NEW_USER'
+    | 'COD_RECEIVED'
+    | 'REFUND_REQUEST'
+    | 'ORDER_CANCELLED';
+
+export interface AdminNotification {
+    id: string;
+    type: NotificationType;
+    title: string;
+    message: string;
+    orderId?: string;
+    orderNumber?: string;
+    customerName?: string;
+    amount?: number;
+    paymentMethod?: string;
+    products?: { name: string; quantity: number; image?: string }[];
+    isRead: boolean;
+    createdAt: string;
+}
+
+/** @deprecated Use AdminNotification instead */
 export interface Notification {
     id: string;
     type: 'order' | 'payment' | 'stock' | 'request';
