@@ -108,6 +108,7 @@ const ProductDetail = () => {
                     price: v.price ?? undefined,
                     priceModifier: v.priceModifier ?? 0,
                     images: v.images || [],
+                    deliveryCharge: v.deliveryCharge ?? undefined,
                 }));
                 setRawVariants(variants);
 
@@ -128,6 +129,7 @@ const ProductDetail = () => {
                     variants: variants,
                     stockQuantity: p.stockQuantity,
                     sections: p.sections || [],
+                    deliveryCharge: p.deliveryCharge,
                 };
                 setProduct(mapped);
 
@@ -264,6 +266,9 @@ const ProductDetail = () => {
     const originalPrice = product?.price ?? 0;
     const effectiveStock = selectedVariant ? selectedVariant.stockQuantity : (product?.stockQuantity ?? 0);
     const isInStock = hasVariants ? (selectedVariant ? selectedVariant.stockQuantity > 0 : true) : (product?.inStock ?? false);
+    const effectiveDeliveryCharge = selectedVariant && selectedVariant.deliveryCharge !== undefined && selectedVariant.deliveryCharge !== null
+        ? selectedVariant.deliveryCharge
+        : (product?.deliveryCharge ?? 0);
 
     const discountPercent = effectivePrice < originalPrice
         ? Math.round(((originalPrice - effectivePrice) / originalPrice) * 100)
@@ -525,6 +530,18 @@ const ProductDetail = () => {
                                     ) : (
                                         <span className="text-4xl font-bold">₹{effectivePrice.toLocaleString()}</span>
                                     )}
+                                </div>
+
+                                {/* Delivery Charge */}
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Truck className="h-4 w-4 text-primary" />
+                                    <span>
+                                        Delivery: {effectiveDeliveryCharge > 0 ? (
+                                            <span className="font-semibold text-foreground">₹{effectiveDeliveryCharge}</span>
+                                        ) : (
+                                            <span className="font-semibold text-green-500">FREE</span>
+                                        )}
+                                    </span>
                                 </div>
 
                                 {/* ===== VARIANT SELECTORS ===== */}

@@ -155,6 +155,7 @@ const createProductSchema = z.object({
     price: z.coerce.number().positive('Price must be greater than 0'),
     offerPrice: z.coerce.number().positive().optional().nullable(),
     costPrice: z.coerce.number().optional().nullable(),     // frontend sends this
+    deliveryCharge: z.coerce.number().nonnegative('Delivery charge must be 0 or greater').optional().default(0),
     images: z.array(productImageSchema).optional().default([]),
     thumbnailUrl: z.string().optional().nullable(),
     thumbnailPublicId: z.string().optional().nullable(),
@@ -178,6 +179,7 @@ const createProductSchema = z.object({
         price: z.coerce.number().positive().optional().nullable(),
         priceModifier: z.number().optional().default(0),
         images: z.array(productImageSchema).optional().default([]),
+        deliveryCharge: z.coerce.number().nonnegative('Variant delivery charge must be 0 or greater').optional().nullable(),
     })).optional().default([]),
     specifications: z.array(z.object({
         label: z.string(),
@@ -232,11 +234,12 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
             size: v.size || null,
             color: v.color || null,
             model: v.model || null,
-            sku: v.sku || `${finalSku} -V${i + 1} `,
+            sku: v.sku || `${finalSku}-V${i + 1}`,
             stockQuantity: v.stockQuantity ?? 0,
             price: v.price ?? null,
             priceModifier: v.priceModifier ?? 0,
             images: v.images || [],
+            deliveryCharge: v.deliveryCharge ?? null,
         }));
 
         // Strip undefined values that Prisma can't handle
@@ -255,6 +258,7 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
                 brand: data.brand,
                 price: data.price,
                 offerPrice: data.offerPrice ?? null,
+                deliveryCharge: data.deliveryCharge,
                 sku: finalSku,
                 stockQuantity: data.stockQuantity,
                 inStock: data.stockQuantity > 0,
@@ -332,6 +336,10 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
             if (p !== null && p > 0) updateData.price = p;
         }
         if ('offerPrice' in body) updateData.offerPrice = toFloatOrNull(body.offerPrice);
+        if ('deliveryCharge' in body) {
+            const dc = toFloatOrNull(body.deliveryCharge);
+            if (dc !== null && dc >= 0) updateData.deliveryCharge = dc;
+        }
         if ('stockQuantity' in body) {
             updateData.stockQuantity = toIntOrZero(body.stockQuantity);
             updateData.inStock = updateData.stockQuantity > 0;
@@ -373,6 +381,7 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
                 price: toFloatOrNull(v.price),
                 priceModifier: toFloatOrNull(v.priceModifier) ?? 0,
                 images: Array.isArray(v.images) ? v.images : [],
+                deliveryCharge: toFloatOrNull(v.deliveryCharge),
             }));
         }
 

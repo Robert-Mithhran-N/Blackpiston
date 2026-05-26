@@ -91,7 +91,7 @@ router.post('/create-order', authenticateToken, async (req: Request, res: Respon
         }
 
         // ── Step 1: Validate prices from database (NEVER trust frontend) ──
-        const { validatedItems, subtotal, errors: priceErrors } = await validateCartPrices(items);
+        const { validatedItems, subtotal, shippingCost, errors: priceErrors } = await validateCartPrices(items);
 
         if (priceErrors.length > 0) {
             return res.status(400).json({ error: 'Cart validation failed', details: priceErrors });
@@ -111,7 +111,6 @@ router.post('/create-order', authenticateToken, async (req: Request, res: Respon
         }
 
         // ── Step 3: Calculate totals ──
-        const shippingCost = subtotal >= 5000 ? 0 : 99;
         const taxAmount = Math.round(subtotal * 0.18 * 100) / 100; // 18% GST
         let discountAmount = 0;
 
@@ -162,6 +161,7 @@ router.post('/create-order', authenticateToken, async (req: Request, res: Respon
             totalPrice: item.totalPrice,
             variantSize: item.variantSize || '',
             variantColor: item.variantColor || '',
+            deliveryCharge: item.deliveryCharge,
         }));
 
         const order = await prisma.order.create({

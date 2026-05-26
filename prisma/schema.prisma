@@ -177,15 +177,16 @@ type ProductSpecification {
 }
 
 type ProductVariant {
-  id            String?
-  size          String?
-  color         String?
-  model         String?
-  sku           String
-  stockQuantity Int
-  price         Float?
-  priceModifier Float          @default(0)
-  images        ProductImage[]
+  id             String?
+  size           String?
+  color          String?
+  model          String?
+  sku            String
+  stockQuantity  Int
+  price          Float?
+  priceModifier  Float          @default(0)
+  images         ProductImage[]
+  deliveryCharge Float?         @default(0)
 }
 
 type ProductDimensions {
@@ -220,6 +221,7 @@ model Product {
   inStock          Boolean                @default(true)
   weight           Float?
   dimensions       ProductDimensions?
+  deliveryCharge   Float                  @default(0)
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
 
@@ -249,15 +251,16 @@ model ProductSection {
 
 
 type OrderProduct {
-  productId   String
-  name        String
-  sku         String
-  image       String?
-  quantity    Int
-  unitPrice   Float
-  totalPrice  Float
-  variantSize String?
-  variantColor String?
+  productId      String
+  name           String
+  sku            String
+  image          String?
+  quantity       Int
+  unitPrice      Float
+  totalPrice     Float
+  variantSize    String?
+  variantColor   String?
+  deliveryCharge Float                  @default(0)
 }
 
 type ShippingAddress {

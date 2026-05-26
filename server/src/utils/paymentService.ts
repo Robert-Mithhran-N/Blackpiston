@@ -13,7 +13,7 @@ interface CartItemInput {
     quantity: number;
 }
 
-interface ValidatedCartItem {
+export interface ValidatedCartItem {
     productId: string;
     variantId?: string;
     name: string;
@@ -24,16 +24,19 @@ interface ValidatedCartItem {
     totalPrice: number;
     variantSize?: string;
     variantColor?: string;
+    deliveryCharge: number;
 }
 
 export async function validateCartPrices(items: CartItemInput[]): Promise<{
     validatedItems: ValidatedCartItem[];
     subtotal: number;
+    shippingCost: number;
     errors: string[];
 }> {
     const validatedItems: ValidatedCartItem[] = [];
     const errors: string[] = [];
     let subtotal = 0;
+    let shippingCost = 0;
 
     for (const item of items) {
         const product = await prisma.product.findUnique({
@@ -44,6 +47,7 @@ export async function validateCartPrices(items: CartItemInput[]): Promise<{
                 sku: true,
                 price: true,
                 offerPrice: true,
+                deliveryCharge: true,
                 images: true,
                 thumbnailUrl: true,
                 variants: true,
@@ -66,6 +70,7 @@ export async function validateCartPrices(items: CartItemInput[]): Promise<{
         let variantSize: string | undefined;
         let variantColor: string | undefined;
         let sku = product.sku;
+        let deliveryCharge = product.deliveryCharge ?? 0;
 
         if (item.variantId && product.variants && product.variants.length > 0) {
             const variant = product.variants.find((v: any) => v.id === item.variantId);
@@ -77,12 +82,16 @@ export async function validateCartPrices(items: CartItemInput[]): Promise<{
             variantSize = variant.size ?? undefined;
             variantColor = variant.color ?? undefined;
             sku = variant.sku || product.sku;
+            if (variant.deliveryCharge !== null && variant.deliveryCharge !== undefined) {
+                deliveryCharge = variant.deliveryCharge;
+            }
         } else {
             unitPrice = product.offerPrice ?? product.price;
         }
 
         const totalPrice = unitPrice * item.quantity;
         subtotal += totalPrice;
+        shippingCost += deliveryCharge * item.quantity;
 
         const image = product.thumbnailUrl ||
             (product.images && product.images.length > 0 ? product.images[0].url : undefined);
@@ -98,10 +107,11 @@ export async function validateCartPrices(items: CartItemInput[]): Promise<{
             totalPrice,
             variantSize,
             variantColor,
+            deliveryCharge,
         });
     }
 
-    return { validatedItems, subtotal, errors };
+    return { validatedItems, subtotal, shippingCost, errors };
 }
 
 // ============================================================

@@ -28,7 +28,7 @@ import { useUserAuth } from "@/context/UserAuthContext";
 
 const Checkout = () => {
     const navigate = useNavigate();
-    const { cartItems, cartCount, cartTotal, clearCart } = useCart();
+    const { cartItems, cartCount, cartTotal, cartShippingTotal, clearCart } = useCart();
     const { user } = useUserAuth();
     const {
         paymentState,
@@ -287,7 +287,7 @@ const Checkout = () => {
     };
 
     const discountAmount = appliedCoupon ? appliedCoupon.discount : 0;
-    const shippingCost = cartTotal - discountAmount >= 5000 ? 0 : 199;
+    const shippingCost = cartShippingTotal;
     const finalTotal = cartTotal - discountAmount + shippingCost;
 
     // Prevent rendering while redirecting

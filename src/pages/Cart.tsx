@@ -19,7 +19,7 @@ import { verifyStock } from "@/lib/api";
 import { toast } from "sonner";
 
 const Cart = () => {
-  const { cartItems, cartCount, cartTotal, removeFromCart, updateQuantity, clearCart } = useCart();
+  const { cartItems, cartCount, cartTotal, cartShippingTotal, removeFromCart, updateQuantity, clearCart } = useCart();
   const [isVerifying, setIsVerifying] = useState(false);
   const navigate = useNavigate();
 
@@ -136,6 +136,14 @@ const Cart = () => {
                             {item.variantLabel}
                           </p>
                         )}
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <Truck className="h-3.5 w-3.5 text-muted-foreground" />
+                          Delivery: {((variant?.deliveryCharge ?? item.product.deliveryCharge ?? 0) > 0) ? (
+                            <span>₹{variant?.deliveryCharge ?? item.product.deliveryCharge ?? 0}</span>
+                          ) : (
+                            <span className="text-green-500 font-medium">FREE</span>
+                          )}
+                        </p>
                         <p className="text-sm font-bold text-primary mt-2">
                           ₹{unitPrice.toLocaleString()}
                         </p>
@@ -202,8 +210,8 @@ const Cart = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Shipping</span>
-                    <span className="text-green-500 font-medium">
-                      {cartTotal >= 5000 ? "FREE" : "₹199"}
+                    <span className={cartShippingTotal > 0 ? "font-medium" : "text-green-500 font-medium"}>
+                      {cartShippingTotal > 0 ? `₹${cartShippingTotal.toLocaleString()}` : "FREE"}
                     </span>
                   </div>
                 </div>
@@ -212,14 +220,9 @@ const Cart = () => {
                   <div className="flex justify-between text-lg font-bold">
                     <span>Total</span>
                     <span className="text-primary">
-                      ₹{(cartTotal + (cartTotal < 5000 ? 199 : 0)).toLocaleString()}
+                      ₹{(cartTotal + cartShippingTotal).toLocaleString()}
                     </span>
                   </div>
-                  {cartTotal < 5000 && (
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Add ₹{(5000 - cartTotal).toLocaleString()} more for free shipping!
-                    </p>
-                  )}
                 </div>
 
                 <Button

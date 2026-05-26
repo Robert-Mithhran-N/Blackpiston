@@ -14,6 +14,7 @@ export interface ProductVariant {
     price?: number;
     priceModifier?: number;
     images?: ProductVariantImage[];
+    deliveryCharge?: number;
 }
 export interface ProductSection {
     id?: string;
@@ -40,6 +41,7 @@ export interface Product {
     variants?: ProductVariant[];
     stockQuantity?: number;
     sections?: ProductSection[];
+    deliveryCharge?: number;
 }
 
 export type ProductCategory = string;

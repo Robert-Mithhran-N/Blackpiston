@@ -96,6 +96,7 @@ interface ProductVariant {
   price?: number | string;
   stockQuantity?: number | string;
   images?: ProductImage[];
+  deliveryCharge?: number | string;
 }
 
 interface ProductSection {
@@ -126,6 +127,7 @@ interface Product {
   isFeatured: boolean;
   isActive: boolean;
   inStock: boolean;
+  deliveryCharge: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -159,6 +161,7 @@ interface FormData {
   offerPrice: string;
   discountPercent: string;
   costPrice: string;
+  deliveryCharge: string;
   stockQuantity: string;
   hasVariants: boolean;
   isFeatured: boolean;
@@ -182,6 +185,7 @@ const emptyForm: FormData = {
   offerPrice: "",
   discountPercent: "",
   costPrice: "",
+  deliveryCharge: "0",
   stockQuantity: "0",
   hasVariants: false,
   isFeatured: false,
@@ -299,6 +303,7 @@ const AdminProducts = () => {
       offerPrice: product.offerPrice ? String(product.offerPrice) : "",
       discountPercent,
       costPrice: product.costPrice ? String(product.costPrice) : "",
+      deliveryCharge: String(product.deliveryCharge ?? 0),
       stockQuantity: String(product.stockQuantity),
       hasVariants,
       isFeatured: product.isFeatured,
@@ -406,6 +411,7 @@ const AdminProducts = () => {
         sku: formData.sku.trim() || undefined,
         price,
         offerPrice,
+        deliveryCharge: parseFloat(formData.deliveryCharge) || 0,
         stockQuantity: variantTotalStock,
         tags: formData.productType ? [...formData.tagChips.filter(t => t !== formData.productType), formData.productType] : formData.tagChips,
         isFeatured: formData.isFeatured,
@@ -418,6 +424,7 @@ const AdminProducts = () => {
               ...v,
               price: v.price !== "" && v.price != null ? Number(v.price) : null,
               stockQuantity: v.stockQuantity !== "" && v.stockQuantity != null ? Number(v.stockQuantity) : 0,
+              deliveryCharge: v.deliveryCharge !== "" && v.deliveryCharge != null ? Number(v.deliveryCharge) : null,
             }))
           : [],
       };
@@ -549,7 +556,7 @@ const AdminProducts = () => {
       ...prev,
       variants: [
         ...prev.variants,
-        { size: "", color: "", model: "", sku: "", price: "", stockQuantity: "0", images: [] },
+        { size: "", color: "", model: "", sku: "", price: "", stockQuantity: "0", images: [], deliveryCharge: "" },
       ],
     }));
   };
@@ -1266,16 +1273,29 @@ const AdminProducts = () => {
                       </div>
                     </div>
                   )}
-                  <div className="space-y-2">
-                    <Label htmlFor="costPrice">Cost Price (₹) <span className="text-muted-foreground text-xs">(internal only)</span></Label>
-                    <Input
-                      id="costPrice"
-                      type="number"
-                      min="0"
-                      value={formData.costPrice}
-                      onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
-                      placeholder="Optional — your purchase cost"
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="costPrice">Cost Price (₹) <span className="text-muted-foreground text-xs">(internal only)</span></Label>
+                      <Input
+                        id="costPrice"
+                        type="number"
+                        min="0"
+                        value={formData.costPrice}
+                        onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
+                        placeholder="Optional — your purchase cost"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="deliveryCharge">Delivery Charge (₹) *</Label>
+                      <Input
+                        id="deliveryCharge"
+                        type="number"
+                        min="0"
+                        value={formData.deliveryCharge}
+                        onChange={(e) => setFormData({ ...formData, deliveryCharge: e.target.value })}
+                        placeholder="0"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1478,7 +1498,7 @@ const AdminProducts = () => {
                                 onChange={(e) => updateVariant(i, "sku", e.target.value)}
                               />
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-3 gap-2">
                               <div className="space-y-1">
                                 <Label className="text-xs">Price Override (₹)</Label>
                                 <Input
@@ -1486,6 +1506,15 @@ const AdminProducts = () => {
                                   placeholder={`Base: ${formData.price || "—"}`}
                                   value={variant.price ?? ""}
                                   onChange={(e) => updateVariant(i, "price", e.target.value ? Number(e.target.value) : "")}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Delivery Override (₹)</Label>
+                                <Input
+                                  type="number"
+                                  placeholder={`Base: ${formData.deliveryCharge || "0"}`}
+                                  value={variant.deliveryCharge ?? ""}
+                                  onChange={(e) => updateVariant(i, "deliveryCharge", e.target.value ? Number(e.target.value) : "")}
                                 />
                               </div>
                               <div className="space-y-1">

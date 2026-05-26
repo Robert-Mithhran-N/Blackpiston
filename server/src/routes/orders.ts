@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { emitStockUpdate } from '../socketManager.js';
 import { sendOrderConfirmation, sendOrderStatusUpdate } from '../utils/emailService.js';
 import { ObjectId } from 'bson';
+import { validateCartPrices } from '../utils/paymentService.js';
 
 const router = Router();
 
@@ -120,7 +121,19 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
             return res.status(400).json({ error: 'No products in order' });
         }
 
-        // ── Step 1: Validate stock for every item ──
+        // ── Step 1: Validate prices/products from database (NEVER trust frontend) ──
+        const cartItemsInput = products.map((p: any) => ({
+            productId: p.productId,
+            variantId: p.variantId,
+            quantity: p.quantity,
+        }));
+        const { validatedItems, subtotal, shippingCost, errors: priceErrors } = await validateCartPrices(cartItemsInput);
+
+        if (priceErrors.length > 0) {
+            return res.status(400).json({ error: 'Cart validation failed', details: priceErrors });
+        }
+
+        // ── Step 2: Validate stock for every item ──
         const stockErrors: string[] = [];
         const stockUpdates: {
             productId: string;
@@ -129,7 +142,7 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
             updatedVariants?: any[];
         }[] = [];
 
-        for (const item of products) {
+        for (const item of validatedItems) {
             const product = await prisma.product.findUnique({
                 where: { id: item.productId },
                 select: { id: true, name: true, stockQuantity: true, variants: true }
@@ -190,7 +203,7 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
             });
         }
 
-        // ── Step 2: Atomically decrement stock ──
+        // ── Step 3: Atomically decrement stock ──
         for (const update of stockUpdates) {
             const updateData: any = {
                 stockQuantity: update.newProductStock,
@@ -205,27 +218,46 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
             });
         }
 
-        // ── Step 3: Create order ──
-        let subtotal = 0;
-        const orderProducts = products.map((item: any) => {
-            const itemTotal = item.unitPrice * item.quantity;
-            subtotal += itemTotal;
-            return {
-                productId: item.productId,
-                name: item.name,
-                sku: item.sku || '',
-                image: item.image,
-                quantity: item.quantity,
-                unitPrice: item.unitPrice,
-                totalPrice: itemTotal,
-                variantSize: item.variantSize,
-                variantColor: item.variantColor
-            };
-        });
-
-        const shippingCost = subtotal >= 5000 ? 0 : 99; // Free shipping over ₹5000
+        // ── Step 4: Calculate coupon discount, tax and total amount ──
         const taxAmount = Math.round(subtotal * 0.18 * 100) / 100; // 18% GST
-        const totalAmount = subtotal + shippingCost + taxAmount;
+        let discountAmount = 0;
+
+        // Apply coupon if provided
+        if (couponCode) {
+            try {
+                const coupon = await prisma.coupon.findUnique({ where: { code: couponCode } });
+                if (coupon && coupon.isActive) {
+                    if (coupon.expiryDate && coupon.expiryDate < new Date()) {
+                        // Expired — ignore silently
+                    } else if (coupon.minOrderAmount && subtotal < coupon.minOrderAmount) {
+                        // Below minimum — ignore silently
+                    } else {
+                        if (coupon.discountType === 'PERCENTAGE') {
+                            discountAmount = Math.round((subtotal * coupon.value) / 100);
+                        } else {
+                            discountAmount = coupon.value;
+                        }
+                    }
+                }
+            } catch {
+                // Coupon errors are non-blocking
+            }
+        }
+
+        const totalAmount = subtotal + shippingCost + taxAmount - discountAmount;
+
+        const orderProducts = validatedItems.map(item => ({
+            productId: item.productId,
+            name: item.name,
+            sku: item.sku,
+            image: item.image || '',
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            totalPrice: item.totalPrice,
+            variantSize: item.variantSize || '',
+            variantColor: item.variantColor || '',
+            deliveryCharge: item.deliveryCharge,
+        }));
 
         const order = await prisma.order.create({
             data: {
@@ -235,9 +267,9 @@ router.post('/', authenticateToken, async (req: Request, res: Response) => {
                 subtotal,
                 shippingCost,
                 taxAmount,
-                discountAmount: 0,
+                discountAmount,
                 totalAmount,
-                couponCode,
+                couponCode: couponCode || undefined,
                 paymentMethod: paymentMethod as any,
                 paymentStatus: 'PENDING',
                 orderStatus: 'NEW',
