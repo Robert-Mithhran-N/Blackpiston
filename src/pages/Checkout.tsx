@@ -22,6 +22,7 @@ import {
     RefreshCw,
     XCircle,
     ArrowLeft,
+    Banknote,
 } from "lucide-react";
 
 import { useUserAuth } from "@/context/UserAuthContext";
@@ -483,24 +484,33 @@ const Checkout = () => {
             {/* Payment status overlay */}
             {renderPaymentOverlay()}
 
-            <main className="container py-8 max-w-6xl">
-                <h1 className="text-3xl font-bold tracking-tight mb-8">Checkout</h1>
+            <main className="checkout-mobile-form px-4 py-5 md:container md:py-8 max-w-6xl pb-36 md:pb-8">
+                <h1 className="text-xl md:text-3xl font-bold tracking-tight mb-4 md:mb-8">
+                    Checkout
+                </h1>
 
-                <div className="grid gap-8 lg:grid-cols-3">
+                <div className="grid gap-3 md:gap-8 lg:grid-cols-3">
                     {/* Left Column: Form & Payment */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Address Form */}
-                        <Card>
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between mb-6 border-b pb-4">
-                                    <div className="flex items-center gap-2 text-xl font-semibold">
-                                        <MapPin className="text-primary h-6 w-6" />
-                                        <h2>Shipping Address</h2>
+                    <div className="lg:col-span-2 space-y-3 md:space-y-6">
+                        {/* ──────────────────────────────────────
+                            SHIPPING ADDRESS SECTION
+                        ────────────────────────────────────── */}
+                        <Card className="border-border/40 md:border-border">
+                            <CardContent className="p-4 md:p-6">
+                                {/* Section Header */}
+                                <div className="flex items-center justify-between mb-4 md:mb-6 border-b border-border/40 pb-3 md:pb-4">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 md:w-auto md:h-auto rounded-full bg-primary/10 flex items-center justify-center md:bg-transparent">
+                                            <MapPin className="text-primary h-4 w-4 md:h-6 md:w-6" />
+                                        </div>
+                                        <h2 className="text-sm md:text-xl font-semibold">
+                                            Shipping Address
+                                        </h2>
                                     </div>
                                     {user?.savedAddresses &&
                                         user.savedAddresses.length > 0 && (
                                             <select
-                                                className="text-sm border rounded p-1 bg-background"
+                                                className="text-xs md:text-sm border border-border/60 rounded-md px-2 py-1.5 bg-secondary/50 text-foreground max-w-[160px] md:max-w-none truncate focus:outline-none focus:ring-1 focus:ring-primary/30"
                                                 onChange={(e) => {
                                                     const addr = user.savedAddresses.find(
                                                         (a: any) => a.id === e.target.value
@@ -519,7 +529,7 @@ const Checkout = () => {
                                                 }}
                                             >
                                                 <option value="">
-                                                    -- Select Saved Address --
+                                                    Saved Addresses
                                                 </option>
                                                 {user.savedAddresses.map((addr: any) => (
                                                     <option key={addr.id} value={addr.id}>
@@ -531,13 +541,20 @@ const Checkout = () => {
                                         )}
                                 </div>
 
+                                {/* Address Form */}
                                 <form
                                     id="checkout-form"
                                     onSubmit={handlePlaceOrder}
-                                    className="grid gap-4 sm:grid-cols-2"
+                                    className="grid gap-3 md:gap-4 md:grid-cols-2"
                                 >
-                                    <div className="space-y-2 sm:col-span-2">
-                                        <Label htmlFor="fullName">Full Name</Label>
+                                    {/* Full Name — full width */}
+                                    <div className="space-y-1.5 md:col-span-2">
+                                        <Label
+                                            htmlFor="fullName"
+                                            className="text-[11px] md:text-sm font-medium uppercase tracking-wider text-muted-foreground"
+                                        >
+                                            Full Name
+                                        </Label>
                                         <Input
                                             id="fullName"
                                             name="fullName"
@@ -546,11 +563,19 @@ const Checkout = () => {
                                             placeholder="John Doe"
                                             required
                                             disabled={isPaymentInProgress}
+                                            autoComplete="name"
+                                            className="h-11 md:h-10 text-sm"
                                         />
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email">Email</Label>
+                                    {/* Email */}
+                                    <div className="space-y-1.5">
+                                        <Label
+                                            htmlFor="email"
+                                            className="text-[11px] md:text-sm font-medium uppercase tracking-wider text-muted-foreground"
+                                        >
+                                            Email
+                                        </Label>
                                         <Input
                                             id="email"
                                             type="email"
@@ -560,11 +585,20 @@ const Checkout = () => {
                                             placeholder="john@example.com"
                                             required
                                             disabled={isPaymentInProgress}
+                                            inputMode="email"
+                                            autoComplete="email"
+                                            className="h-11 md:h-10 text-sm"
                                         />
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <Label htmlFor="phone">Phone Number</Label>
+                                    {/* Phone */}
+                                    <div className="space-y-1.5">
+                                        <Label
+                                            htmlFor="phone"
+                                            className="text-[11px] md:text-sm font-medium uppercase tracking-wider text-muted-foreground"
+                                        >
+                                            Phone Number
+                                        </Label>
                                         <Input
                                             id="phone"
                                             type="tel"
@@ -574,11 +608,20 @@ const Checkout = () => {
                                             placeholder="+91 9876543210"
                                             required
                                             disabled={isPaymentInProgress}
+                                            inputMode="tel"
+                                            autoComplete="tel"
+                                            className="h-11 md:h-10 text-sm"
                                         />
                                     </div>
 
-                                    <div className="space-y-2 sm:col-span-2">
-                                        <Label htmlFor="addressLine">Address Line</Label>
+                                    {/* Address Line — full width */}
+                                    <div className="space-y-1.5 md:col-span-2">
+                                        <Label
+                                            htmlFor="addressLine"
+                                            className="text-[11px] md:text-sm font-medium uppercase tracking-wider text-muted-foreground"
+                                        >
+                                            Address Line
+                                        </Label>
                                         <Input
                                             id="addressLine"
                                             name="addressLine"
@@ -587,11 +630,19 @@ const Checkout = () => {
                                             placeholder="123 Street Name, Apartment/Suite"
                                             required
                                             disabled={isPaymentInProgress}
+                                            autoComplete="street-address"
+                                            className="h-11 md:h-10 text-sm"
                                         />
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <Label htmlFor="city">City</Label>
+                                    {/* City */}
+                                    <div className="space-y-1.5">
+                                        <Label
+                                            htmlFor="city"
+                                            className="text-[11px] md:text-sm font-medium uppercase tracking-wider text-muted-foreground"
+                                        >
+                                            City
+                                        </Label>
                                         <Input
                                             id="city"
                                             name="city"
@@ -600,11 +651,19 @@ const Checkout = () => {
                                             placeholder="Mumbai"
                                             required
                                             disabled={isPaymentInProgress}
+                                            autoComplete="address-level2"
+                                            className="h-11 md:h-10 text-sm"
                                         />
                                     </div>
 
-                                    <div className="space-y-2 mb-4">
-                                        <Label htmlFor="state">State</Label>
+                                    {/* State */}
+                                    <div className="space-y-1.5">
+                                        <Label
+                                            htmlFor="state"
+                                            className="text-[11px] md:text-sm font-medium uppercase tracking-wider text-muted-foreground"
+                                        >
+                                            State
+                                        </Label>
                                         <Input
                                             id="state"
                                             name="state"
@@ -613,11 +672,19 @@ const Checkout = () => {
                                             placeholder="Maharashtra"
                                             required
                                             disabled={isPaymentInProgress}
+                                            autoComplete="address-level1"
+                                            className="h-11 md:h-10 text-sm"
                                         />
                                     </div>
 
-                                    <div className="space-y-2 sm:col-span-2">
-                                        <Label htmlFor="pincode">Pincode</Label>
+                                    {/* Pincode — full width on mobile, spans 2 on desktop */}
+                                    <div className="space-y-1.5 md:col-span-2">
+                                        <Label
+                                            htmlFor="pincode"
+                                            className="text-[11px] md:text-sm font-medium uppercase tracking-wider text-muted-foreground"
+                                        >
+                                            Pincode
+                                        </Label>
                                         <Input
                                             id="pincode"
                                             name="pincode"
@@ -626,27 +693,37 @@ const Checkout = () => {
                                             placeholder="400001"
                                             required
                                             disabled={isPaymentInProgress}
+                                            inputMode="numeric"
+                                            autoComplete="postal-code"
+                                            className="h-11 md:h-10 text-sm md:max-w-[200px]"
                                         />
                                     </div>
                                 </form>
                             </CardContent>
                         </Card>
 
-                        {/* Payment Method UI */}
-                        <Card>
-                            <CardContent className="p-6">
-                                <div className="flex items-center gap-2 mb-6 text-xl font-semibold">
-                                    <CreditCard className="text-primary h-6 w-6" />
-                                    <h2>Payment Method</h2>
+                        {/* ──────────────────────────────────────
+                            PAYMENT METHOD SECTION
+                        ────────────────────────────────────── */}
+                        <Card className="border-border/40 md:border-border">
+                            <CardContent className="p-4 md:p-6">
+                                {/* Section Header */}
+                                <div className="flex items-center gap-2 mb-3 md:mb-6">
+                                    <div className="w-8 h-8 md:w-auto md:h-auto rounded-full bg-primary/10 flex items-center justify-center md:bg-transparent">
+                                        <CreditCard className="text-primary h-4 w-4 md:h-6 md:w-6" />
+                                    </div>
+                                    <h2 className="text-sm md:text-xl font-semibold">
+                                        Payment Method
+                                    </h2>
                                 </div>
 
-                                <div className="space-y-3">
-                                    {/* Razorpay Online Payment */}
+                                <div className="space-y-2.5 md:space-y-3">
+                                    {/* ── Pay Online (Razorpay) ── */}
                                     <label
-                                        className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
+                                        className={`flex items-start gap-3 p-3.5 md:p-4 border rounded-xl md:rounded-lg cursor-pointer transition-all duration-200 ${
                                             paymentMethod === "ONLINE"
-                                                ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                                                : "border-border hover:border-primary/50"
+                                                ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20 shadow-sm shadow-primary/5"
+                                                : "border-border/50 hover:border-border"
                                         }`}
                                     >
                                         <input
@@ -655,25 +732,29 @@ const Checkout = () => {
                                             value="ONLINE"
                                             checked={paymentMethod === "ONLINE"}
                                             onChange={() => setPaymentMethod("ONLINE")}
-                                            className="mt-1"
+                                            className="sr-only"
                                             disabled={isPaymentInProgress}
                                         />
-                                        <div className="flex-1">
+                                        <div
+                                            className="checkout-radio-dot mt-0.5 shrink-0"
+                                            data-checked={paymentMethod === "ONLINE"}
+                                        />
+                                        <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between">
-                                                <p className="font-medium text-foreground">
+                                                <p className="text-sm md:text-base font-medium text-foreground">
                                                     Pay Online
                                                 </p>
-                                                <div className="flex items-center gap-1.5">
-                                                    <Shield className="w-3.5 h-3.5 text-green-500" />
-                                                    <span className="text-xs text-green-600 font-medium">
+                                                <div className="flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full">
+                                                    <Shield className="w-3 h-3 text-green-500" />
+                                                    <span className="text-[10px] md:text-xs text-green-500 font-semibold">
                                                         Secure
                                                     </span>
                                                 </div>
                                             </div>
-                                            <p className="text-sm text-muted-foreground mt-0.5">
+                                            <p className="text-xs md:text-sm text-muted-foreground mt-0.5 leading-relaxed">
                                                 Card, UPI, Netbanking, Wallets — powered by Razorpay
                                             </p>
-                                            <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                                            <div className="flex items-center gap-1.5 mt-1.5 text-[10px] md:text-xs text-muted-foreground/70">
                                                 <Smartphone className="w-3 h-3" />
                                                 <span>
                                                     Works on all devices including mobile & PWA
@@ -682,12 +763,12 @@ const Checkout = () => {
                                         </div>
                                     </label>
 
-                                    {/* COD */}
+                                    {/* ── Cash on Delivery ── */}
                                     <label
-                                        className={`flex items-start gap-3 p-4 border rounded-lg cursor-pointer transition-all ${
+                                        className={`flex items-start gap-3 p-3.5 md:p-4 border rounded-xl md:rounded-lg cursor-pointer transition-all duration-200 ${
                                             paymentMethod === "COD"
-                                                ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                                                : "border-border hover:border-primary/50"
+                                                ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20 shadow-sm shadow-primary/5"
+                                                : "border-border/50 hover:border-border"
                                         }`}
                                     >
                                         <input
@@ -696,14 +777,21 @@ const Checkout = () => {
                                             value="COD"
                                             checked={paymentMethod === "COD"}
                                             onChange={() => setPaymentMethod("COD")}
-                                            className="mt-1"
+                                            className="sr-only"
                                             disabled={isPaymentInProgress}
                                         />
-                                        <div>
-                                            <p className="font-medium text-foreground">
-                                                Cash on Delivery (COD)
-                                            </p>
-                                            <p className="text-sm text-muted-foreground">
+                                        <div
+                                            className="checkout-radio-dot mt-0.5 shrink-0"
+                                            data-checked={paymentMethod === "COD"}
+                                        />
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <p className="text-sm md:text-base font-medium text-foreground">
+                                                    Cash on Delivery
+                                                </p>
+                                                <Banknote className="w-4 h-4 text-muted-foreground/50 hidden md:block" />
+                                            </div>
+                                            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
                                                 Pay with cash when your order is delivered.
                                             </p>
                                         </div>
@@ -713,33 +801,42 @@ const Checkout = () => {
                         </Card>
                     </div>
 
-                    {/* Right Column: Order Summary */}
-                    <div className="space-y-6">
-                        <Card className="sticky top-24">
-                            <CardContent className="p-6 space-y-4">
-                                <div className="flex items-center gap-2 text-xl font-bold">
-                                    <Package className="h-5 w-5" />
-                                    <h2>Order Summary</h2>
+                    {/* ──────────────────────────────────────
+                        ORDER SUMMARY SECTION
+                    ────────────────────────────────────── */}
+                    <div className="space-y-3 md:space-y-6">
+                        <Card className="md:sticky md:top-24 border-border/40 md:border-border">
+                            <CardContent className="p-4 md:p-6 space-y-3 md:space-y-4">
+                                {/* Section Header */}
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 md:w-auto md:h-auto rounded-full bg-primary/10 flex items-center justify-center md:bg-transparent">
+                                        <Package className="h-4 w-4 md:h-5 md:w-5 text-primary md:text-foreground" />
+                                    </div>
+                                    <h2 className="text-sm md:text-xl font-bold">
+                                        Order Summary
+                                    </h2>
                                 </div>
 
-                                {/* Apply Coupon Section */}
-                                <div className="bg-muted/30 p-4 rounded-lg border border-border">
-                                    <div className="flex items-center gap-2 font-medium mb-3">
-                                        <Tag className="h-4 w-4 text-primary" />
-                                        <span>Have a promo code?</span>
+                                {/* ── Promo Code ── */}
+                                <div className="bg-muted/20 md:bg-muted/30 p-3 md:p-4 rounded-lg border border-border/30 md:border-border">
+                                    <div className="flex items-center gap-2 font-medium mb-2 md:mb-3">
+                                        <Tag className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary" />
+                                        <span className="text-xs md:text-sm">
+                                            Have a promo code?
+                                        </span>
                                     </div>
                                     {appliedCoupon ? (
-                                        <div className="flex items-center justify-between bg-green-500/10 border border-green-500/20 p-3 rounded-md">
+                                        <div className="flex items-center justify-between bg-green-500/10 border border-green-500/20 p-2.5 md:p-3 rounded-md">
                                             <div className="flex items-center gap-2">
-                                                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                                <span className="font-semibold text-green-700">
+                                                <CheckCircle2 className="h-3.5 w-3.5 md:h-4 md:w-4 text-green-600" />
+                                                <span className="font-semibold text-green-700 text-xs md:text-sm">
                                                     {appliedCoupon.code}
                                                 </span>
                                             </div>
                                             <Button
                                                 variant="ghost"
                                                 size="sm"
-                                                className="h-auto p-1 text-xs hover:bg-transparent text-muted-foreground hover:text-red-500"
+                                                className="h-auto p-1 text-[10px] md:text-xs hover:bg-transparent text-muted-foreground hover:text-red-500"
                                                 onClick={removeCoupon}
                                             >
                                                 Remove
@@ -748,12 +845,12 @@ const Checkout = () => {
                                     ) : (
                                         <div className="flex gap-2">
                                             <Input
-                                                placeholder="Enter code"
+                                                placeholder="ENTER CODE"
                                                 value={couponCode}
                                                 onChange={(e) =>
                                                     setCouponCode(e.target.value.toUpperCase())
                                                 }
-                                                className="uppercase"
+                                                className="uppercase h-10 md:h-10 text-xs md:text-sm"
                                                 disabled={isApplyingCoupon || isPaymentInProgress}
                                             />
                                             <Button
@@ -764,9 +861,10 @@ const Checkout = () => {
                                                     isPaymentInProgress
                                                 }
                                                 variant="secondary"
+                                                className="h-10 px-4 text-xs md:text-sm shrink-0"
                                             >
                                                 {isApplyingCoupon ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                                 ) : (
                                                     "Apply"
                                                 )}
@@ -775,7 +873,8 @@ const Checkout = () => {
                                     )}
                                 </div>
 
-                                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 border-b border-border pb-4 mt-2">
+                                {/* ── Cart Items ── */}
+                                <div className="space-y-3 md:space-y-4 max-h-[240px] md:max-h-[300px] overflow-y-auto pr-1 md:pr-2 custom-scrollbar border-b border-border/40 md:border-border pb-3 md:pb-4">
                                     {cartItems.map((item, index) => {
                                         const variant =
                                             item.variantId && item.product.variants
@@ -796,13 +895,13 @@ const Checkout = () => {
                                                 <img
                                                     src={item.product.image}
                                                     alt={item.product.name}
-                                                    className="w-16 h-16 rounded-md object-cover border border-border"
+                                                    className="w-12 h-12 md:w-16 md:h-16 rounded-lg object-cover border border-border/40"
                                                 />
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium line-clamp-1">
+                                                    <p className="text-xs md:text-sm font-medium line-clamp-1">
                                                         {item.product.name}
                                                     </p>
-                                                    <div className="flex justify-between mt-1 text-sm text-muted-foreground">
+                                                    <div className="flex justify-between mt-0.5 md:mt-1 text-xs md:text-sm text-muted-foreground">
                                                         <span>Qty: {item.quantity}</span>
                                                         <span className="font-semibold text-foreground">
                                                             ₹
@@ -812,7 +911,7 @@ const Checkout = () => {
                                                         </span>
                                                     </div>
                                                     {item.variantLabel && (
-                                                        <p className="text-xs text-muted-foreground truncate">
+                                                        <p className="text-[10px] md:text-xs text-muted-foreground truncate mt-0.5">
                                                             {item.variantLabel}
                                                         </p>
                                                     )}
@@ -822,7 +921,8 @@ const Checkout = () => {
                                     })}
                                 </div>
 
-                                <div className="space-y-2 text-sm pt-2">
+                                {/* ── Price Breakdown ── */}
+                                <div className="space-y-1.5 md:space-y-2 text-xs md:text-sm pt-1 md:pt-2">
                                     <div className="flex justify-between">
                                         <span className="text-muted-foreground">Subtotal</span>
                                         <span className="font-medium">
@@ -843,14 +943,15 @@ const Checkout = () => {
                                             {shippingCost === 0 ? (
                                                 <span className="text-green-500">FREE</span>
                                             ) : (
-                                                `₹${shippingCost}`
+                                                `₹${shippingCost.toLocaleString()}`
                                             )}
                                         </span>
                                     </div>
                                 </div>
 
-                                <div className="border-t border-border pt-4">
-                                    <div className="flex justify-between text-lg font-bold">
+                                {/* ── Total ── */}
+                                <div className="border-t border-border/60 md:border-border pt-3 md:pt-4">
+                                    <div className="flex justify-between text-base md:text-lg font-bold">
                                         <span>Total</span>
                                         <span className="text-primary">
                                             ₹{finalTotal.toLocaleString()}
@@ -858,51 +959,116 @@ const Checkout = () => {
                                     </div>
                                 </div>
 
-                                <Button
-                                    type="submit"
-                                    form="checkout-form"
-                                    size="lg"
-                                    className="w-full bg-gradient-to-r from-primary to-orange-500 hover:opacity-90 h-12 text-lg mt-4"
-                                    disabled={isProcessing || isPaymentInProgress}
-                                >
-                                    {isProcessing || isPaymentInProgress ? (
-                                        <>
-                                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                                            Processing...
-                                        </>
-                                    ) : paymentMethod === "ONLINE" ? (
-                                        <>
-                                            <Shield className="mr-2 h-5 w-5" />
-                                            Pay ₹{finalTotal.toLocaleString()}
-                                        </>
-                                    ) : (
-                                        <>
-                                            <CheckCircle2 className="mr-2 h-5 w-5" />
-                                            Place Order (₹{finalTotal.toLocaleString()})
-                                        </>
+                                {/* ── Desktop CTA (hidden on mobile) ── */}
+                                <div className="hidden md:block">
+                                    <Button
+                                        type="submit"
+                                        form="checkout-form"
+                                        size="lg"
+                                        className="w-full bg-gradient-to-r from-primary to-orange-500 hover:opacity-90 h-12 text-lg mt-4"
+                                        disabled={isProcessing || isPaymentInProgress}
+                                    >
+                                        {isProcessing || isPaymentInProgress ? (
+                                            <>
+                                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                                Processing...
+                                            </>
+                                        ) : paymentMethod === "ONLINE" ? (
+                                            <>
+                                                <Shield className="mr-2 h-5 w-5" />
+                                                Pay ₹{finalTotal.toLocaleString()}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <CheckCircle2 className="mr-2 h-5 w-5" />
+                                                Place Order (₹{finalTotal.toLocaleString()})
+                                            </>
+                                        )}
+                                    </Button>
+
+                                    {paymentMethod === "ONLINE" && (
+                                        <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-2">
+                                            <Shield className="w-3 h-3 text-green-500" />
+                                            <span>
+                                                256-bit SSL encrypted • Secured by Razorpay
+                                            </span>
+                                        </div>
                                     )}
-                                </Button>
 
-                                {paymentMethod === "ONLINE" && (
-                                    <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground mt-2">
-                                        <Shield className="w-3 h-3 text-green-500" />
-                                        <span>
-                                            256-bit SSL encrypted • Secured by Razorpay
-                                        </span>
-                                    </div>
-                                )}
+                                    <p className="text-xs text-center text-muted-foreground mt-4">
+                                        By placing your order, you agree to our Terms of Service &
+                                        Privacy Policy.
+                                    </p>
+                                </div>
 
-                                <p className="text-xs text-center text-muted-foreground mt-4">
-                                    By placing your order, you agree to our Terms of Service &
-                                    Privacy Policy.
-                                </p>
+                                {/* ── Mobile security & terms (visible only on mobile, above sticky CTA) ── */}
+                                <div className="md:hidden space-y-2 pt-1">
+                                    {paymentMethod === "ONLINE" && (
+                                        <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground/70">
+                                            <Shield className="w-3 h-3 text-green-500/70" />
+                                            <span>
+                                                256-bit SSL encrypted • Secured by Razorpay
+                                            </span>
+                                        </div>
+                                    )}
+                                    <p className="text-[10px] text-center text-muted-foreground/60 leading-relaxed">
+                                        By placing your order, you agree to our Terms of Service &
+                                        Privacy Policy.
+                                    </p>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
                 </div>
             </main>
 
-            <Footer />
+            {/* ──────────────────────────────────────
+                MOBILE STICKY CTA
+            ────────────────────────────────────── */}
+            <div className="checkout-sticky-cta md:hidden">
+                <div className="flex items-center gap-3">
+                    {/* Price summary */}
+                    <div className="shrink-0">
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider leading-none">
+                            Total
+                        </p>
+                        <p className="text-lg font-bold text-primary leading-tight">
+                            ₹{finalTotal.toLocaleString()}
+                        </p>
+                    </div>
+
+                    {/* CTA Button */}
+                    <Button
+                        type="submit"
+                        form="checkout-form"
+                        className={`flex-1 h-[52px] rounded-xl text-sm font-bold bg-gradient-to-r from-primary to-orange-500 hover:opacity-90 shadow-lg shadow-primary/20 transition-all duration-200 ${
+                            !(isProcessing || isPaymentInProgress) ? "checkout-cta-shimmer" : ""
+                        }`}
+                        disabled={isProcessing || isPaymentInProgress}
+                    >
+                        {isProcessing || isPaymentInProgress ? (
+                            <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Processing...
+                            </>
+                        ) : paymentMethod === "ONLINE" ? (
+                            <>
+                                <Shield className="mr-1.5 h-4 w-4" />
+                                Pay ₹{finalTotal.toLocaleString()}
+                            </>
+                        ) : (
+                            <>
+                                <CheckCircle2 className="mr-1.5 h-4 w-4" />
+                                Place Order
+                            </>
+                        )}
+                    </Button>
+                </div>
+            </div>
+
+            <div className="hidden md:block">
+                <Footer />
+            </div>
         </div>
     );
 };

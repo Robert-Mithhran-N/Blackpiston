@@ -229,6 +229,66 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: hsl(var(--muted-foreground));
   }
+
+  /* ================================================
+     Mobile Checkout — Premium Styling
+     ================================================ */
+
+  /* Sticky CTA bar at bottom of mobile checkout */
+  .checkout-sticky-cta {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    background: hsl(var(--background) / 0.97);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid hsl(var(--border) / 0.5);
+    padding: 0.75rem 1rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -4px 24px hsl(var(--background) / 0.8);
+  }
+
+  /* Ensure focused inputs scroll into view above sticky CTA */
+  .checkout-mobile-form input:focus,
+  .checkout-mobile-form select:focus {
+    scroll-margin-bottom: 120px;
+    scroll-margin-top: 80px;
+  }
+
+  /* Custom radio styling for payment method cards */
+  .checkout-radio-dot {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    border-radius: 50%;
+    border: 2px solid hsl(var(--border));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+  .checkout-radio-dot[data-checked="true"] {
+    border-color: hsl(var(--primary));
+  }
+  .checkout-radio-dot[data-checked="true"]::after {
+    content: "";
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: hsl(var(--primary));
+  }
+
+  /* Subtle shimmer animation for CTA button */
+  @keyframes checkout-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  .checkout-cta-shimmer {
+    background-size: 200% 100%;
+    animation: checkout-shimmer 3s ease-in-out infinite;
+  }
 }
 
 /* ================================================
