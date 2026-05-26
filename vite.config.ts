@@ -40,7 +40,7 @@ export default defineConfig(({ mode }) => ({
     react(),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["favicon.ico", "pwa-icon-192.png", "pwa-icon-512.png"],
+      includeAssets: ["favicon.ico", "favicon-16x16.png", "favicon-32x32.png", "apple-touch-icon.png", "pwa-icon-192.png", "pwa-icon-512.png", "pwa-icon-maskable.png"],
       manifest: {
         id: "/",
         scope: "/",
@@ -65,7 +65,7 @@ export default defineConfig(({ mode }) => ({
             type: "image/png",
           },
           {
-            src: "/pwa-icon-512.png",
+            src: "/pwa-icon-maskable.png",
             sizes: "512x512",
             type: "image/png",
             purpose: "maskable",

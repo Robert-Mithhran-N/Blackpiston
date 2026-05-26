@@ -306,6 +306,46 @@ const ProductDetail = () => {
         navigate("/cart");
     };
 
+    const handleShare = () => {
+        const url = window.location.href;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url)
+                .then(() => {
+                    toast.success("Link copied to clipboard!");
+                })
+                .catch((err) => {
+                    console.error("Failed to copy link:", err);
+                    fallbackCopyText(url);
+                });
+        } else {
+            fallbackCopyText(url);
+        }
+    };
+
+    const fallbackCopyText = (text: string) => {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.top = "0";
+        textArea.style.left = "0";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        try {
+            const successful = document.execCommand('copy');
+            if (successful) {
+                toast.success("Link copied to clipboard!");
+            } else {
+                toast.error("Failed to copy link");
+            }
+        } catch (err) {
+            console.error("Fallback copy failed:", err);
+            toast.error("Failed to copy link");
+        }
+        document.body.removeChild(textArea);
+    };
+
     if (!product && !isLoading) {
         return (
             <div className="min-h-screen bg-background">
@@ -489,6 +529,51 @@ const ProductDetail = () => {
 
                             {/* Product Info */}
                             <div className="space-y-6">
+                                {/* Product Name */}
+                                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{product.name}</h1>
+
+                                {/* Action Buttons */}
+                                <div className="flex flex-col sm:flex-row gap-3">
+                                    <Button
+                                        size="lg"
+                                        className="flex-1 bg-gradient-to-r from-primary to-orange-500 hover:opacity-90 text-lg h-14"
+                                        onClick={handleAddToCart}
+                                        disabled={!isInStock}
+                                    >
+                                        <ShoppingCart className="mr-2 h-5 w-5" />
+                                        {!isInStock ? "Out of Stock" : "Add to Cart"}
+                                    </Button>
+                                    <Button
+                                        size="lg"
+                                        variant="secondary"
+                                        className="flex-1 text-lg h-14"
+                                        onClick={handleBuyNow}
+                                        disabled={!isInStock}
+                                    >
+                                        <Zap className="mr-2 h-5 w-5" />
+                                        Buy Now
+                                    </Button>
+                                </div>
+
+                                {/* Wishlist & Share */}
+                                <div className="flex gap-3">
+                                    <Button
+                                        variant="outline"
+                                        className={`flex-1 ${isWishlisted ? "text-red-500 border-red-500/50" : ""}`}
+                                        onClick={() => {
+                                            setIsWishlisted(!isWishlisted);
+                                            toast.success(isWishlisted ? "Removed from wishlist" : "Added to wishlist");
+                                        }}
+                                    >
+                                        <Heart className={`mr-2 h-4 w-4 ${isWishlisted ? "fill-red-500" : ""}`} />
+                                        {isWishlisted ? "Wishlisted" : "Add to Wishlist"}
+                                    </Button>
+                                    <Button variant="outline" onClick={handleShare}>
+                                        <Share2 className="mr-2 h-4 w-4" />
+                                        Share
+                                    </Button>
+                                </div>
+
                                 {/* Category & Rating */}
                                 <div className="flex items-center justify-between">
                                     <Badge variant="outline" className="capitalize">
@@ -509,9 +594,6 @@ const ProductDetail = () => {
                                         </span>
                                     </div>
                                 </div>
-
-                                {/* Product Name */}
-                                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{product.name}</h1>
 
                                 {/* Price */}
                                 <div className="flex items-baseline gap-4">
@@ -644,29 +726,6 @@ const ProductDetail = () => {
                                     )}
                                 </div>
 
-                                {/* Dynamic Sections or Legacy Description */}
-                                {product.sections && product.sections.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {product.sections.map((section, idx) => (
-                                            <div key={idx} className="border border-border/50 rounded-xl p-5 bg-card/40">
-                                                <h3 className="text-lg font-bold tracking-tight mb-2 text-foreground/90">
-                                                    {section.title}
-                                                </h3>
-                                                <div className="prose prose-sm prose-invert max-w-none text-muted-foreground whitespace-pre-line">
-                                                    {section.content}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="prose prose-sm prose-invert max-w-none">
-                                        <p className="text-muted-foreground leading-relaxed">
-                                            {product.description ||
-                                                "Premium quality product designed for maximum performance and comfort. Built with the finest materials and crafted to perfection."}
-                                        </p>
-                                    </div>
-                                )}
-
                                 {/* Quantity Selector */}
                                 <div className="flex items-center gap-4">
                                     <span className="text-sm font-medium">Quantity:</span>
@@ -692,47 +751,28 @@ const ProductDetail = () => {
                                     </div>
                                 </div>
 
-                                {/* Action Buttons */}
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <Button
-                                        size="lg"
-                                        className="flex-1 bg-gradient-to-r from-primary to-orange-500 hover:opacity-90 text-lg h-14"
-                                        onClick={handleAddToCart}
-                                        disabled={!isInStock}
-                                    >
-                                        <ShoppingCart className="mr-2 h-5 w-5" />
-                                        {!isInStock ? "Out of Stock" : "Add to Cart"}
-                                    </Button>
-                                    <Button
-                                        size="lg"
-                                        variant="secondary"
-                                        className="flex-1 text-lg h-14"
-                                        onClick={handleBuyNow}
-                                        disabled={!isInStock}
-                                    >
-                                        <Zap className="mr-2 h-5 w-5" />
-                                        Buy Now
-                                    </Button>
-                                </div>
-
-                                {/* Wishlist & Share */}
-                                <div className="flex gap-3">
-                                    <Button
-                                        variant="outline"
-                                        className={`flex-1 ${isWishlisted ? "text-red-500 border-red-500/50" : ""}`}
-                                        onClick={() => {
-                                            setIsWishlisted(!isWishlisted);
-                                            toast.success(isWishlisted ? "Removed from wishlist" : "Added to wishlist");
-                                        }}
-                                    >
-                                        <Heart className={`mr-2 h-4 w-4 ${isWishlisted ? "fill-red-500" : ""}`} />
-                                        {isWishlisted ? "Wishlisted" : "Add to Wishlist"}
-                                    </Button>
-                                    <Button variant="outline" onClick={() => toast.success("Link copied!")}>
-                                        <Share2 className="mr-2 h-4 w-4" />
-                                        Share
-                                    </Button>
-                                </div>
+                                {/* Dynamic Sections or Legacy Description */}
+                                {product.sections && product.sections.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {product.sections.map((section, idx) => (
+                                            <div key={idx} className="border border-border/50 rounded-xl p-5 bg-card/40">
+                                                <h3 className="text-lg font-bold tracking-tight mb-2 text-foreground/90">
+                                                    {section.title}
+                                                </h3>
+                                                <div className="prose prose-sm prose-invert max-w-none text-muted-foreground whitespace-pre-line">
+                                                    {section.content}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="prose prose-sm prose-invert max-w-none">
+                                        <p className="text-muted-foreground leading-relaxed">
+                                            {product.description ||
+                                                "Premium quality product designed for maximum performance and comfort. Built with the finest materials and crafted to perfection."}
+                                        </p>
+                                    </div>
+                                )}
 
                                 {/* Trust Badges */}
                                 <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">

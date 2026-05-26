@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Wrench, Truck, RotateCcw, ShieldCheck } from "lucide-react";
+import { ArrowRight, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 // import heroImage from "@/assets/hero-gear.jpg";
@@ -62,22 +62,13 @@ const Hero = () => {
               </Link>
             </div>
 
-            {/* Trust badges with inline icons */}
+            {/* Trust badges */}
             <div className="flex flex-wrap items-center gap-4 pt-2 text-sm text-metal">
-              <div className="flex items-center gap-2">
-                <Truck className="h-4 w-4 text-primary" />
-                <span>Same-day shipping</span>
-              </div>
+              <span>Same-day shipping</span>
               <span className="text-metal/40">•</span>
-              <div className="flex items-center gap-2">
-                <RotateCcw className="h-4 w-4 text-primary" />
-                <span>30-Day returns</span>
-              </div>
+              <span>30-Day returns</span>
               <span className="text-metal/40">•</span>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-primary" />
-                <span>Certified mechanics</span>
-              </div>
+              <span>Certified mechanics</span>
             </div>
           </div>
 
