@@ -858,7 +858,7 @@ const Shop = () => {
             <div className="flex-1 min-w-0">
               {/* Results count */}
               <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-muted-foreground">
+                <div className="text-sm text-muted-foreground">
                   {loading ? (
                     <Skeleton className="h-4 w-32 inline-block" />
                   ) : (
@@ -870,7 +870,7 @@ const Shop = () => {
                       product{pagination.total !== 1 ? "s" : ""}
                     </>
                   )}
-                </p>
+                </div>
               </div>
 
               {/* Loading Skeletons */}
