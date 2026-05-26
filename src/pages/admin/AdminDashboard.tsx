@@ -226,6 +226,14 @@ const AdminDashboard = () => {
       .finally(() => setIsLoading(false));
   }, []);
 
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    if (amount >= 100000) {
+      return `₹${(amount / 100000).toFixed(2)}L`;
+    }
+    return `₹${amount.toLocaleString()}`;
+  };
+
   // COD Payment handler
   const handleAddCOD = () => {
     const amount = parseFloat(codForm.amount);
