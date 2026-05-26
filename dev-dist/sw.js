@@ -69,7 +69,11 @@ if (!self.define) {
 }
 define(['./workbox-b79e8dca'], (function (workbox) { 'use strict';
 
-  self.skipWaiting();
+  self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SKIP_WAITING') {
+      self.skipWaiting();
+    }
+  });
   workbox.clientsClaim();
 
   /**
@@ -81,14 +85,16 @@ define(['./workbox-b79e8dca'], (function (workbox) { 'use strict';
     "url": "registerSW.js",
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
-    "url": "index.html",
-    "revision": "0.sv5kdp0admg"
+    "url": "/index.html",
+    "revision": "0.stjsftn8ht8"
   }], {});
   workbox.cleanupOutdatedCaches();
-  workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("index.html"), {
-    allowlist: [/^\/$/]
+  workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("/index.html"), {
+    allowlist: [/^\/$/],
+    denylist: [/^\/api\//, /^\/version\.json/]
   }));
-  workbox.registerRoute(/^https?:\/\/.*\/api\/(checkout|payments|admin).*/i, new workbox.NetworkOnly(), 'GET');
+  workbox.registerRoute(/\/version\.json$/, new workbox.NetworkOnly(), 'GET');
+  workbox.registerRoute(/^https?:\/\/.*\/api\/(checkout|payments|admin|orders|user\/orders|appointments|services|messages|users|settings).*/i, new workbox.NetworkOnly(), 'GET');
   workbox.registerRoute(/^https?:\/\/.*\/api\/.*/i, new workbox.NetworkFirst({
     "cacheName": "api-cache",
     plugins: [new workbox.ExpirationPlugin({

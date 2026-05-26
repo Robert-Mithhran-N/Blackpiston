@@ -1,19 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePWA } from "@/context/PWAContext";
 import { Sparkles, RefreshCw, X, Zap, CheckCircle2, Flame } from "lucide-react";
 
 const UpdateModal = () => {
   const { needRefresh, setNeedRefresh, updateApp, latestVersion, appVersion } = usePWA();
   const [isUpdating, setIsUpdating] = useState(false);
+  const forceReloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clean up force-reload timer on unmount
+  useEffect(() => {
+    return () => {
+      if (forceReloadTimerRef.current) {
+        clearTimeout(forceReloadTimerRef.current);
+      }
+    };
+  }, []);
 
   if (!needRefresh) return null;
 
   const handleUpdate = async () => {
     setIsUpdating(true);
-    // Give it a tiny delay for visual feedback before reloading
-    setTimeout(async () => {
+    
+    // Safety net: if the controllerchange event doesn't fire within 6 seconds,
+    // force a hard reload as a fallback (e.g., SW is not responding)
+    forceReloadTimerRef.current = setTimeout(() => {
+      console.warn("[PWA Update] Force reloading — controllerchange did not fire in time.");
+      window.location.reload();
+    }, 6000);
+    
+    try {
       await updateApp();
-    }, 800);
+    } catch (err) {
+      console.error("[PWA Update] Update failed:", err);
+      // Clear the force-reload timer and just reload directly
+      if (forceReloadTimerRef.current) {
+        clearTimeout(forceReloadTimerRef.current);
+      }
+      window.location.reload();
+    }
   };
 
   const handleClose = () => {

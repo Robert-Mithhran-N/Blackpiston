@@ -4,14 +4,16 @@ import { VitePWA } from "vite-plugin-pwa";
 import path from "path";
 import fs from "fs";
 
-// Custom Vite plugin to generate public/version.json on build/dev startup
+// Custom Vite plugin to generate public/version.json on every build
+// Uses a unique buildId (timestamp) that changes on EVERY build/deploy,
+// so the frontend can reliably detect when a new version is available.
 const generateVersionJson = () => {
   return {
     name: "generate-version-json",
     buildStart() {
-      // Get version from environment variable or package.json
       const version = process.env.VITE_APP_VERSION || "1.0.0";
-      const content = JSON.stringify({ version, timestamp: Date.now() }, null, 2);
+      const buildId = Date.now().toString(36); // Unique per-build identifier
+      const content = JSON.stringify({ version, buildId, timestamp: Date.now() }, null, 2);
       const publicDir = path.resolve(__dirname, "public");
       
       // Ensure the directory exists
@@ -21,7 +23,11 @@ const generateVersionJson = () => {
       
       // Write the file
       fs.writeFileSync(path.join(publicDir, "version.json"), content);
-      console.log(`[PWA Version Generator] Wrote version.json: ${version}`);
+      
+      // Also inject the buildId as an env variable so the frontend knows its own build ID
+      process.env.VITE_BUILD_ID = buildId;
+      
+      console.log(`[PWA Version] version=${version} buildId=${buildId}`);
     }
   };
 };
@@ -75,8 +81,18 @@ export default defineConfig(({ mode }) => ({
       workbox: {
         // Cache pages and assets for fast loading
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2,woff,ttf}"],
+        // Never precache version.json — it must always be fetched fresh
+        globIgnores: ["**/version.json"],
+        // SPA fallback for client-side routing
+        navigateFallback: "/index.html",
+        navigateFallbackDenylist: [/^\/api\//, /^\/version\.json/],
         // Runtime caching
         runtimeCaching: [
+          {
+            // version.json must ALWAYS come from the network (never cached)
+            urlPattern: /\/version\.json$/,
+            handler: "NetworkOnly",
+          },
           {
             // Do not cache sensitive API routes or live data
             urlPattern: /^https?:\/\/.*\/api\/(checkout|payments|admin|orders|user\/orders|appointments|services|messages|users|settings).*/i,
