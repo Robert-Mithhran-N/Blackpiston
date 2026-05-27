@@ -62,14 +62,7 @@ const Hero = () => {
               </Link>
             </div>
 
-            {/* Trust badges */}
-            <div className="flex flex-wrap items-center gap-4 pt-2 text-sm text-metal">
-              <span>Same-day shipping</span>
-              <span className="text-metal/40">•</span>
-              <span>30-Day returns</span>
-              <span className="text-metal/40">•</span>
-              <span>Certified mechanics</span>
-            </div>
+
           </div>
 
           {/* Right Content - Hero Image with premium effects */}

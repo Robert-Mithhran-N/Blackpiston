@@ -117,7 +117,7 @@ const Contact = () => {
                 {/* Address */}
                 <Card className="border-2 hover:border-primary/50 transition-colors">
                   <CardContent className="p-6 flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
                       <MapPin className="h-6 w-6 text-primary" />
                     </div>
                     <div>
@@ -134,8 +134,8 @@ const Contact = () => {
                 {/* Phone */}
                 <Card className="border-2 hover:border-primary/50 transition-colors">
                   <CardContent className="p-6 flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
-                      <Phone className="h-6 w-6 text-green-500" />
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                      <Phone className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">Call Us</h3>
@@ -155,8 +155,8 @@ const Contact = () => {
                 {/* Email */}
                 <Card className="border-2 hover:border-primary/50 transition-colors">
                   <CardContent className="p-6 flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-                      <Mail className="h-6 w-6 text-blue-500" />
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                      <Mail className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">Email Us</h3>
@@ -176,8 +176,8 @@ const Contact = () => {
                 {/* Business Hours */}
                 <Card className="border-2 hover:border-primary/50 transition-colors">
                   <CardContent className="p-6 flex items-start gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
-                      <Clock className="h-6 w-6 text-orange-500" />
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                      <Clock className="h-6 w-6 text-primary" />
                     </div>
                     <div>
                       <h3 className="font-semibold mb-1">Business Hours</h3>
