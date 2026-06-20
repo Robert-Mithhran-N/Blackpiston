@@ -273,6 +273,43 @@ export async function deleteProduct(id: string) {
     return res.json();
 }
 
+// AI Content Generation
+export async function generateProductContentAI(data: {
+    name: string;
+    brand?: string;
+    productType?: string;
+    variantInfo?: string;
+}) {
+    const res = await fetch(`${API_BASE}/admin/products/generate-content`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to generate product content");
+    }
+    return res.json();
+}
+
+export async function regenerateProductSection(data: {
+    name: string;
+    brand?: string;
+    productType?: string;
+    sectionTitle: string;
+}) {
+    const res = await fetch(`${API_BASE}/admin/products/regenerate-section`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to regenerate section");
+    }
+    return res.json();
+}
+
 // ============================================================
 // Categories Admin - REMOVED (categories feature removed)
 // ============================================================

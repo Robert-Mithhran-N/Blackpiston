@@ -65,6 +65,8 @@ import {
   Percent,
   Info,
   Layers,
+  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -74,6 +76,8 @@ import {
   deleteProduct,
   uploadImages,
   fetchTagSuggestions,
+  generateProductContentAI,
+  regenerateProductSection,
 } from "@/lib/api";
 
 // ============================================================
@@ -128,6 +132,10 @@ interface Product {
   isActive: boolean;
   inStock: boolean;
   deliveryCharge: number;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string[];
+  highlights?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -170,6 +178,10 @@ interface FormData {
   thumbnailPublicId: string | null;
   images: ProductImage[];
   variants: ProductVariant[];
+  seoTitle: string;
+  seoDescription: string;
+  seoKeywords: string[];
+  highlights: string[];
 }
 
 const emptyForm: FormData = {
@@ -194,6 +206,10 @@ const emptyForm: FormData = {
   thumbnailPublicId: null,
   images: [],
   variants: [],
+  seoTitle: "",
+  seoDescription: "",
+  seoKeywords: [],
+  highlights: [],
 };
 
 // ============================================================
@@ -219,6 +235,14 @@ const AdminProducts = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [variantUploadingIndex, setVariantUploadingIndex] = useState<number | null>(null);
+
+  // AI generation state
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isRegeneratingSectionIdx, setIsRegeneratingSectionIdx] = useState<number | null>(null);
+
+  // AI & SEO tab inputs
+  const [newHighlight, setNewHighlight] = useState("");
+  const [newKeyword, setNewKeyword] = useState("");
 
   // Tag suggestions
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
@@ -275,6 +299,8 @@ const AdminProducts = () => {
   const openAddForm = () => {
     setEditingProduct(null);
     setFormData({ ...emptyForm });
+    setNewHighlight("");
+    setNewKeyword("");
     setIsFormOpen(true);
   };
 
@@ -312,7 +338,13 @@ const AdminProducts = () => {
       thumbnailPublicId: product.thumbnailPublicId || null,
       images: product.images || [],
       variants: product.variants || [],
+      seoTitle: product.seoTitle || "",
+      seoDescription: product.seoDescription || "",
+      seoKeywords: product.seoKeywords || [],
+      highlights: product.highlights || [],
     });
+    setNewHighlight("");
+    setNewKeyword("");
     setIsFormOpen(true);
   };
 
@@ -349,6 +381,83 @@ const AdminProducts = () => {
       offerPrice = "";
     }
     setFormData({ ...formData, discountPercent: value, offerPrice });
+  };
+
+  // --------------------------------
+  // AI Content Generation
+  // --------------------------------
+  const handleGenerateContent = async () => {
+    if (!formData.name.trim()) {
+      toast.error("Enter a product name first");
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const productTypeLabel = PRODUCT_TYPES.find(pt => pt.id === formData.productType)?.label || formData.productType;
+      const result = await generateProductContentAI({
+        name: formData.name.trim(),
+        brand: formData.brand.trim() || undefined,
+        productType: productTypeLabel || undefined,
+      });
+
+      const content = result.content;
+      if (!content) {
+        toast.error("AI returned empty content");
+        return;
+      }
+
+      // Merge generated tags with existing ones (deduplicate)
+      const existingTags = new Set(formData.tagChips.map(t => t.toLowerCase()));
+      const newTags = (content.tags || []).filter((t: string) => !existingTags.has(t.toLowerCase()));
+
+      setFormData(prev => ({
+        ...prev,
+        shortDescription: content.shortDescription || prev.shortDescription,
+        sections: content.sections || prev.sections,
+        tagChips: [...prev.tagChips, ...newTags],
+        seoTitle: content.seo?.title || prev.seoTitle,
+        seoDescription: content.seo?.description || prev.seoDescription,
+        seoKeywords: content.seo?.keywords || prev.seoKeywords,
+        highlights: content.highlights || prev.highlights,
+      }));
+
+      toast.success("✨ Product content generated successfully!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to generate content");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleRegenerateSection = async (sectionIdx: number) => {
+    const section = formData.sections[sectionIdx];
+    if (!section?.title || !formData.name.trim()) return;
+
+    setIsRegeneratingSectionIdx(sectionIdx);
+    try {
+      const productTypeLabel = PRODUCT_TYPES.find(pt => pt.id === formData.productType)?.label || formData.productType;
+      const result = await regenerateProductSection({
+        name: formData.name.trim(),
+        brand: formData.brand.trim() || undefined,
+        productType: productTypeLabel || undefined,
+        sectionTitle: section.title,
+      });
+
+      if (result.section?.content) {
+        const newSections = [...formData.sections];
+        newSections[sectionIdx] = {
+          ...newSections[sectionIdx],
+          content: result.section.content,
+        };
+        setFormData({ ...formData, sections: newSections });
+        toast.success(`"${section.title}" regenerated`);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to regenerate section");
+    } finally {
+      setIsRegeneratingSectionIdx(null);
+    }
   };
 
   // --------------------------------
@@ -427,6 +536,10 @@ const AdminProducts = () => {
               deliveryCharge: v.deliveryCharge !== "" && v.deliveryCharge != null ? Number(v.deliveryCharge) : null,
             }))
           : [],
+        seoTitle: formData.seoTitle.trim() || null,
+        seoDescription: formData.seoDescription.trim() || null,
+        seoKeywords: formData.seoKeywords.filter(k => k.trim()),
+        highlights: formData.highlights.filter(h => h.trim()),
       };
 
       if (editingProduct) {
@@ -942,7 +1055,7 @@ const AdminProducts = () => {
 
           <ScrollArea className="flex-1 px-6 overflow-y-auto">
             <Tabs defaultValue="basic" className="w-full">
-              <TabsList className="w-full grid grid-cols-5 mb-4">
+              <TabsList className="w-full grid grid-cols-6 mb-4">
                 <TabsTrigger value="basic">Basic Info</TabsTrigger>
                 <TabsTrigger value="sections">Sections</TabsTrigger>
                 <TabsTrigger value="pricing">Pricing & Stock</TabsTrigger>
@@ -955,6 +1068,7 @@ const AdminProducts = () => {
                     </Badge>
                   )}
                 </TabsTrigger>
+                <TabsTrigger value="ai-seo">AI & SEO</TabsTrigger>
               </TabsList>
 
               {/* ── BASIC INFO TAB ── */}
@@ -1020,6 +1134,29 @@ const AdminProducts = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {formData.name.trim() && (
+                  <div className="pt-1">
+                    <Button
+                      type="button"
+                      disabled={isGenerating}
+                      onClick={handleGenerateContent}
+                      className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-medium shadow-md transition-all duration-300 hover:scale-[1.01]"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin text-white" />
+                          <span>Generating E-commerce Content...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4 text-yellow-300 fill-yellow-300" />
+                          <span>Generate Product Content with Gemini</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
 
                 {/* Tags — chip editor */}
                 <div className="space-y-2">
@@ -1164,6 +1301,22 @@ const AdminProducts = () => {
                                 }}
                               >
                                 ↓
+                              </Button>
+                            )}
+                            {formData.name.trim() && section.title.trim() && (
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 text-violet-400 hover:text-violet-300"
+                                title="Regenerate section with Gemini"
+                                disabled={isRegeneratingSectionIdx === idx}
+                                onClick={() => handleRegenerateSection(idx)}
+                              >
+                                {isRegeneratingSectionIdx === idx ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="h-3.5 w-3.5" />
+                                )}
                               </Button>
                             )}
                             <Button
@@ -1593,6 +1746,159 @@ const AdminProducts = () => {
                     <p className="text-xs mt-1">Enable the toggle above to add size, color, or model variations.</p>
                   </div>
                 )}
+              </TabsContent>
+
+              {/* ── AI & SEO TAB ── */}
+              <TabsContent value="ai-seo" className="space-y-6 pb-4">
+                <div className="flex items-center justify-between border-b border-border pb-3">
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                      <Sparkles className="h-4 w-4 text-violet-400" /> AI & Search Engine Optimization
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Manage product highlights (feature badges) and search meta parameters.
+                    </p>
+                  </div>
+                  {formData.name.trim() && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-violet-500/30 hover:bg-violet-500/10 text-violet-400"
+                      disabled={isGenerating}
+                      onClick={handleGenerateContent}
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+                          Regenerate SEO
+                        </>
+                      )}
+                    </Button>
+                  )}
+                </div>
+
+                <div className="space-y-4">
+                  {/* Highlights */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Product Highlights / Badges</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Key features displayed prominently as badge tags (e.g. "Dual Visor", "Pinlock Pin Included").
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 p-3 border border-border rounded-md bg-background min-h-[50px]">
+                      {formData.highlights.map((hl, idx) => (
+                        <Badge key={idx} variant="secondary" className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          {hl}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = formData.highlights.filter((_, i) => i !== idx);
+                              setFormData({ ...formData, highlights: updated });
+                            }}
+                            className="ml-0.5 rounded-full hover:bg-emerald-500/20 p-0.5 text-emerald-400"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                      <input
+                        placeholder={formData.highlights.length === 0 ? "Type a highlight and press enter..." : "Add highlight..."}
+                        value={newHighlight}
+                        onChange={(e) => setNewHighlight(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === ",") {
+                            e.preventDefault();
+                            const val = newHighlight.trim();
+                            if (val && !formData.highlights.includes(val)) {
+                              setFormData({ ...formData, highlights: [...formData.highlights, val] });
+                              setNewHighlight("");
+                            }
+                          }
+                        }}
+                        className="flex-1 min-w-[150px] bg-transparent outline-none text-sm placeholder:text-muted-foreground"
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* SEO Meta */}
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Search Engine Settings</h4>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <Label htmlFor="seoTitle">Meta Title</Label>
+                        <span className={`text-xs ${formData.seoTitle.length > 60 ? 'text-yellow-500 font-semibold' : 'text-muted-foreground'}`}>
+                          {formData.seoTitle.length}/60 chars
+                        </span>
+                      </div>
+                      <Input
+                        id="seoTitle"
+                        value={formData.seoTitle}
+                        onChange={(e) => setFormData({ ...formData, seoTitle: e.target.value })}
+                        placeholder="Google Search title (recommended < 60 chars)"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <Label htmlFor="seoDescription">Meta Description</Label>
+                        <span className={`text-xs ${formData.seoDescription.length > 160 ? 'text-yellow-500 font-semibold' : 'text-muted-foreground'}`}>
+                          {formData.seoDescription.length}/160 chars
+                        </span>
+                      </div>
+                      <Textarea
+                        id="seoDescription"
+                        rows={3}
+                        value={formData.seoDescription}
+                        onChange={(e) => setFormData({ ...formData, seoDescription: e.target.value })}
+                        placeholder="Search snippet description (recommended < 160 chars)"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Keywords</Label>
+                      <div className="flex flex-wrap gap-1.5 p-3 border border-border rounded-md bg-background min-h-[50px]">
+                        {formData.seoKeywords.map((kw, idx) => (
+                          <Badge key={idx} variant="secondary" className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                            {kw}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = formData.seoKeywords.filter((_, i) => i !== idx);
+                                setFormData({ ...formData, seoKeywords: updated });
+                              }}
+                              className="ml-0.5 rounded-full hover:bg-indigo-500/20 p-0.5 text-indigo-400"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        ))}
+                        <input
+                          placeholder={formData.seoKeywords.length === 0 ? "Type a keyword and press enter..." : "Add keyword..."}
+                          value={newKeyword}
+                          onChange={(e) => setNewKeyword(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === ",") {
+                              e.preventDefault();
+                              const val = newKeyword.trim();
+                              if (val && !formData.seoKeywords.includes(val)) {
+                                setFormData({ ...formData, seoKeywords: [...formData.seoKeywords, val] });
+                                setNewKeyword("");
+                              }
+                            }
+                          }}
+                          className="flex-1 min-w-[150px] bg-transparent outline-none text-sm placeholder:text-muted-foreground"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </TabsContent>
             </Tabs>
           </ScrollArea>

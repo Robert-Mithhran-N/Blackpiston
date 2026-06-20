@@ -6,6 +6,7 @@ import prisma from '../config/database.js';
 import { deleteFromCloudinary } from '../config/cloudinary.js';
 import { emitStockUpdate } from '../socketManager.js';
 import { Parser } from 'json2csv';
+import { generateProductContent, regenerateSection } from '../config/gemini.js';
 
 const router = Router();
 
@@ -194,6 +195,10 @@ const createProductSchema = z.object({
         content: z.string(),
         order: z.number().optional()
     })).optional().default([]),
+    seoTitle: z.string().optional().nullable(),
+    seoDescription: z.string().optional().nullable(),
+    seoKeywords: z.array(z.string()).optional().default([]),
+    highlights: z.array(z.string()).optional().default([]),
 });
 
 // ============================================================
@@ -201,6 +206,68 @@ const createProductSchema = z.object({
 // Stub routes return informative messages
 // ============================================================
 
+
+// ============================================================
+// AI Content Generation
+// ============================================================
+
+// Generate product content using Gemini AI
+router.post('/products/generate-content', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const { name, brand, productType, variantInfo } = req.body;
+
+        if (!name || typeof name !== 'string' || !name.trim()) {
+            return res.status(400).json({ error: 'Product name is required' });
+        }
+
+        const content = await generateProductContent({
+            name: name.trim(),
+            brand: brand?.trim() || undefined,
+            productType: productType?.trim() || undefined,
+            variantInfo: variantInfo?.trim() || undefined,
+        });
+
+        res.json({ content });
+    } catch (error: any) {
+        console.error('❌ [POST /products/generate-content] AI generation error:', error?.message || error);
+
+        // Handle specific error types
+        if (error?.message?.includes('GEMINI_API_KEY')) {
+            return res.status(503).json({ error: 'AI service is not configured. Please set GEMINI_API_KEY.' });
+        }
+        if (error?.status === 429 || error?.message?.includes('429') || error?.message?.toLowerCase()?.includes('rate limit')) {
+            return res.status(429).json({ error: 'AI rate limit exceeded. Please try again in a few seconds.' });
+        }
+        if (error?.message?.includes('empty response')) {
+            return res.status(502).json({ error: 'AI returned an empty response. Please try again.' });
+        }
+
+        res.status(500).json({ error: error?.message || 'Failed to generate product content' });
+    }
+});
+
+// Regenerate a single section using Gemini AI
+router.post('/products/regenerate-section', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const { name, brand, productType, sectionTitle } = req.body;
+
+        if (!name || !sectionTitle) {
+            return res.status(400).json({ error: 'Product name and section title are required' });
+        }
+
+        const section = await regenerateSection({
+            name: name.trim(),
+            brand: brand?.trim() || undefined,
+            productType: productType?.trim() || undefined,
+            sectionTitle: sectionTitle.trim(),
+        });
+
+        res.json({ section });
+    } catch (error: any) {
+        console.error('❌ [POST /products/regenerate-section] AI regeneration error:', error?.message || error);
+        res.status(500).json({ error: error?.message || 'Failed to regenerate section' });
+    }
+});
 
 // ============================================================
 // Products CRUD
@@ -275,6 +342,10 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
                 specifications: data.specifications,
                 rating: data.rating,
                 totalReviews: data.totalReviews,
+                seoTitle: data.seoTitle || null,
+                seoDescription: data.seoDescription || null,
+                seoKeywords: data.seoKeywords || [],
+                highlights: data.highlights || [],
                 sections: {
                     create: data.sections.map((s: any, idx: number) => ({
                         title: s.title,
@@ -399,6 +470,12 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
                 };
             }
         }
+
+        // SEO and highlights fields
+        if ('seoTitle' in body) updateData.seoTitle = body.seoTitle || null;
+        if ('seoDescription' in body) updateData.seoDescription = body.seoDescription || null;
+        if ('seoKeywords' in body && Array.isArray(body.seoKeywords)) updateData.seoKeywords = body.seoKeywords;
+        if ('highlights' in body && Array.isArray(body.highlights)) updateData.highlights = body.highlights;
 
         const product = await prisma.product.update({
             where: { id },
