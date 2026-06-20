@@ -136,6 +136,12 @@ interface Product {
   seoDescription?: string;
   seoKeywords?: string[];
   highlights?: string[];
+  shippingBadgeTitle?: string;
+  shippingBadgeDesc?: string;
+  warrantyBadgeTitle?: string;
+  warrantyBadgeDesc?: string;
+  returnBadgeTitle?: string;
+  returnBadgeDesc?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -182,6 +188,12 @@ interface FormData {
   seoDescription: string;
   seoKeywords: string[];
   highlights: string[];
+  shippingBadgeTitle: string;
+  shippingBadgeDesc: string;
+  warrantyBadgeTitle: string;
+  warrantyBadgeDesc: string;
+  returnBadgeTitle: string;
+  returnBadgeDesc: string;
 }
 
 const emptyForm: FormData = {
@@ -210,6 +222,12 @@ const emptyForm: FormData = {
   seoDescription: "",
   seoKeywords: [],
   highlights: [],
+  shippingBadgeTitle: "",
+  shippingBadgeDesc: "",
+  warrantyBadgeTitle: "",
+  warrantyBadgeDesc: "",
+  returnBadgeTitle: "",
+  returnBadgeDesc: "",
 };
 
 // ============================================================
@@ -342,6 +360,12 @@ const AdminProducts = () => {
       seoDescription: product.seoDescription || "",
       seoKeywords: product.seoKeywords || [],
       highlights: product.highlights || [],
+      shippingBadgeTitle: product.shippingBadgeTitle || "",
+      shippingBadgeDesc: product.shippingBadgeDesc || "",
+      warrantyBadgeTitle: product.warrantyBadgeTitle || "",
+      warrantyBadgeDesc: product.warrantyBadgeDesc || "",
+      returnBadgeTitle: product.returnBadgeTitle || "",
+      returnBadgeDesc: product.returnBadgeDesc || "",
     });
     setNewHighlight("");
     setNewKeyword("");
@@ -540,6 +564,12 @@ const AdminProducts = () => {
         seoDescription: formData.seoDescription.trim() || null,
         seoKeywords: formData.seoKeywords.filter(k => k.trim()),
         highlights: formData.highlights.filter(h => h.trim()),
+        shippingBadgeTitle: formData.shippingBadgeTitle.trim() || null,
+        shippingBadgeDesc: formData.shippingBadgeDesc.trim() || null,
+        warrantyBadgeTitle: formData.warrantyBadgeTitle.trim() || null,
+        warrantyBadgeDesc: formData.warrantyBadgeDesc.trim() || null,
+        returnBadgeTitle: formData.returnBadgeTitle.trim() || null,
+        returnBadgeDesc: formData.returnBadgeDesc.trim() || null,
       };
 
       if (editingProduct) {
@@ -1821,6 +1851,79 @@ const AdminProducts = () => {
                         }}
                         className="flex-1 min-w-[150px] bg-transparent outline-none text-sm placeholder:text-muted-foreground"
                       />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Trust Badges */}
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Trust Badges / Policies</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Customize the titles and descriptions displayed on the product page. Leave blank to use default values.
+                    </p>
+                    
+                    <div className="grid grid-cols-2 gap-4 border border-border p-4 rounded-lg bg-card/20">
+                      <div className="space-y-2">
+                        <Label htmlFor="shippingBadgeTitle">Shipping Badge Title</Label>
+                        <Input
+                          id="shippingBadgeTitle"
+                          value={formData.shippingBadgeTitle}
+                          onChange={(e) => setFormData({ ...formData, shippingBadgeTitle: e.target.value })}
+                          placeholder="Default: Free Shipping"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="shippingBadgeDesc">Shipping Badge Subtext</Label>
+                        <Input
+                          id="shippingBadgeDesc"
+                          value={formData.shippingBadgeDesc}
+                          onChange={(e) => setFormData({ ...formData, shippingBadgeDesc: e.target.value })}
+                          placeholder="Default: Orders ₹5000+"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 border border-border p-4 rounded-lg bg-card/20">
+                      <div className="space-y-2">
+                        <Label htmlFor="warrantyBadgeTitle">Warranty Badge Title</Label>
+                        <Input
+                          id="warrantyBadgeTitle"
+                          value={formData.warrantyBadgeTitle}
+                          onChange={(e) => setFormData({ ...formData, warrantyBadgeTitle: e.target.value })}
+                          placeholder="Default: Warranty"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="warrantyBadgeDesc">Warranty Badge Subtext</Label>
+                        <Input
+                          id="warrantyBadgeDesc"
+                          value={formData.warrantyBadgeDesc}
+                          onChange={(e) => setFormData({ ...formData, warrantyBadgeDesc: e.target.value })}
+                          placeholder="Default: 1 Year"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 border border-border p-4 rounded-lg bg-card/20">
+                      <div className="space-y-2">
+                        <Label htmlFor="returnBadgeTitle">Returns Badge Title</Label>
+                        <Input
+                          id="returnBadgeTitle"
+                          value={formData.returnBadgeTitle}
+                          onChange={(e) => setFormData({ ...formData, returnBadgeTitle: e.target.value })}
+                          placeholder="Default: Easy Returns"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="returnBadgeDesc">Returns Badge Subtext</Label>
+                        <Input
+                          id="returnBadgeDesc"
+                          value={formData.returnBadgeDesc}
+                          onChange={(e) => setFormData({ ...formData, returnBadgeDesc: e.target.value })}
+                          placeholder="Default: 30 Days"
+                        />
+                      </div>
                     </div>
                   </div>
 

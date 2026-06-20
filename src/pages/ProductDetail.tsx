@@ -130,6 +130,12 @@ const ProductDetail = () => {
                     stockQuantity: p.stockQuantity,
                     sections: p.sections || [],
                     deliveryCharge: p.deliveryCharge,
+                    shippingBadgeTitle: p.shippingBadgeTitle || "",
+                    shippingBadgeDesc: p.shippingBadgeDesc || "",
+                    warrantyBadgeTitle: p.warrantyBadgeTitle || "",
+                    warrantyBadgeDesc: p.warrantyBadgeDesc || "",
+                    returnBadgeTitle: p.returnBadgeTitle || "",
+                    returnBadgeDesc: p.returnBadgeDesc || "",
                 };
                 setProduct(mapped);
 
@@ -778,18 +784,18 @@ const ProductDetail = () => {
                                 <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
                                     <div className="flex flex-col items-center gap-1 text-center">
                                         <Truck className="h-6 w-6 text-primary" />
-                                        <span className="text-xs font-medium">Free Shipping</span>
-                                        <span className="text-xs text-muted-foreground">Orders ₹5000+</span>
+                                        <span className="text-xs font-medium">{product.shippingBadgeTitle || "Free Shipping"}</span>
+                                        <span className="text-xs text-muted-foreground">{product.shippingBadgeDesc || "Orders ₹5000+"}</span>
                                     </div>
                                     <div className="flex flex-col items-center gap-1 text-center">
                                         <Shield className="h-6 w-6 text-green-500" />
-                                        <span className="text-xs font-medium">Warranty</span>
-                                        <span className="text-xs text-muted-foreground">1 Year</span>
+                                        <span className="text-xs font-medium">{product.warrantyBadgeTitle || "Warranty"}</span>
+                                        <span className="text-xs text-muted-foreground">{product.warrantyBadgeDesc || "1 Year"}</span>
                                     </div>
                                     <div className="flex flex-col items-center gap-1 text-center">
                                         <RotateCcw className="h-6 w-6 text-blue-500" />
-                                        <span className="text-xs font-medium">Easy Returns</span>
-                                        <span className="text-xs text-muted-foreground">30 Days</span>
+                                        <span className="text-xs font-medium">{product.returnBadgeTitle || "Easy Returns"}</span>
+                                        <span className="text-xs text-muted-foreground">{product.returnBadgeDesc || "30 Days"}</span>
                                     </div>
                                 </div>
                             </div>

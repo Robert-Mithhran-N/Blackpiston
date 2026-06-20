@@ -226,6 +226,12 @@ model Product {
   seoDescription   String?
   seoKeywords      String[]
   highlights       String[]
+  shippingBadgeTitle String?
+  shippingBadgeDesc  String?
+  warrantyBadgeTitle String?
+  warrantyBadgeDesc  String?
+  returnBadgeTitle   String?
+  returnBadgeDesc    String?
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
 

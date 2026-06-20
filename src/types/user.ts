@@ -42,6 +42,12 @@ export interface Product {
     stockQuantity?: number;
     sections?: ProductSection[];
     deliveryCharge?: number;
+    shippingBadgeTitle?: string;
+    shippingBadgeDesc?: string;
+    warrantyBadgeTitle?: string;
+    warrantyBadgeDesc?: string;
+    returnBadgeTitle?: string;
+    returnBadgeDesc?: string;
 }
 
 export type ProductCategory = string;

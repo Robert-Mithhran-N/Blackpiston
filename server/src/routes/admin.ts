@@ -199,6 +199,12 @@ const createProductSchema = z.object({
     seoDescription: z.string().optional().nullable(),
     seoKeywords: z.array(z.string()).optional().default([]),
     highlights: z.array(z.string()).optional().default([]),
+    shippingBadgeTitle: z.string().optional().nullable(),
+    shippingBadgeDesc: z.string().optional().nullable(),
+    warrantyBadgeTitle: z.string().optional().nullable(),
+    warrantyBadgeDesc: z.string().optional().nullable(),
+    returnBadgeTitle: z.string().optional().nullable(),
+    returnBadgeDesc: z.string().optional().nullable(),
 });
 
 // ============================================================
@@ -346,6 +352,12 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
                 seoDescription: data.seoDescription || null,
                 seoKeywords: data.seoKeywords || [],
                 highlights: data.highlights || [],
+                shippingBadgeTitle: data.shippingBadgeTitle || null,
+                shippingBadgeDesc: data.shippingBadgeDesc || null,
+                warrantyBadgeTitle: data.warrantyBadgeTitle || null,
+                warrantyBadgeDesc: data.warrantyBadgeDesc || null,
+                returnBadgeTitle: data.returnBadgeTitle || null,
+                returnBadgeDesc: data.returnBadgeDesc || null,
                 sections: {
                     create: data.sections.map((s: any, idx: number) => ({
                         title: s.title,
@@ -476,6 +488,14 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
         if ('seoDescription' in body) updateData.seoDescription = body.seoDescription || null;
         if ('seoKeywords' in body && Array.isArray(body.seoKeywords)) updateData.seoKeywords = body.seoKeywords;
         if ('highlights' in body && Array.isArray(body.highlights)) updateData.highlights = body.highlights;
+
+        // Trust badge fields
+        if ('shippingBadgeTitle' in body) updateData.shippingBadgeTitle = body.shippingBadgeTitle || null;
+        if ('shippingBadgeDesc' in body) updateData.shippingBadgeDesc = body.shippingBadgeDesc || null;
+        if ('warrantyBadgeTitle' in body) updateData.warrantyBadgeTitle = body.warrantyBadgeTitle || null;
+        if ('warrantyBadgeDesc' in body) updateData.warrantyBadgeDesc = body.warrantyBadgeDesc || null;
+        if ('returnBadgeTitle' in body) updateData.returnBadgeTitle = body.returnBadgeTitle || null;
+        if ('returnBadgeDesc' in body) updateData.returnBadgeDesc = body.returnBadgeDesc || null;
 
         const product = await prisma.product.update({
             where: { id },
