@@ -131,6 +131,7 @@ interface Props {
 export const AdminNotificationProvider = ({ children }: Props) => {
   const { token, isAuthenticated } = useAdminAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<AdminNotification[]>(loadNotifications);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const processedIdsRef = useRef<Set<string>>(new Set());
@@ -249,7 +250,7 @@ export const AdminNotificationProvider = ({ children }: Props) => {
       socket.off("connect", joinAdmin);
       hasJoinedRef.current = false;
     };
-  }, [isAuthenticated, token, queryClient, soundEnabled]);
+  }, [isAuthenticated, token, queryClient, soundEnabled, navigate]);
 
   return (
     <AdminNotificationContext.Provider

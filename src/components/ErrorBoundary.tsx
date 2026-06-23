@@ -39,9 +39,9 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
         sessionStorage.setItem('last-chunk-error-reload', now.toString());
         
         // Clear Cache Storage to force clean reload
-        if ('caches' in window) {
-          caches.keys()
-            .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+        if (window.caches) {
+          window.caches.keys()
+            .then((keys) => Promise.all(keys.map((key) => window.caches.delete(key))))
             .catch((err) => console.error("Error clearing caches on chunk failure:", err))
             .finally(() => {
               window.location.reload();

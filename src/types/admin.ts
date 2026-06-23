@@ -267,7 +267,7 @@ export interface RevenueDataPoint {
 export interface SalesDataPoint {
     period: string;
     unitsSold: number;
-    percentageSold: number;
+    percentageSold?: number;
 }
 
 export interface SalesData {
