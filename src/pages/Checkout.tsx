@@ -23,6 +23,7 @@ import {
     XCircle,
     ArrowLeft,
     Banknote,
+    ChevronDown,
 } from "lucide-react";
 
 import { useUserAuth } from "@/context/UserAuthContext";
@@ -44,6 +45,7 @@ const Checkout = () => {
     // State
     const [isProcessing, setIsProcessing] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState<"COD" | "ONLINE">("ONLINE");
+    const [isItemsExpanded, setIsItemsExpanded] = useState(false);
 
     // Coupon State
     const [couponCode, setCouponCode] = useState("");
@@ -507,15 +509,24 @@ const Checkout = () => {
                                             Shipping Address
                                         </h2>
                                     </div>
-                                    {user?.savedAddresses &&
-                                        user.savedAddresses.length > 0 && (
-                                            <select
-                                                className="text-xs md:text-sm border border-border/60 rounded-md px-2 py-1.5 bg-secondary/50 text-foreground max-w-[160px] md:max-w-none truncate focus:outline-none focus:ring-1 focus:ring-primary/30"
-                                                onChange={(e) => {
-                                                    const addr = user.savedAddresses.find(
-                                                        (a: any) => a.id === e.target.value
-                                                    );
-                                                    if (addr) {
+                                </div>
+
+                                {/* Visual Address Grid */}
+                                {user?.savedAddresses && user.savedAddresses.length > 0 && (
+                                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 mb-6">
+                                        {user.savedAddresses.map((addr: any) => {
+                                            const isSelected =
+                                                formData.fullName === addr.fullName &&
+                                                formData.phone === addr.phone &&
+                                                formData.addressLine === addr.addressLine1 &&
+                                                formData.city === addr.city &&
+                                                formData.state === addr.state &&
+                                                formData.pincode === addr.pincode;
+
+                                            return (
+                                                <div
+                                                    key={addr.id}
+                                                    onClick={() => {
                                                         setFormData((prev) => ({
                                                             ...prev,
                                                             fullName: addr.fullName,
@@ -525,21 +536,34 @@ const Checkout = () => {
                                                             state: addr.state,
                                                             pincode: addr.pincode,
                                                         }));
-                                                    }
-                                                }}
-                                            >
-                                                <option value="">
-                                                    Saved Addresses
-                                                </option>
-                                                {user.savedAddresses.map((addr: any) => (
-                                                    <option key={addr.id} value={addr.id}>
-                                                        {addr.label} - {addr.addressLine1},{" "}
-                                                        {addr.city}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        )}
-                                </div>
+                                                    }}
+                                                    className={`cursor-pointer rounded-xl p-4 border-2 transition-all duration-200 bg-card/45 hover:bg-card/75 text-left relative ${
+                                                        isSelected
+                                                            ? "border-primary bg-primary/5 ring-1 ring-primary/20 shadow-lg shadow-primary/5"
+                                                            : "border-border/60 hover:border-border"
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <span className="font-semibold text-xs capitalize flex items-center gap-1.5 text-foreground">
+                                                            <MapPin className="w-3.5 h-3.5 text-primary" />
+                                                            {addr.label || "Address"}
+                                                        </span>
+                                                        {addr.isDefault && (
+                                                            <span className="text-[9px] bg-primary/20 text-primary border border-primary/30 px-1.5 py-0.5 rounded font-bold">
+                                                                DEFAULT
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-xs font-semibold text-foreground line-clamp-1">{addr.fullName}</p>
+                                                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                                        {addr.addressLine1}, {addr.city}, {addr.state} - {addr.pincode}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground mt-1.5">Tel: {addr.phone}</p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
 
                                 {/* Address Form */}
                                 <form
@@ -720,10 +744,10 @@ const Checkout = () => {
                                 <div className="space-y-2.5 md:space-y-3">
                                     {/* ── Pay Online (Razorpay) ── */}
                                     <label
-                                        className={`flex items-start gap-3 p-3.5 md:p-4 border rounded-xl md:rounded-lg cursor-pointer transition-all duration-200 ${
+                                        className={`flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
                                             paymentMethod === "ONLINE"
-                                                ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20 shadow-sm shadow-primary/5"
-                                                : "border-border/50 hover:border-border"
+                                                ? "border-primary bg-primary/5 ring-1 ring-primary/20 shadow-lg shadow-primary/5"
+                                                : "border-border/60 bg-card/25 hover:border-border hover:bg-card/45"
                                         }`}
                                     >
                                         <input
@@ -736,39 +760,39 @@ const Checkout = () => {
                                             disabled={isPaymentInProgress}
                                         />
                                         <div
-                                            className="checkout-radio-dot mt-0.5 shrink-0"
+                                            className="checkout-radio-dot mt-1 shrink-0"
                                             data-checked={paymentMethod === "ONLINE"}
                                         />
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center justify-between">
-                                                <p className="text-sm md:text-base font-medium text-foreground">
+                                                <p className="text-sm md:text-base font-bold text-foreground flex items-center gap-2">
+                                                    <CreditCard className="w-4 h-4 text-primary" />
                                                     Pay Online
                                                 </p>
-                                                <div className="flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full">
+                                                <div className="flex items-center gap-1 bg-green-500/10 px-2 py-0.5 rounded-full border border-green-500/20">
                                                     <Shield className="w-3 h-3 text-green-500" />
-                                                    <span className="text-[10px] md:text-xs text-green-500 font-semibold">
+                                                    <span className="text-[9px] md:text-xs text-green-500 font-bold uppercase">
                                                         Secure
                                                     </span>
                                                 </div>
                                             </div>
-                                            <p className="text-xs md:text-sm text-muted-foreground mt-0.5 leading-relaxed">
-                                                Card, UPI, Netbanking, Wallets — powered by Razorpay
+                                            <p className="text-xs md:text-sm text-muted-foreground mt-1 leading-relaxed">
+                                                UPI, Cards (Visa, Mastercard, RuPay), Netbanking, Wallets
                                             </p>
-                                            <div className="flex items-center gap-1.5 mt-1.5 text-[10px] md:text-xs text-muted-foreground/70">
-                                                <Smartphone className="w-3 h-3" />
-                                                <span>
-                                                    Works on all devices including mobile & PWA
-                                                </span>
+                                            <div className="flex flex-wrap gap-1.5 mt-2">
+                                                <span className="text-[10px] bg-muted/80 text-foreground px-2 py-0.5 rounded font-mono border border-border/40">UPI</span>
+                                                <span className="text-[10px] bg-muted/80 text-foreground px-2 py-0.5 rounded font-mono border border-border/40">CARDS</span>
+                                                <span className="text-[10px] bg-muted/80 text-foreground px-2 py-0.5 rounded font-mono border border-border/40">NETBANKING</span>
                                             </div>
                                         </div>
                                     </label>
 
                                     {/* ── Cash on Delivery ── */}
                                     <label
-                                        className={`flex items-start gap-3 p-3.5 md:p-4 border rounded-xl md:rounded-lg cursor-pointer transition-all duration-200 ${
+                                        className={`flex items-start gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
                                             paymentMethod === "COD"
-                                                ? "border-primary/50 bg-primary/5 ring-1 ring-primary/20 shadow-sm shadow-primary/5"
-                                                : "border-border/50 hover:border-border"
+                                                ? "border-primary bg-primary/5 ring-1 ring-primary/20 shadow-lg shadow-primary/5"
+                                                : "border-border/60 bg-card/25 hover:border-border hover:bg-card/45"
                                         }`}
                                     >
                                         <input
@@ -781,18 +805,18 @@ const Checkout = () => {
                                             disabled={isPaymentInProgress}
                                         />
                                         <div
-                                            className="checkout-radio-dot mt-0.5 shrink-0"
+                                            className="checkout-radio-dot mt-1 shrink-0"
                                             data-checked={paymentMethod === "COD"}
                                         />
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <p className="text-sm md:text-base font-medium text-foreground">
-                                                    Cash on Delivery
+                                                <p className="text-sm md:text-base font-bold text-foreground flex items-center gap-2">
+                                                    <Banknote className="w-4 h-4 text-primary" />
+                                                    Cash on Delivery (COD)
                                                 </p>
-                                                <Banknote className="w-4 h-4 text-muted-foreground/50 hidden md:block" />
                                             </div>
-                                            <p className="text-xs md:text-sm text-muted-foreground mt-0.5">
-                                                Pay with cash when your order is delivered.
+                                            <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                                                Pay in cash or UPI when your parcel is delivered at your door.
                                             </p>
                                         </div>
                                     </label>
@@ -874,7 +898,20 @@ const Checkout = () => {
                                 </div>
 
                                 {/* ── Cart Items ── */}
-                                <div className="space-y-3 md:space-y-4 max-h-[240px] md:max-h-[300px] overflow-y-auto pr-1 md:pr-2 custom-scrollbar border-b border-border/40 md:border-border pb-3 md:pb-4">
+                                <div className="md:hidden">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsItemsExpanded(!isItemsExpanded)}
+                                        className="flex items-center justify-between w-full py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground border-b border-border/40 mb-3"
+                                    >
+                                        <span>{isItemsExpanded ? "Hide item details" : "Show item details"} ({cartCount})</span>
+                                        <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isItemsExpanded ? "rotate-180" : ""}`} />
+                                    </button>
+                                </div>
+
+                                <div className={`space-y-3 md:space-y-4 max-h-[240px] md:max-h-[300px] overflow-y-auto pr-1 md:pr-2 custom-scrollbar border-b border-border/40 md:border-border pb-3 md:pb-4 ${
+                                    isItemsExpanded ? "block" : "hidden md:block"
+                                }`}>
                                     {cartItems.map((item, index) => {
                                         const variant =
                                             item.variantId && item.product.variants

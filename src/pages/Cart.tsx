@@ -13,6 +13,7 @@ import {
   Package,
   ShieldCheck,
   Truck,
+  AlertCircle,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { verifyStock } from "@/lib/api";
@@ -22,6 +23,15 @@ const Cart = () => {
   const { cartItems, cartCount, cartTotal, cartShippingTotal, removeFromCart, updateQuantity, clearCart } = useCart();
   const [isVerifying, setIsVerifying] = useState(false);
   const navigate = useNavigate();
+
+  const hasStockError = cartItems.some(item => {
+    const variant = item.variantId && item.product.variants
+      ? item.product.variants.find(v => v.id === item.variantId)
+      : null;
+    const stock = variant ? variant.stockQuantity : (item.product.stockQuantity ?? 0);
+    const inStock = variant ? variant.stockQuantity > 0 : item.product.inStock;
+    return !inStock || stock <= 0 || item.quantity > stock;
+  });
 
   const handleCheckout = async () => {
     setIsVerifying(true);
@@ -144,6 +154,35 @@ const Cart = () => {
                             <span className="text-green-500 font-medium">FREE</span>
                           )}
                         </p>
+
+                        {(() => {
+                          const stock = variant ? variant.stockQuantity : (item.product.stockQuantity ?? 0);
+                          const inStock = variant ? variant.stockQuantity > 0 : item.product.inStock;
+                          const isLowStock = inStock && stock > 0 && stock <= 5;
+                          const isOutOfStock = !inStock || stock <= 0;
+                          const isInsufficient = inStock && stock > 0 && item.quantity > stock;
+
+                          return (
+                            <div className="flex flex-wrap gap-2 mt-1.5">
+                              {isOutOfStock && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20">
+                                  Out of Stock
+                                </span>
+                              )}
+                              {isInsufficient && !isOutOfStock && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-red-500 bg-red-500/10 px-2 py-0.5 rounded-md border border-red-500/20">
+                                  Only {stock} available (Requested {item.quantity})
+                                </span>
+                              )}
+                              {isLowStock && !isInsufficient && (
+                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">
+                                  Low Stock (Only {stock} left)
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+
                         <p className="text-sm font-bold text-primary mt-2">
                           ₹{unitPrice.toLocaleString()}
                         </p>
@@ -229,10 +268,20 @@ const Cart = () => {
                   size="lg"
                   className="w-full bg-gradient-to-r from-primary to-orange-500 hover:opacity-90 h-12 text-lg"
                   onClick={handleCheckout}
-                  disabled={isVerifying}
+                  disabled={isVerifying || hasStockError}
                 >
                   {isVerifying ? 'Verifying Stock...' : 'Proceed to Checkout'}
                 </Button>
+
+                {hasStockError && (
+                  <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-xs text-red-500 flex items-start gap-2 mt-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-500" />
+                    <div>
+                      <p className="font-semibold text-red-400">Checkout Blocked</p>
+                      <p className="text-muted-foreground mt-0.5">Please update or remove items with insufficient stock to proceed.</p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pt-2">
                   <div className="flex items-center gap-1">

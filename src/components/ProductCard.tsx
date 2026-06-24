@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Star, ShoppingCart, Eye, ArrowRight } from "lucide-react";
 import { Product } from "@/types/user";
+import { getResponsiveImageUrl } from "@/lib/imageUtils";
 
 interface ProductCardProps {
     product: Product;
@@ -61,7 +62,7 @@ const ProductCard = ({ product, variant = "default", onAddToCart }: ProductCardP
                 <div className="relative overflow-hidden aspect-[4/3] bg-gradient-to-br from-muted to-muted/50">
                     {/* Product Image */}
                     <img
-                        src={product.image}
+                        src={getResponsiveImageUrl(product.image, 300, 300)}
                         alt={product.name}
                         className={`w-full h-full object-cover transition-all duration-700 ease-out
               ${isHovered ? "scale-110 brightness-90" : "scale-100 brightness-100"}

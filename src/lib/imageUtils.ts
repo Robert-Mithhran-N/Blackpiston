@@ -31,16 +31,23 @@ export const handleThumbnailError = (e: React.SyntheticEvent<HTMLImageElement>) 
  */
 export function getResponsiveImageUrl(
   url: string,
-  width: number = 400
+  width?: number,
+  height?: number,
+  crop: string = "fill"
 ): string {
   if (!url || !url.includes("cloudinary.com")) return url;
 
   // If URL already has transforms, don't double-apply
-  if (url.includes("/w_")) return url;
+  if (url.includes("/w_") || url.includes("/h_")) return url;
 
-  // Insert width transform before the version segment
+  const transforms: string[] = ["f_auto", "q_auto"];
+  if (width) transforms.push(`w_${width}`);
+  if (height) transforms.push(`h_${height}`);
+  if (crop && (width || height)) transforms.push(`c_${crop}`);
+
+  // Insert transforms before the version segment
   return url.replace(
     "/upload/",
-    `/upload/w_${width},q_auto,f_auto/`
+    `/upload/${transforms.join(",")}/`
   );
 }

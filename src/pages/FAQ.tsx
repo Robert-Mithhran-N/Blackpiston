@@ -1,4 +1,10 @@
 import PagePlaceholder from "@/components/layout/PagePlaceholder";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 const questions = [
   {
@@ -28,13 +34,23 @@ const FAQ = () => {
       primaryAction={{ label: "Talk with us", to: "/contact" }}
       secondaryAction={{ label: "View services", to: "/garage" }}
     >
-      <div className="grid gap-6 md:grid-cols-2">
-        {questions.map((item) => (
-          <div key={item.q} className="rounded-xl border border-border bg-card/60 p-5 shadow-sm">
-            <p className="text-sm font-semibold text-foreground">{item.q}</p>
-            <p className="mt-3 text-sm text-muted-foreground">{item.a}</p>
-          </div>
-        ))}
+      <div className="max-w-3xl mx-auto w-full">
+        <Accordion type="single" collapsible className="w-full space-y-4">
+          {questions.map((item, index) => (
+            <AccordionItem
+              key={index}
+              value={`item-${index}`}
+              className="border border-border/80 bg-card/45 rounded-xl px-5 py-1.5 shadow-sm transition-all duration-300 hover:border-primary/40 hover:bg-card/70 data-[state=open]:border-primary/50 data-[state=open]:bg-card/90"
+            >
+              <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline py-4 text-left">
+                {item.q}
+              </AccordionTrigger>
+              <AccordionContent className="text-muted-foreground leading-relaxed pt-1 pb-4">
+                {item.a}
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
       </div>
     </PagePlaceholder>
   );

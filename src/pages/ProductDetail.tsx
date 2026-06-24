@@ -30,6 +30,8 @@ import { Product, ProductVariant } from "@/types/user";
 import { useCart } from "@/context/CartContext";
 import { toast } from "sonner";
 import { useStockUpdates, StockUpdatePayload } from "@/hooks/useStockUpdates";
+import { getResponsiveImageUrl } from "@/lib/imageUtils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Product specifications — uses real data from the API, falls back to defaults
 const getProductSpecs = (product: Product) => {
@@ -75,6 +77,8 @@ const ProductDetail = () => {
     const [product, setProduct] = useState<Product | null>(null);
     const [rawVariants, setRawVariants] = useState<ProductVariant[]>([]);
     const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+    const [youMayAlsoLike, setYouMayAlsoLike] = useState<Product[]>([]);
+    const [bundleChecked, setBundleChecked] = useState<boolean[]>([true, true]);
 
     // Variant selection state
     const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -139,8 +143,8 @@ const ProductDetail = () => {
                 };
                 setProduct(mapped);
 
-                // Fetch related products by brand/tags
-                fetchProducts({ limit: 8, featured: true })
+                // Fetch related products by category
+                fetchProducts({ limit: 8, category: p.categorySlug || p.category?.slug || undefined })
                     .then((catData) => {
                         const related = (catData.products || [])
                             .filter((r: any) => r.id !== p.id)
@@ -164,6 +168,57 @@ const ProductDetail = () => {
                         setRelatedProducts(related);
                     })
                     .catch(() => setRelatedProducts([]));
+
+                // Fetch "You May Also Like" (featured products from other categories/tags)
+                fetchProducts({ limit: 12, featured: true })
+                    .then((featuredData) => {
+                        const items = (featuredData.products || [])
+                            .filter((r: any) => r.id !== p.id && (r.categorySlug || r.category?.slug) !== (p.categorySlug || p.category?.slug))
+                            .slice(0, 6)
+                            .map((r: any): Product => {
+                                const rImg = r.thumbnailUrl || r.images?.find((i: any) => i.isPrimary)?.url || r.images?.[0]?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
+                                return {
+                                    id: r.id,
+                                    name: r.name,
+                                    category: r.categorySlug || r.category?.slug || "accessories",
+                                    price: r.price,
+                                    offerPrice: r.offerPrice || undefined,
+                                    image: rImg,
+                                    rating: r.averageRating || r.rating || 0,
+                                    description: r.description || "",
+                                    inStock: r.inStock !== false && (r.stockQuantity === undefined || r.stockQuantity > 0),
+                                    featured: r.isFeatured || false,
+                                    isTopOffer: false,
+                                };
+                            });
+
+                        // Fallback: if other categories have too few products, just list any featured products
+                        if (items.length < 3) {
+                            const generalItems = (featuredData.products || [])
+                                .filter((r: any) => r.id !== p.id)
+                                .slice(0, 6)
+                                .map((r: any): Product => {
+                                    const rImg = r.thumbnailUrl || r.images?.find((i: any) => i.isPrimary)?.url || r.images?.[0]?.url || "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=400&fit=crop";
+                                    return {
+                                        id: r.id,
+                                        name: r.name,
+                                        category: r.categorySlug || r.category?.slug || "accessories",
+                                        price: r.price,
+                                        offerPrice: r.offerPrice || undefined,
+                                        image: rImg,
+                                        rating: r.averageRating || r.rating || 0,
+                                        description: r.description || "",
+                                        inStock: r.inStock !== false && (r.stockQuantity === undefined || r.stockQuantity > 0),
+                                        featured: r.isFeatured || false,
+                                        isTopOffer: false,
+                                    };
+                                });
+                            setYouMayAlsoLike(generalItems);
+                        } else {
+                            setYouMayAlsoLike(items);
+                        }
+                    })
+                    .catch(() => setYouMayAlsoLike([]));
 
             })
             .catch((err) => {
@@ -310,6 +365,30 @@ const ProductDetail = () => {
     const handleBuyNow = () => {
         handleAddToCart();
         navigate("/cart");
+    };
+
+    const handleAddBundleToCart = () => {
+        if (!product) return;
+
+        let count = 0;
+        // 1. Add current product
+        if (bundleChecked[0]) {
+            addToCart({ ...product, price: effectivePrice }, 1, selectedVariant?.id, variantLabel);
+            count++;
+        }
+
+        // 2. Add related product
+        if (bundleChecked[1] && relatedProducts[0]) {
+            const relPrice = relatedProducts[0].offerPrice || relatedProducts[0].price;
+            addToCart({ ...relatedProducts[0], price: relPrice }, 1);
+            count++;
+        }
+
+        if (count > 0) {
+            toast.success("Bundle added to cart!", {
+                description: `Successfully added ${count} items to your shopping cart.`,
+            });
+        }
     };
 
     const handleShare = () => {
@@ -461,7 +540,7 @@ const ProductDetail = () => {
                                     )}
                                     <img
                                         key={selectedImage}
-                                        src={images[selectedImage] || images[0]}
+                                        src={getResponsiveImageUrl(images[selectedImage] || images[0], 800, 800)}
                                         alt={product.name}
                                         className="w-full h-full object-cover animate-product-fade-in group-hover:scale-105 transition-transform duration-500"
                                         onError={(e) => {
@@ -519,7 +598,7 @@ const ProductDetail = () => {
                                                     ${selectedImage === i ? "border-primary ring-2 ring-primary/30" : "border-border hover:border-primary/50"}`}
                                             >
                                                 <img
-                                                    src={img}
+                                                    src={getResponsiveImageUrl(img, 200, 200)}
                                                     alt={`${product.name} ${i + 1}`}
                                                     className="w-full h-full object-cover"
                                                     onError={(e) => {
@@ -822,6 +901,103 @@ const ProductDetail = () => {
                         </Card>
                     )}
 
+                    {/* Frequently Bought Together */}
+                    {product && relatedProducts.length > 0 && (
+                        <Card className="mt-8 border-2 border-primary/20 bg-gradient-to-br from-card to-card/60">
+                            <CardContent className="p-6">
+                                <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                                    <Package className="h-6 w-6 text-primary" />
+                                    Frequently Bought Together
+                                </h2>
+
+                                <div className="flex flex-col lg:flex-row items-center gap-6 justify-between">
+                                    {/* Products Row */}
+                                    <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 flex-1">
+                                        {/* Current Product */}
+                                        <div className="flex items-center gap-4 bg-muted/40 p-4 rounded-xl border border-border/50 max-w-[280px]">
+                                            <Checkbox
+                                                checked={bundleChecked[0]}
+                                                disabled
+                                                className="border-primary/40 data-[state=checked]:bg-primary/80"
+                                            />
+                                            <div className="flex items-center gap-3">
+                                                <img
+                                                    src={getResponsiveImageUrl(product.image, 100, 100)}
+                                                    alt={product.name}
+                                                    className="w-16 h-16 object-cover rounded-lg border border-border"
+                                                />
+                                                <div className="min-w-0">
+                                                    <p className="font-semibold text-xs text-foreground line-clamp-1">{product.name}</p>
+                                                    <p className="text-xs text-muted-foreground mt-0.5 capitalize">{product.category}</p>
+                                                    <p className="text-sm font-bold text-primary mt-1">₹{effectivePrice.toLocaleString()}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Plus separator */}
+                                        <Plus className="h-6 w-6 text-muted-foreground shrink-0" />
+
+                                        {/* Related Product 1 */}
+                                        <div className="flex items-center gap-4 bg-muted/40 p-4 rounded-xl border border-border/50 max-w-[280px]">
+                                            <Checkbox
+                                                checked={bundleChecked[1]}
+                                                onCheckedChange={(checked) => setBundleChecked([true, !!checked])}
+                                                className="border-primary/40 data-[state=checked]:bg-primary/80"
+                                            />
+                                            <div className="flex items-center gap-3">
+                                                <img
+                                                    src={getResponsiveImageUrl(relatedProducts[0].image, 100, 100)}
+                                                    alt={relatedProducts[0].name}
+                                                    className="w-16 h-16 object-cover rounded-lg border border-border"
+                                                />
+                                                <div className="min-w-0">
+                                                    <p className="font-semibold text-xs text-foreground line-clamp-1">{relatedProducts[0].name}</p>
+                                                    <p className="text-xs text-muted-foreground mt-0.5 capitalize">{relatedProducts[0].category}</p>
+                                                    <p className="text-sm font-bold text-primary mt-1">₹{(relatedProducts[0].offerPrice || relatedProducts[0].price).toLocaleString()}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Bundle Pricing / Checkout Box */}
+                                    <div className="w-full lg:w-[260px] bg-muted/30 p-5 rounded-xl border border-border/60 text-center lg:text-left shrink-0">
+                                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">Bundle Total</p>
+                                        <div className="flex items-baseline justify-center lg:justify-start gap-2 mt-1">
+                                            <span className="text-2xl font-bold text-primary">
+                                                ₹{(
+                                                    effectivePrice +
+                                                    (bundleChecked[1] ? (relatedProducts[0].offerPrice || relatedProducts[0].price) : 0)
+                                                ).toLocaleString()}
+                                            </span>
+                                            {bundleChecked[1] && (
+                                                <span className="text-xs text-muted-foreground line-through">
+                                                    ₹{(
+                                                        originalPrice +
+                                                        relatedProducts[0].price
+                                                    ).toLocaleString()}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {bundleChecked[1] && (
+                                            <span className="inline-block text-[10px] text-green-500 font-bold bg-green-500/10 px-2 py-0.5 rounded-full mt-1.5">
+                                                Save ₹{(
+                                                    (originalPrice - effectivePrice) +
+                                                    (relatedProducts[0].price - (relatedProducts[0].offerPrice || relatedProducts[0].price))
+                                                ).toLocaleString()}!
+                                            </span>
+                                        )}
+                                        <Button
+                                            onClick={handleAddBundleToCart}
+                                            className="w-full bg-gradient-to-r from-primary to-orange-500 hover:opacity-90 mt-4 text-xs font-bold"
+                                        >
+                                            Add Bundle to Cart
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
                     {/* Related Products */}
                     {relatedProducts.length > 0 && (
                         <section className="mt-16">
@@ -833,6 +1009,23 @@ const ProductDetail = () => {
                             </div>
                             <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
                                 {relatedProducts.map((p) => (
+                                    <ProductCard key={p.id} product={p} />
+                                ))}
+                            </div>
+                        </section>
+                    )}
+
+                    {/* You May Also Like */}
+                    {youMayAlsoLike.length > 0 && (
+                        <section className="mt-16">
+                            <div className="flex items-center justify-between mb-8">
+                                <h2 className="text-2xl font-bold">You May Also Like</h2>
+                                <Link to="/shop">
+                                    <Button variant="outline">View All</Button>
+                                </Link>
+                            </div>
+                            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+                                {youMayAlsoLike.map((p) => (
                                     <ProductCard key={p.id} product={p} />
                                 ))}
                             </div>
