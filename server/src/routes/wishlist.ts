@@ -13,7 +13,7 @@ function authenticateToken(req: Request, res: Response, next: Function) {
 
     const token = authHeader.split(' ')[1];
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as { userId: string; role: string };
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string; role: string };
         (req as any).userId = decoded.userId;
         (req as any).userRole = decoded.role;
         next();

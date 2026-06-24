@@ -80,7 +80,7 @@ export function initSocketServer(httpServer: HttpServer): Server {
             try {
                 const decoded = jwt.verify(
                     token,
-                    process.env.JWT_SECRET || 'default-secret'
+                    process.env.JWT_SECRET as string
                 ) as { userId: string; role: string };
 
                 if (['ADMIN', 'STAFF', 'super-admin'].includes(decoded.role)) {

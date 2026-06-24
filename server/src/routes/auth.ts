@@ -7,6 +7,25 @@ import { sendWelcomeEmail, sendPasswordResetEmail } from '../utils/emailService.
 import crypto from 'crypto';
 
 import { ObjectId } from 'bson';
+import { z } from 'zod';
+
+const registerSchema = z.object({
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+    phone: z.string().optional(),
+    address: z.object({
+        line1: z.string().optional(),
+        city: z.string().optional(),
+        state: z.string().optional(),
+        pincode: z.string().optional()
+    }).optional()
+});
+
+const loginSchema = z.object({
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(1, 'Password is required')
+});
 
 const router = Router();
 
@@ -19,7 +38,14 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 // Register new user
 router.post('/register', async (req: Request, res: Response) => {
     try {
-        const { name, email, password, phone, address } = req.body;
+        const validation = registerSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: validation.error.format()
+            });
+        }
+        const { name, email, password, phone, address } = validation.data;
 
         // Check if user already exists
         const existingUser = await prisma.user.findUnique({
@@ -75,7 +101,7 @@ router.post('/register', async (req: Request, res: Response) => {
         // Generate JWT token
         const token = jwt.sign(
             { userId: user.id, role: user.role },
-            process.env.JWT_SECRET || 'default-secret',
+            process.env.JWT_SECRET!,
             jwtSignOptions
         );
 
@@ -96,7 +122,14 @@ router.post('/register', async (req: Request, res: Response) => {
 // Login
 router.post('/login', async (req: Request, res: Response) => {
     try {
-        const { email, password } = req.body;
+        const validation = loginSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: validation.error.format()
+            });
+        }
+        const { email, password } = validation.data;
 
         // Find user
         const user = await prisma.user.findUnique({
@@ -134,7 +167,7 @@ router.post('/login', async (req: Request, res: Response) => {
         // Generate JWT token
         const token = jwt.sign(
             { userId: user.id, role: user.role },
-            process.env.JWT_SECRET || 'default-secret',
+            process.env.JWT_SECRET!,
             jwtSignOptions
         );
 
@@ -351,7 +384,7 @@ router.post('/google', async (req: Request, res: Response) => {
         // Generate JWT token
         const token = jwt.sign(
             { userId: user.id, role: user.role },
-            process.env.JWT_SECRET || 'default-secret',
+            process.env.JWT_SECRET!,
             jwtSignOptions
         );
 
@@ -409,7 +442,7 @@ router.post('/admin/login', async (req: Request, res: Response) => {
         // Generate JWT token
         const token = jwt.sign(
             { userId: user.id, role: user.role },
-            process.env.JWT_SECRET || 'default-secret',
+            process.env.JWT_SECRET!,
             jwtSignOptions
         );
 
@@ -439,7 +472,7 @@ router.get('/me', async (req: Request, res: Response) => {
         }
 
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as { userId: string };
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
 
         const user = await prisma.user.findUnique({
             where: { id: decoded.userId },

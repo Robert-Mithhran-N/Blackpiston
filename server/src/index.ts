@@ -25,14 +25,38 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
+// Validate JWT_SECRET on startup
+if (!process.env.JWT_SECRET) {
+    console.error("❌ CRITICAL: JWT_SECRET environment variable is missing!");
+    process.exit(1);
+}
+
 const app = express();
 const httpServer = createServer(app);
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// Lock CORS to whitelisted domains, localhost, and Vercel subdomains
+const corsWhitelist = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : [];
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, POSTMAN, or cURL requests)
+    if (!origin) return callback(null, true);
+
+    const isWhitelisted = corsWhitelist.includes(origin);
+    const isLocalhost = origin.startsWith('http://localhost:') || 
+                        origin.startsWith('http://127.0.0.1:') || 
+                        origin.startsWith('https://localhost:') || 
+                        origin.startsWith('https://127.0.0.1:') || 
+                        origin.startsWith('http://192.168.');
+    const isVercelApp = origin.endsWith('.vercel.app');
+
+    if (isWhitelisted || isLocalhost || isVercelApp) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 

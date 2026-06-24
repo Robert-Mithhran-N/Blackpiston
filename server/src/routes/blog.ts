@@ -1,8 +1,34 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
+import jwt from 'jsonwebtoken';
 import prisma from '../config/database.js';
 
 const router = Router();
+
+function authenticateAdmin(req: Request, res: Response, next: Function) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'No token provided' });
+    }
+
+    try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+            userId: string;
+            role: string;
+        };
+
+        if (!['ADMIN', 'STAFF'].includes(decoded.role)) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        (req as any).userId = decoded.userId;
+        (req as any).userRole = decoded.role;
+        next();
+    } catch {
+        return res.status(401).json({ error: 'Invalid token' });
+    }
+}
 
 // Zod Validation Schema
 const blogSchema = z.object({
@@ -16,7 +42,7 @@ const blogSchema = z.object({
 });
 
 // GET all blog posts (Admin)
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { page = '1', limit = '20', search, category, status } = req.query;
     const pageNum = parseInt(page as string);
@@ -59,7 +85,7 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 // POST new blog post
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const parseResult = blogSchema.safeParse(req.body);
     if (!parseResult.success) {
@@ -86,7 +112,7 @@ router.post('/', async (req: Request, res: Response) => {
 });
 
 // PUT update blog post
-router.put('/:id', async (req: Request, res: Response) => {
+router.put('/:id', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const parseResult = blogSchema.partial().safeParse(req.body);
@@ -109,7 +135,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 });
 
 // DELETE blog post
-router.delete('/:id', async (req: Request, res: Response) => {
+router.delete('/:id', authenticateAdmin, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await prisma.blog.delete({ where: { id } });

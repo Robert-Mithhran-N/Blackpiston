@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { z } from 'zod';
 import prisma from '../config/database.js';
 import { getRazorpayKeyId } from '../config/razorpay.js';
 import { ObjectId } from 'bson';
@@ -31,7 +32,7 @@ function authenticateToken(req: Request, res: Response, next: Function) {
 
     const token = authHeader.split(' ')[1];
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
             userId: string;
             role: string;
         };
@@ -69,19 +70,54 @@ router.get('/config', (req: Request, res: Response) => {
     }
 });
 
+const createPaymentOrderSchema = z.object({
+    items: z.array(z.object({
+        productId: z.string().min(1, 'Product ID is required'),
+        variantId: z.string().optional().nullable(),
+        quantity: z.number().int().positive('Quantity must be a positive integer'),
+    })).min(1, 'At least one item is required'),
+    shippingAddress: z.object({
+        name: z.string().min(1, 'Shipping name is required'),
+        phone: z.string().min(1, 'Shipping phone is required'),
+        street: z.string().min(1, 'Shipping street is required'),
+        city: z.string().min(1, 'Shipping city is required'),
+        state: z.string().min(1, 'Shipping state is required'),
+        pincode: z.string().min(1, 'Shipping pincode is required'),
+        country: z.string().optional().nullable()
+    }),
+    billingAddress: z.object({
+        name: z.string().optional().nullable(),
+        phone: z.string().optional().nullable(),
+        street: z.string().optional().nullable(),
+        city: z.string().optional().nullable(),
+        state: z.string().optional().nullable(),
+        pincode: z.string().optional().nullable(),
+        country: z.string().optional().nullable()
+    }).optional().nullable(),
+    couponCode: z.string().optional().nullable()
+});
+
 // ============================================================
 // POST /create-order — Validate cart, create order, create Razorpay order
 // ============================================================
 
 router.post('/create-order', authenticateToken, async (req: Request, res: Response) => {
     try {
+        const validation = createPaymentOrderSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: validation.error.format()
+            });
+        }
+
         const userId = (req as any).userId;
         const {
-            items,            // [{ productId, variantId, quantity }]
+            items,
             shippingAddress,
             billingAddress,
             couponCode,
-        } = req.body;
+        } = validation.data;
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ error: 'No items provided' });
@@ -92,7 +128,12 @@ router.post('/create-order', authenticateToken, async (req: Request, res: Respon
         }
 
         // ── Step 1: Validate prices from database (NEVER trust frontend) ──
-        const { validatedItems, subtotal, shippingCost, errors: priceErrors } = await validateCartPrices(items);
+        const cartItemsInput = items.map(item => ({
+            productId: item.productId,
+            variantId: item.variantId || undefined,
+            quantity: item.quantity,
+        }));
+        const { validatedItems, subtotal, shippingCost, errors: priceErrors } = await validateCartPrices(cartItemsInput);
 
         if (priceErrors.length > 0) {
             return res.status(400).json({ error: 'Cart validation failed', details: priceErrors });

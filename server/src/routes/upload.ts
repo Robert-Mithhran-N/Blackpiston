@@ -15,7 +15,7 @@ function authenticateUpload(req: Request, res: Response, next: NextFunction) {
 
     try {
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
             userId: string;
             role: string;
         };
@@ -28,6 +28,14 @@ function authenticateUpload(req: Request, res: Response, next: NextFunction) {
     }
 }
 
+function authorizeAdminOrStaff(req: Request, res: Response, next: NextFunction) {
+    const role = (req as any).userRole;
+    if (!role || !['ADMIN', 'STAFF'].includes(role)) {
+        return res.status(403).json({ error: 'Admin or Staff access required' });
+    }
+    next();
+}
+
 // Helper to extract structured response from multer-cloudinary file
 function formatUploadedFile(file: Express.Multer.File) {
     return {
@@ -38,7 +46,7 @@ function formatUploadedFile(file: Express.Multer.File) {
 }
 
 // Upload single image
-router.post('/image', authenticateUpload, (req: Request, res: Response, next: NextFunction) => {
+router.post('/image', authenticateUpload, authorizeAdminOrStaff, (req: Request, res: Response, next: NextFunction) => {
     (req as any).uploadFolder = 'blackpiston/products';
     next();
 }, upload.single('image'), async (req: Request, res: Response) => {
@@ -60,7 +68,7 @@ router.post('/image', authenticateUpload, (req: Request, res: Response, next: Ne
 });
 
 // Upload multiple images (up to 5)
-router.post('/images', authenticateUpload, (req: Request, res: Response, next: NextFunction) => {
+router.post('/images', authenticateUpload, authorizeAdminOrStaff, (req: Request, res: Response, next: NextFunction) => {
     (req as any).uploadFolder = 'blackpiston/products';
     next();
 }, upload.array('images', 5), async (req: Request, res: Response) => {
@@ -103,7 +111,7 @@ router.post('/avatar', authenticateUpload, (req: Request, res: Response, next: N
 });
 
 // Upload category image
-router.post('/category', authenticateUpload, (req: Request, res: Response, next: NextFunction) => {
+router.post('/category', authenticateUpload, authorizeAdminOrStaff, (req: Request, res: Response, next: NextFunction) => {
     (req as any).uploadFolder = 'blackpiston/categories';
     next();
 }, upload.single('image'), async (req: Request, res: Response) => {
@@ -124,7 +132,7 @@ router.post('/category', authenticateUpload, (req: Request, res: Response, next:
 });
 
 // Upload banner image
-router.post('/banner', authenticateUpload, (req: Request, res: Response, next: NextFunction) => {
+router.post('/banner', authenticateUpload, authorizeAdminOrStaff, (req: Request, res: Response, next: NextFunction) => {
     (req as any).uploadFolder = 'blackpiston/banners';
     next();
 }, upload.single('image'), async (req: Request, res: Response) => {
@@ -145,7 +153,7 @@ router.post('/banner', authenticateUpload, (req: Request, res: Response, next: N
 });
 
 // Delete an image from Cloudinary by public_id
-router.delete('/image/:publicId(*)', authenticateUpload, async (req: Request, res: Response) => {
+router.delete('/image/:publicId(*)', authenticateUpload, authorizeAdminOrStaff, async (req: Request, res: Response) => {
     try {
         const publicId = req.params.publicId;
         if (!publicId) {

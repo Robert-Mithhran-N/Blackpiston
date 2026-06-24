@@ -21,7 +21,7 @@ function authenticateAdmin(req: Request, res: Response, next: Function) {
 
     try {
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default-secret') as {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
             userId: string;
             role: string;
         };
@@ -207,6 +207,8 @@ const createProductSchema = z.object({
     returnBadgeDesc: z.string().optional().nullable(),
 });
 
+const updateProductSchema = createProductSchema.partial();
+
 // ============================================================
 // Categories Management — REMOVED (using tags instead)
 // Stub routes return informative messages
@@ -380,7 +382,13 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
 router.put('/products/:id', authenticateAdmin, async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const body = req.body;
+        
+        const parseResult = updateProductSchema.safeParse(req.body);
+        if (!parseResult.success) {
+            const errors = parseResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`);
+            return res.status(400).json({ error: 'Validation failed', details: errors });
+        }
+        const body = parseResult.data;
 
 
         // Helper: convert to number or null

@@ -240,6 +240,9 @@ model Product {
   reviews   Review[]
   sections  ProductSection[]
 
+  @@index([isActive])
+  @@index([isFeatured])
+  @@index([tagStrings])
   @@map("products")
 }
 
@@ -341,6 +344,9 @@ model Order {
   couponUsages  CouponUsage[]
   returnRequest ReturnRequest?
 
+  @@index([userId])
+  @@index([orderStatus])
+  @@index([razorpayOrderId])
   @@map("orders")
 }
 
@@ -616,6 +622,8 @@ model ServiceBooking {
   updatedAt         DateTime               @updatedAt
   completedAt       DateTime?
 
+  @@index([userId])
+  @@index([appointmentDate])
   @@map("service_bookings")
 }
 
@@ -637,6 +645,8 @@ model Notification {
   metadata      Json?
   createdAt     DateTime         @default(now())
 
+  @@index([recipientId])
+  @@index([createdAt])
   @@map("notifications")
 }
 
