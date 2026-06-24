@@ -775,6 +775,86 @@ router.post('/:orderId/cancel', authenticateToken, async (req: Request, res: Res
     }
 });
 
+// Admin: Record COD Payment Received
+// IMPORTANT: This must come BEFORE the /:orderId catch-all route
+router.patch('/admin/:orderId/cod-received', authenticateToken, async (req: Request, res: Response) => {
+    try {
+        const userRole = (req as any).userRole;
+        const userId = (req as any).userId;
+
+        if (!['ADMIN', 'STAFF'].includes(userRole)) {
+            return res.status(403).json({ error: 'Admin access required' });
+        }
+
+        const { orderId } = req.params;
+
+        // 1. Fetch order by either BSON ID or Order Number
+        const isObjectId = /^[a-fA-F0-9]{24}$/.test(orderId);
+        const order = await prisma.order.findFirst({
+            where: isObjectId ? { id: orderId } : { orderNumber: orderId },
+            include: { payment: true }
+        });
+
+        if (!order) {
+            return res.status(404).json({ error: 'Order not found' });
+        }
+
+        if (order.paymentMethod !== 'COD') {
+            return res.status(400).json({ error: 'Only COD orders can be marked as COD received' });
+        }
+
+        // 2. Update order status and history
+        const updatedOrder = await prisma.order.update({
+            where: { id: order.id },
+            data: {
+                paymentStatus: 'COD_RECEIVED',
+                isPaid: true,
+                paidAt: new Date(),
+                statusHistory: {
+                    push: {
+                        status: order.orderStatus,
+                        timestamp: new Date(),
+                        note: 'COD payment received and verified by admin',
+                        updatedBy: userId
+                    }
+                }
+            },
+            include: { payment: true }
+        });
+
+        // 3. Update or create the payment record
+        if (order.payment) {
+            await prisma.payment.update({
+                where: { id: order.payment.id },
+                data: {
+                    paymentStatus: 'COD_RECEIVED',
+                    amountReceived: order.totalAmount,
+                    receivedDate: new Date()
+                }
+            });
+        } else {
+            await prisma.payment.create({
+                data: {
+                    paymentId: `PAY-${order.orderNumber}`,
+                    orderId: order.id,
+                    userId: order.userId,
+                    paymentMethod: 'COD',
+                    amountDue: order.totalAmount,
+                    amountReceived: order.totalAmount,
+                    paymentStatus: 'COD_RECEIVED',
+                    receivedDate: new Date(),
+                    currency: 'INR'
+                }
+            });
+        }
+
+        res.json({ message: 'COD payment marked as received', order: updatedOrder });
+    } catch (error: any) {
+        console.error('Record COD received error:', error);
+        res.status(500).json({ error: error?.message || 'Failed to update order payment' });
+    }
+});
+
 // Get single order by ID
 // IMPORTANT: This catch-all route MUST be defined LAST among the order routes
 router.get('/:orderId', authenticateToken, async (req: Request, res: Response) => {

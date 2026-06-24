@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -51,6 +51,7 @@ import {
   fetchLowStockProducts,
   fetchAdminRequests,
   fetchAdminPayments,
+  markCODReceived,
 } from "@/lib/api";
 import { CODPayment, SalesDataPoint } from "@/types/admin";
 
@@ -177,8 +178,8 @@ const AdminDashboard = () => {
   });
 
   // Fetch dashboard data from API
-  useEffect(() => {
-    setIsLoading(true);
+  const loadDashboardData = useCallback((showLoading = true) => {
+    if (showLoading) setIsLoading(true);
     Promise.all([
       fetchDashboardStats(),
       fetchLowStockProducts(),
@@ -223,8 +224,14 @@ const AdminDashboard = () => {
         console.error("Failed to load dashboard data:", err);
         toast.error("Failed to load dashboard data");
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => {
+        if (showLoading) setIsLoading(false);
+      });
   }, []);
+
+  useEffect(() => {
+    loadDashboardData(true);
+  }, [loadDashboardData]);
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -235,31 +242,29 @@ const AdminDashboard = () => {
   };
 
   // COD Payment handler
-  const handleAddCOD = () => {
+  const handleAddCOD = async () => {
     const amount = parseFloat(codForm.amount);
     if (!codForm.orderId || isNaN(amount) || amount <= 0) {
       toast.error("Please fill all fields correctly");
       return;
     }
 
-    const newCOD: CODPayment = {
-      id: `COD-${String(codPayments.length + 1).padStart(3, "0")}`,
-      orderId: codForm.orderId,
-      amount,
-      dateReceived: codForm.dateReceived,
-      createdAt: new Date().toISOString(),
-    };
-
-    setCodPayments([...codPayments, newCOD]);
-    setPaymentSummary((prev) => ({
-      ...prev,
-      codTotal: prev.codTotal + amount,
-      combinedTotal: prev.combinedTotal + amount,
-    }));
-
-    setCodForm({ orderId: "", amount: "", dateReceived: new Date().toISOString().split("T")[0] });
-    setIsCODModalOpen(false);
-    toast.success("COD payment added successfully");
+    try {
+      setIsLoading(true);
+      await markCODReceived(codForm.orderId);
+      
+      toast.success("COD payment recorded successfully");
+      setCodForm({ orderId: "", amount: "", dateReceived: new Date().toISOString().split("T")[0] });
+      setIsCODModalOpen(false);
+      
+      // Reload stats/payments from API to reflect the updated COD payment
+      await loadDashboardData(false);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to record COD payment");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Get current sales data
