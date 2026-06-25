@@ -21,6 +21,7 @@ import {
 import { services } from "@/config/services";
 import { contactConfig } from "@/config/contact";
 import { Service } from "@/types/user";
+import FloatingCard from "@/components/FloatingCard";
 
 // --- Components ---
 
@@ -70,10 +71,11 @@ const ServiceHighlights = ({ highlights }: { highlights: string[] }) => (
   </ul>
 );
 
-const ServiceCard = ({ service, onClick }: { service: Service; onClick: () => void }) => (
-  <div 
+const ServiceCard = ({ service, onClick, index }: { service: Service; onClick: () => void; index: number }) => (
+  <FloatingCard 
+    seed={index}
     onClick={onClick}
-    className="group relative flex flex-col bg-zinc-950 border border-white/5 rounded-xl overflow-hidden cursor-pointer hover:border-orange-500/50 transition-all duration-500 hover:shadow-[0_0_40px_-10px_rgba(249,115,22,0.15)]"
+    className="flex flex-col h-full bg-zinc-950/40"
   >
     {/* Image Container */}
     <div className="relative h-64 overflow-hidden">
@@ -81,7 +83,7 @@ const ServiceCard = ({ service, onClick }: { service: Service; onClick: () => vo
       <img
         src={service.image}
         alt={service.name}
-        className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
+        className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03] transition-opacity"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent z-10" />
       
@@ -93,7 +95,7 @@ const ServiceCard = ({ service, onClick }: { service: Service; onClick: () => vo
     </div>
 
     {/* Content */}
-    <div className="flex-1 p-6 relative z-20 bg-zinc-950 flex flex-col">
+    <div className="flex-1 p-6 relative z-20 bg-zinc-950/30 flex flex-col">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-2xl font-display font-bold text-white group-hover:text-orange-500 transition-colors uppercase tracking-wide">
           {service.name}
@@ -116,7 +118,7 @@ const ServiceCard = ({ service, onClick }: { service: Service; onClick: () => vo
         <ArrowRight className="h-6 w-6 text-orange-500" />
       </div>
     </div>
-  </div>
+  </FloatingCard>
 );
 
 const ServiceDetailModal = ({ service, onClose }: { service: Service; onClose: () => void }) => {
@@ -308,8 +310,39 @@ const Garage = () => {
         <GarageHero />
 
         {/* Services Showcase */}
-        <section className="py-24 relative z-10 bg-background">
-          <div className="container">
+        <section className="py-24 relative z-10 bg-background overflow-hidden">
+          {/* Subtle ambient lighting & floating dust background */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+            {/* Soft ambient orange glow */}
+            <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-orange-500/5 rounded-full blur-[120px] mix-blend-screen" />
+            <div className="absolute bottom-1/4 right-1/3 w-[600px] h-[600px] bg-red-500/3 rounded-full blur-[140px] mix-blend-screen" />
+            
+            {/* Floating dust particles */}
+            <div className="absolute inset-0 opacity-20">
+              {[...Array(8)].map((_, i) => {
+                const randomLeft = 5 + Math.random() * 90;
+                const randomTop = 10 + Math.random() * 80;
+                const randomSize = 2 + Math.random() * 3;
+                const randomDuration = 18 + Math.random() * 18;
+                const randomDelay = Math.random() * -15;
+                return (
+                  <div
+                    key={i}
+                    className="absolute rounded-full bg-orange-500/30 blur-[0.5px]"
+                    style={{
+                      left: `${randomLeft}%`,
+                      top: `${randomTop}%`,
+                      width: `${randomSize}px`,
+                      height: `${randomSize}px`,
+                      animation: `floatParticle ${randomDuration}s linear ${randomDelay}s infinite`,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="container relative z-10">
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6">
               <div className="max-w-2xl">
                 <h2 className="text-3xl md:text-5xl font-display font-bold text-white uppercase tracking-tight mb-4">
@@ -323,10 +356,11 @@ const Garage = () => {
             </div>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {services.map((service) => (
+              {services.map((service, idx) => (
                 <ServiceCard 
                   key={service.id} 
                   service={service} 
+                  index={idx}
                   onClick={() => setSelectedService(service)} 
                 />
               ))}

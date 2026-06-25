@@ -633,3 +633,44 @@
     transform: translate(-50%, -55%) !important;
   }
 }
+
+/* Premium Floating Card Animations */
+.animate-premium-float {
+  animation: premiumFloat var(--float-duration, 12s) ease-in-out var(--float-delay, 0s) infinite;
+}
+
+@keyframes premiumFloat {
+  0% {
+    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1);
+  }
+  25% {
+    transform: translate3d(calc(var(--float-x, 6px) * 0.5), calc(var(--float-y, 6px) * -0.5), calc(var(--float-z, 1px) * 0.2)) rotateX(calc(var(--float-rx, 1deg) * 0.5)) rotateY(calc(var(--float-ry, 1deg) * -0.3)) rotateZ(calc(var(--float-rz, 0.5deg) * 0.4)) scale(calc(1 + (var(--float-scale, 1.01) - 1) * 0.5));
+  }
+  50% {
+    transform: translate3d(var(--float-x, 10px), var(--float-y, 10px), var(--float-z, 2px)) rotateX(var(--float-rx, 1.5deg)) rotateY(var(--float-ry, 1.5deg)) rotateZ(var(--float-rz, 1deg)) scale(var(--float-scale, 1.01));
+  }
+  75% {
+    transform: translate3d(calc(var(--float-x, 10px) * -0.3), calc(var(--float-y, 10px) * 0.7), calc(var(--float-z, 2px) * -0.5)) rotateX(calc(var(--float-rx, 1.5deg) * -0.4)) rotateY(calc(var(--float-ry, 1.5deg) * 0.6)) rotateZ(calc(var(--float-rz, 1deg) * -0.3)) scale(calc(1 - (var(--float-scale, 1.01) - 1) * 0.4));
+  }
+  100% {
+    transform: translate3d(0px, 0px, 0px) rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1);
+  }
+}
+
+/* Floating Particles Keyframe */
+@keyframes floatParticle {
+  0% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  }
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-100px) translateX(30px) scale(0.6);
+    opacity: 0;
+  }
+}
