@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -64,6 +64,90 @@ const getProductSpecs = (product: Product) => {
         ],
     };
     return defaultSpecsMap[product.category] || defaultSpecsMap.accessories;
+};
+
+// Reusable product description section with alternating zig-zag layout
+interface ProductDescriptionSectionProps {
+    title: string;
+    content: string;
+    index: number;
+}
+
+const ProductDescriptionSection = ({ title, content, index }: ProductDescriptionSectionProps) => {
+    const [isVisible, setIsVisible] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsVisible(true);
+                    observer.unobserve(entry.target);
+                }
+            },
+            {
+                threshold: 0.1,
+                rootMargin: "0px 0px -50px 0px"
+            }
+        );
+
+        const currentRef = ref.current;
+        if (currentRef) {
+            observer.observe(currentRef);
+        }
+
+        return () => {
+            if (currentRef) {
+                observer.unobserve(currentRef);
+            }
+        };
+    }, []);
+
+    const isEven = index % 2 === 1;
+
+    // Base alignment class names for text content
+    const alignmentClasses = isEven 
+        ? "text-left md:text-right md:ml-auto" 
+        : "text-left md:mr-auto";
+
+    // Layout configuration using grid
+    // Odd (index 0, 2, 4): LEFT -> CENTER (columns 1 to 6 on desktop, 1 to 7 on tablet, full width on mobile)
+    // Even (index 1, 3, 5): CENTER -> RIGHT (columns 7 to 12 on desktop, 6 to 12 on tablet, full width on mobile)
+    const gridPlacementClasses = isEven
+        ? "col-span-12 md:col-span-7 md:col-start-6 lg:col-span-6 lg:col-start-7"
+        : "col-span-12 md:col-span-7 md:col-start-1 lg:col-span-6 lg:col-start-1";
+
+    // Slide-in animations configuration
+    // Odd slides in from left (translate-x negative), Even slides in from right (translate-x positive)
+    // Disabled/simplified on mobile (we can do a simple fade up/slide up on mobile)
+    const initialAnimationClasses = isEven
+        ? "opacity-0 translate-y-4 md:translate-y-0 md:translate-x-12"
+        : "opacity-0 translate-y-4 md:translate-y-0 md:-translate-x-12";
+        
+    const animatedClasses = isVisible
+        ? "opacity-100 translate-x-0 translate-y-0"
+        : initialAnimationClasses;
+
+    return (
+        <div 
+            ref={ref}
+            className={`grid grid-cols-12 w-full transition-all duration-700 ease-out ${animatedClasses}`}
+        >
+            <div className={`${gridPlacementClasses} ${alignmentClasses}`}>
+                <div className="group border border-border/40 rounded-2xl p-6 md:p-8 bg-gradient-to-b from-card/85 via-card/70 to-card/40 backdrop-blur-sm shadow-xl hover:shadow-2xl hover:border-primary/25 transition-all duration-300">
+                    <h3 className={`text-xl md:text-2xl font-bold tracking-tight mb-4 text-foreground/90 group-hover:text-primary transition-colors flex items-center gap-2 ${isEven ? "justify-start md:justify-end" : "justify-start"}`}>
+                        {isEven && <span className="hidden md:inline w-2 h-2 rounded-full bg-primary animate-pulse" />}
+                        {title}
+                        {!isEven && <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
+                    </h3>
+                    <div className="h-0.5 w-12 bg-primary/80 mb-6 transition-all duration-300 group-hover:w-20" style={{ marginLeft: isEven ? 'auto' : '0px', marginRight: isEven ? '0px' : 'auto' }} />
+                    <div className="prose prose-sm prose-invert max-w-none text-muted-foreground whitespace-pre-line leading-relaxed text-sm md:text-base">
+                        {content}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 const ProductDetail = () => {
@@ -510,7 +594,8 @@ const ProductDetail = () => {
                             </div>
                         </div>
                     ) : product ? (
-                        <div className="grid gap-8 lg:grid-cols-2">
+                        <>
+                            <div className="grid gap-8 lg:grid-cols-2">
                             {/* Product Images */}
                             <div className="space-y-4">
                                 {/* Main Image */}
@@ -837,20 +922,7 @@ const ProductDetail = () => {
                                 </div>
 
                                 {/* Dynamic Sections or Legacy Description */}
-                                {product.sections && product.sections.length > 0 ? (
-                                    <div className="space-y-4">
-                                        {product.sections.map((section, idx) => (
-                                            <div key={idx} className="border border-border/50 rounded-xl p-5 bg-card/40">
-                                                <h3 className="text-lg font-bold tracking-tight mb-2 text-foreground/90">
-                                                    {section.title}
-                                                </h3>
-                                                <div className="prose prose-sm prose-invert max-w-none text-muted-foreground whitespace-pre-line">
-                                                    {section.content}
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
+                                {(!product.sections || product.sections.length === 0) && (
                                     <div className="prose prose-sm prose-invert max-w-none">
                                         <p className="text-muted-foreground leading-relaxed">
                                             {product.description ||
@@ -879,7 +951,22 @@ const ProductDetail = () => {
                                 </div>
                             </div>
                         </div>
-                    ) : null}
+
+                        {/* Alternate Section-wise Descriptions (Full Width) */}
+                        {product.sections && product.sections.length > 0 && (
+                            <div className="mt-16 space-y-12">
+                                {product.sections.map((section, idx) => (
+                                    <ProductDescriptionSection
+                                        key={idx}
+                                        title={section.title}
+                                        content={section.content}
+                                        index={idx}
+                                    />
+                                ))}
+                            </div>
+                        )}
+                    </>
+                ) : null}
 
                     {/* Specifications */}
                     {product && (
