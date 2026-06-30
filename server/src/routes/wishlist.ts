@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../config/database.js';
 import jwt from 'jsonwebtoken';
+import { JWT_VERIFY_OPTIONS } from '../middlewares/security.js';
 
 const router = Router();
 
@@ -13,7 +14,7 @@ function authenticateToken(req: Request, res: Response, next: Function) {
 
     const token = authHeader.split(' ')[1];
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string; role: string };
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string, JWT_VERIFY_OPTIONS) as { userId: string; role: string };
         (req as any).userId = decoded.userId;
         (req as any).userRole = decoded.role;
         next();

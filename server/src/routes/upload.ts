@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { upload, deleteFromCloudinary } from '../config/cloudinary.js';
+import { JWT_VERIFY_OPTIONS } from '../middlewares/security.js';
 
 const router = Router();
 
@@ -15,7 +16,7 @@ function authenticateUpload(req: Request, res: Response, next: NextFunction) {
 
     try {
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!, JWT_VERIFY_OPTIONS) as {
             userId: string;
             role: string;
         };
@@ -158,6 +159,11 @@ router.delete('/image/:publicId(*)', authenticateUpload, authorizeAdminOrStaff, 
         const publicId = req.params.publicId;
         if (!publicId) {
             return res.status(400).json({ error: 'public_id is required' });
+        }
+
+        // Path traversal protection: only allow deletion of BlackPiston images
+        if (!publicId.startsWith('blackpiston/')) {
+            return res.status(403).json({ error: 'Cannot delete images outside the blackpiston folder' });
         }
 
         const success = await deleteFromCloudinary(publicId);

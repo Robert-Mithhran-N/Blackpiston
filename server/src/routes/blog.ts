@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/database.js';
+import { JWT_VERIFY_OPTIONS } from '../middlewares/security.js';
 
 const router = Router();
 
@@ -13,7 +14,7 @@ function authenticateAdmin(req: Request, res: Response, next: Function) {
 
     try {
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!, JWT_VERIFY_OPTIONS) as {
             userId: string;
             role: string;
         };

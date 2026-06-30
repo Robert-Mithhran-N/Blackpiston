@@ -1,10 +1,34 @@
 import express from 'express';
 import { createServer } from 'http';
-import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { PrismaClient } from '@prisma/client';
+
+// Load environment variables FIRST (before any other imports that use env vars)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
+// Validate environment variables — crashes on missing critical vars
+import { validateEnvironment } from './config/validateEnv.js';
+validateEnvironment();
+
+// Security middleware
+import {
+    helmetMiddleware,
+    corsMiddleware,
+    authLimiter,
+    uploadLimiter,
+    searchLimiter,
+    adminLimiter,
+    generalLimiter,
+} from './middlewares/security.js';
+import { requestLogger } from './middlewares/logger.js';
+import { sanitizeInput } from './middlewares/sanitize.js';
+import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
+
+// Route imports
 import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
 import orderRoutes from './routes/orders.js';
@@ -20,11 +44,6 @@ import paymentRoutes from './routes/payments.js';
 import { initSocketServer } from './socketManager.js';
 import { cleanupExpiredOrders } from './utils/paymentService.js';
 
-// Load environment variables (resolve path relative to this file, not CWD)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-
 // Validate JWT_SECRET on startup
 if (!process.env.JWT_SECRET) {
     console.error("❌ CRITICAL: JWT_SECRET environment variable is missing!");
@@ -36,45 +55,40 @@ const httpServer = createServer(app);
 const prisma = new PrismaClient();
 const PORT = process.env.PORT || 3001;
 
-// Lock CORS to whitelisted domains, localhost, and Vercel subdomains
-const corsWhitelist = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : [];
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, POSTMAN, or cURL requests)
-    if (!origin) return callback(null, true);
+// ============================================================
+// Global Security Middleware (applied in order)
+// ============================================================
 
-    const isWhitelisted = corsWhitelist.includes(origin);
-    const isLocalhost = origin.startsWith('http://localhost:') || 
-                        origin.startsWith('http://127.0.0.1:') || 
-                        origin.startsWith('https://localhost:') || 
-                        origin.startsWith('https://127.0.0.1:') || 
-                        origin.startsWith('http://192.168.');
-    const isVercelApp = origin.endsWith('.vercel.app');
+// 1. Helmet — HTTP security headers
+app.use(helmetMiddleware);
 
-    if (isWhitelisted || isLocalhost || isVercelApp) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
+// 2. CORS — strict whitelist
+app.use(corsMiddleware);
 
-// Raw body parser for Razorpay webhook (MUST come before express.json)
+// 3. Request logging
+app.use(requestLogger);
+
+// 4. Raw body parser for Razorpay webhook (MUST come before express.json)
 app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
 
+// 5. Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Root Health check endpoint
+// 6. Input sanitization (after body parsing, before routes)
+app.use(sanitizeInput);
+
+// ============================================================
+// Health Check Endpoints (no rate limiting)
+// ============================================================
+
 app.get("/health", (req, res) => {
-  return res.status(200).json({
-    status: "ok",
-    message: "BlackPiston backend running"
-  });
+    return res.status(200).json({
+        status: "ok",
+        message: "BlackPiston backend running"
+    });
 });
 
-// Health check endpoint
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
@@ -83,7 +97,6 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-// Database health check endpoint
 app.get('/api/health/db', async (req, res) => {
     try {
         await prisma.$runCommandRaw({ ping: 1 });
@@ -102,22 +115,46 @@ app.get('/api/health/db', async (req, res) => {
     }
 });
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
-app.use('/api/orders', orderRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/admin/blog', blogRoutes);
-app.use('/api/admin/services', serviceRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/coupons', couponRoutes);
-app.use('/api/wishlist', wishlistRoutes);
-app.use('/api/requests', requestRoutes);
-app.use('/api/payments', paymentRoutes);
-// Search and tag suggestion routes are inside products router
+// ============================================================
+// API Routes with Rate Limiters
+// ============================================================
 
-// Database connection check
+// Auth routes — strictest rate limit (5/min)
+app.use('/api/auth', authLimiter, authRoutes);
+
+// Upload routes — 20/min
+app.use('/api/upload', uploadLimiter, uploadRoutes);
+
+// Admin routes — 50/min
+app.use('/api/admin', adminLimiter, adminRoutes);
+app.use('/api/admin/blog', adminLimiter, blogRoutes);
+app.use('/api/admin/services', adminLimiter, serviceRoutes);
+
+// Product/search routes — 100/min
+app.use('/api/products', searchLimiter, productRoutes);
+
+// General API routes — 200/min
+app.use('/api/orders', generalLimiter, orderRoutes);
+app.use('/api/users', generalLimiter, userRoutes);
+app.use('/api/coupons', generalLimiter, couponRoutes);
+app.use('/api/wishlist', generalLimiter, wishlistRoutes);
+app.use('/api/requests', generalLimiter, requestRoutes);
+app.use('/api/payments', generalLimiter, paymentRoutes);
+
+// ============================================================
+// Error Handling (must be LAST)
+// ============================================================
+
+// 404 handler
+app.use(notFoundHandler);
+
+// Centralized error handler
+app.use(errorHandler);
+
+// ============================================================
+// Server Startup
+// ============================================================
+
 async function checkDatabaseConnection() {
     try {
         await prisma.$connect();
@@ -128,21 +165,6 @@ async function checkDatabaseConnection() {
     }
 }
 
-// Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('Error:', err.message);
-    res.status(500).json({
-        error: 'Internal Server Error',
-        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-    });
-});
-
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({ error: 'Not Found', message: 'The requested resource was not found' });
-});
-
-// Start server
 async function startServer() {
     await checkDatabaseConnection();
 
@@ -158,6 +180,7 @@ async function startServer() {
 🔗 API Base URL: http://localhost:${PORT}/api
 🏥 Health Check: http://localhost:${PORT}/api/health
 🔌 Socket.IO: Enabled
+🔐 Security: Helmet + Rate Limiting + CORS + Sanitization
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     `);
     });

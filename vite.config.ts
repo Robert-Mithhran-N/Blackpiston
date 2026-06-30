@@ -95,7 +95,7 @@ export default defineConfig(({ mode }) => ({
           },
           {
             // Do not cache sensitive API routes or live data
-            urlPattern: /^https?:\/\/.*\/api\/(checkout|payments|admin|orders|user\/orders|appointments|services|messages|users|settings).*/i,
+            urlPattern: /^https?:\/\/.*\/api\/(auth|checkout|payments|admin|orders|user\/orders|appointments|services|messages|users|settings|wishlist).*/i,
             handler: "NetworkOnly",
           },
           {

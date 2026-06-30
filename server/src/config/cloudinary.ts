@@ -33,7 +33,7 @@ const storage = new CloudinaryStorage({
 
         return {
             folder: folder,
-            allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+            allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'],
             transformation: [
                 { width: 1200, height: 1200, crop: 'limit' },
                 { quality: 'auto:good' }
@@ -49,7 +49,7 @@ export const upload = multer({
         fileSize: 5 * 1024 * 1024, // 5MB limit
     },
     fileFilter: (req, file, cb) => {
-        const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
         if (allowedMimes.includes(file.mimetype)) {
             cb(null, true);
         } else {

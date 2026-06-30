@@ -17,6 +17,7 @@ import {
 import { verifyWebhookSignature, processWebhookEvent } from '../utils/webhookHandler.js';
 import { sendOrderConfirmation } from '../utils/emailService.js';
 import { emitNewOrder } from '../socketManager.js';
+import { JWT_VERIFY_OPTIONS } from '../middlewares/security.js';
 
 const router = Router();
 
@@ -32,7 +33,7 @@ function authenticateToken(req: Request, res: Response, next: Function) {
 
     const token = authHeader.split(' ')[1];
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string, JWT_VERIFY_OPTIONS) as {
             userId: string;
             role: string;
         };

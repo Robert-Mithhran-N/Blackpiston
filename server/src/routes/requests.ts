@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/database.js';
+import { z } from 'zod';
+import { JWT_VERIFY_OPTIONS } from '../middlewares/security.js';
 
 const router = Router();
 
@@ -14,7 +16,7 @@ const authenticateUser = (req: Request, res: Response, next: Function) => {
         }
 
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string };
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string, JWT_VERIFY_OPTIONS) as { userId: string };
         
         (req as any).user = decoded;
         next();
@@ -23,11 +25,28 @@ const authenticateUser = (req: Request, res: Response, next: Function) => {
     }
 };
 
+const createRequestSchema = z.object({
+    userName: z.string().min(1, 'Name is required'),
+    userEmail: z.string().email('Valid email is required'),
+    userPhone: z.string().optional(),
+    requestType: z.enum(['PRODUCT_INQUIRY', 'CUSTOM_ORDER', 'BULK_ORDER', 'OTHER']).optional().default('PRODUCT_INQUIRY'),
+    productName: z.string().optional(),
+    message: z.string().min(1, 'Message is required').max(2000, 'Message too long'),
+});
+
 // Create a new request (Public/Customer endpoint)
 router.post('/', authenticateUser, async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
-        const { userName, userEmail, userPhone, requestType, productName, message } = req.body;
+
+        const validation = createRequestSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: validation.error.format()
+            });
+        }
+        const { userName, userEmail, userPhone, requestType, productName, message } = validation.data;
 
         // Generate a random request number
         const requestNumber = `REQ-${Date.now().toString().slice(-6)}-${Math.floor(Math.random() * 1000)}`;

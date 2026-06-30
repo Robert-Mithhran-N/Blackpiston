@@ -2,7 +2,9 @@ import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { ObjectId } from 'bson';
+import { z } from 'zod';
 import prisma from '../config/database.js';
+import { JWT_VERIFY_OPTIONS } from '../middlewares/security.js';
 
 const router = Router();
 
@@ -15,7 +17,7 @@ const authenticateUser = (req: Request, res: Response, next: Function) => {
         }
 
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { userId: string; role: string };
+        const decoded = jwt.verify(token, process.env.JWT_SECRET as string, JWT_VERIFY_OPTIONS) as { userId: string; role: string };
         
         // Attach user info to request
         (req as any).user = decoded;
@@ -32,15 +34,43 @@ router.use(authenticateUser);
 // Profile Details
 // ---------------------------------------------------------
 
+// Zod validation schemas
+const updateProfileSchema = z.object({
+    name: z.string().min(2, 'Name must be at least 2 characters').max(100).optional(),
+    phone: z.string().max(20).optional(),
+});
+
+const changePasswordSchema = z.object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+});
+
+const addressSchema = z.object({
+    label: z.string().optional().default('Home'),
+    fullName: z.string().min(1, 'Full name is required'),
+    phone: z.string().min(1, 'Phone is required'),
+    addressLine1: z.string().min(1, 'Address line 1 is required'),
+    addressLine2: z.string().optional().default(''),
+    city: z.string().min(1, 'City is required'),
+    state: z.string().min(1, 'State is required'),
+    pincode: z.string().min(1, 'Pincode is required'),
+    country: z.string().optional().default('India'),
+    landmark: z.string().optional().default(''),
+    isDefault: z.boolean().optional().default(false),
+});
+
 // Update basic user profile info (name, phone)
 router.put('/update', async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
-        const { name, phone } = req.body;
-
-        // Note: we generally do not allow email updates here easily because it relies on Auth checks
-        // However, for standard name/phone updates it's fine.
-        
+        const validation = updateProfileSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: validation.error.format()
+            });
+        }
+        const { name, phone } = validation.data;
         const updatedUser = await prisma.user.update({
             where: { id: userId },
             data: { 
@@ -68,11 +98,14 @@ router.put('/update', async (req: Request, res: Response) => {
 router.put('/password', async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
-        const { currentPassword, newPassword } = req.body;
-
-        if (!currentPassword || !newPassword) {
-            return res.status(400).json({ error: 'Current and new passwords are required' });
+        const validation = changePasswordSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: validation.error.format()
+            });
         }
+        const { currentPassword, newPassword } = validation.data;
 
         const user = await prisma.user.findUnique({ where: { id: userId } });
         if (!user) {
@@ -110,7 +143,14 @@ router.put('/password', async (req: Request, res: Response) => {
 router.post('/addresses', async (req: Request, res: Response) => {
     try {
         const userId = (req as any).user.userId;
-        const addressData = req.body; // e.g., { label, street, city, state, pincode, country, isDefault }
+        const validation = addressSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: validation.error.format()
+            });
+        }
+        const addressData = validation.data;
 
         // Must explicitly generate a unique BSON object ID for the nested type, or rely on Prisma handling
         // Prisma allows atomic array pushes.

@@ -1,6 +1,7 @@
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import { allowedOrigins, JWT_VERIFY_OPTIONS } from './middlewares/security.js';
 
 let io: Server | null = null;
 
@@ -53,20 +54,15 @@ export function initSocketServer(httpServer: HttpServer): Server {
     io = new Server(httpServer, {
         cors: {
             origin: (origin, callback) => {
-                // Allow all origins in development; production should be more restrictive
-                if (!origin || process.env.NODE_ENV === 'development') {
-                    return callback(null, true);
-                }
-                const allowedOrigins = [
-                    process.env.FRONTEND_URL || 'http://localhost:5000',
-                    'http://localhost:5000',
-                    'http://localhost:5173',
-                    'http://localhost:3000',
-                ].filter(Boolean);
-
+                if (!origin) return callback(null, true);
                 if (allowedOrigins.includes(origin)) {
                     return callback(null, true);
                 }
+                const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+                if (isLocalhost) return callback(null, true);
+                const isLocalNetwork = /^https?:\/\/192\.168\.\d+\.\d+(:\d+)?$/.test(origin);
+                if (isLocalNetwork) return callback(null, true);
+                if (origin.endsWith('.vercel.app')) return callback(null, true);
                 callback(new Error('Not allowed by CORS'));
             },
             credentials: true,
@@ -80,10 +76,11 @@ export function initSocketServer(httpServer: HttpServer): Server {
             try {
                 const decoded = jwt.verify(
                     token,
-                    process.env.JWT_SECRET as string
+                    process.env.JWT_SECRET as string,
+                    JWT_VERIFY_OPTIONS
                 ) as { userId: string; role: string };
 
-                if (['ADMIN', 'STAFF', 'super-admin'].includes(decoded.role)) {
+                if (['ADMIN', 'STAFF'].includes(decoded.role)) {
                     socket.join('admin');
                     socket.emit('admin-joined', { success: true });
                     console.log(`👤 Admin socket joined: ${decoded.userId} (${decoded.role})`);

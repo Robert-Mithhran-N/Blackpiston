@@ -5,9 +5,9 @@ import { OAuth2Client } from 'google-auth-library';
 import prisma from '../config/database.js';
 import { sendWelcomeEmail, sendPasswordResetEmail } from '../utils/emailService.js';
 import crypto from 'crypto';
-
 import { ObjectId } from 'bson';
 import { z } from 'zod';
+import { JWT_SIGN_OPTIONS, JWT_VERIFY_OPTIONS } from '../middlewares/security.js';
 
 const registerSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -27,10 +27,31 @@ const loginSchema = z.object({
     password: z.string().min(1, 'Password is required')
 });
 
+const forgotPasswordSchema = z.object({
+    email: z.string().email('Invalid email address'),
+});
+
+const resetPasswordSchema = z.object({
+    token: z.string().min(1, 'Reset token is required'),
+    newPassword: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+const googleOAuthSchema = z.object({
+    access_token: z.string().optional(),
+    credential: z.string().optional(),
+}).refine(data => data.access_token || data.credential, {
+    message: 'Either access_token or credential is required',
+});
+
+const adminLoginSchema = z.object({
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(1, 'Password is required'),
+});
+
 const router = Router();
 
-// JWT signing helper — cast expiresIn to satisfy newer @types/jsonwebtoken
-const jwtSignOptions = { expiresIn: (process.env.JWT_EXPIRES_IN || '7d') as any };
+// JWT signing options — hardened with algorithm, issuer, audience
+const jwtSignOptions = JWT_SIGN_OPTIONS as jwt.SignOptions;
 
 // Google OAuth client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -191,7 +212,12 @@ router.post('/login', async (req: Request, res: Response) => {
 // Forgot Password
 router.post('/forgot-password', async (req: Request, res: Response) => {
     try {
-        const { email } = req.body;
+        const validation = forgotPasswordSchema.safeParse(req.body);
+        if (!validation.success) {
+            // Always return success for security (don't reveal validation)
+            return res.status(200).json({ message: 'If the email exists, a reset link has been sent' });
+        }
+        const { email } = validation.data;
         
         // Find user
         const user = await prisma.user.findUnique({
@@ -229,15 +255,14 @@ router.post('/forgot-password', async (req: Request, res: Response) => {
 // Reset Password
 router.post('/reset-password', async (req: Request, res: Response) => {
     try {
-        const { token, newPassword } = req.body;
-
-        if (!token || !newPassword) {
-            return res.status(400).json({ error: 'Token and new password required' });
+        const validation = resetPasswordSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: validation.error.format()
+            });
         }
-
-        if (newPassword.length < 6) {
-            return res.status(400).json({ error: 'Password must be at least 6 characters long' });
-        }
+        const { token, newPassword } = validation.data;
 
         // Use raw find to bypass active schema lock
         const cursor = await prisma.$runCommandRaw({
@@ -284,7 +309,14 @@ router.post('/reset-password', async (req: Request, res: Response) => {
 // Google OAuth login
 router.post('/google', async (req: Request, res: Response) => {
     try {
-        const { access_token, credential } = req.body;
+        const validation = googleOAuthSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: validation.error.format()
+            });
+        }
+        const { access_token, credential } = validation.data;
 
         let googleId: string | undefined;
         let email: string | undefined;
@@ -294,7 +326,6 @@ router.post('/google', async (req: Request, res: Response) => {
 
         if (access_token) {
             // Flow 1: Access token from useGoogleLogin popup
-            // Fetch user info from Google's userinfo API
             const userInfoResponse = await fetch(
                 'https://www.googleapis.com/oauth2/v3/userinfo',
                 {
@@ -408,7 +439,14 @@ router.post('/google', async (req: Request, res: Response) => {
 // Admin login
 router.post('/admin/login', async (req: Request, res: Response) => {
     try {
-        const { email, password } = req.body;
+        const validation = adminLoginSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: validation.error.format()
+            });
+        }
+        const { email, password } = validation.data;
 
         // Find admin user
         const user = await prisma.user.findFirst({
@@ -472,7 +510,7 @@ router.get('/me', async (req: Request, res: Response) => {
         }
 
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!, JWT_VERIFY_OPTIONS) as { userId: string };
 
         const user = await prisma.user.findUnique({
             where: { id: decoded.userId },
