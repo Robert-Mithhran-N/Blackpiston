@@ -1,4 +1,5 @@
 import PagePlaceholder from "@/components/layout/PagePlaceholder";
+import SEO from "@/components/seo/SEO";
 import {
   Accordion,
   AccordionContent,
@@ -26,6 +27,24 @@ const questions = [
 ];
 
 const FAQ = () => {
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": questions.map(item => ({
+      "@type": "Question",
+      "name": item.q,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": item.a
+      }
+    }))
+  };
+
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "FAQ", url: "/faq" }
+  ];
+
   return (
     <PagePlaceholder
       eyebrow="FAQ"
@@ -34,6 +53,12 @@ const FAQ = () => {
       primaryAction={{ label: "Talk with us", to: "/contact" }}
       secondaryAction={{ label: "View services", to: "/garage" }}
     >
+      <SEO
+        title="Frequently Asked Questions (FAQ)"
+        description="Quick answers for new riders and returning customers about installs, timings, parts selection, and shipping options at BlackPiston Garage."
+        breadcrumbs={breadcrumbs}
+        jsonLd={faqSchema}
+      />
       <div className="max-w-3xl mx-auto w-full">
         <Accordion type="single" collapsible className="w-full space-y-4">
           {questions.map((item, index) => (

@@ -85,12 +85,17 @@ export default defineConfig(({ mode }) => ({
         globIgnores: ["**/version.json"],
         // SPA fallback for client-side routing
         navigateFallback: "/index.html",
-        navigateFallbackDenylist: [/^\/api\//, /^\/version\.json/],
+        navigateFallbackDenylist: [/^\/api\//, /^\/version\.json/, /^\/sitemap\.xml/],
         // Runtime caching
         runtimeCaching: [
           {
             // version.json must ALWAYS come from the network (never cached)
             urlPattern: /\/version\.json$/,
+            handler: "NetworkOnly",
+          },
+          {
+            // sitemap.xml must ALWAYS come from the network (never cached)
+            urlPattern: /\/sitemap\.xml$/,
             handler: "NetworkOnly",
           },
           {

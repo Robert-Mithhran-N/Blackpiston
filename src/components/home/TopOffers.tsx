@@ -19,6 +19,7 @@ const TopOffers = () => {
                 const productsData = data.products || [];
                 setProducts(productsData.map((p: any) => ({
                     id: p.id,
+                    slug: p.slug,
                     name: p.name,
                     category: p.categorySlug || p.category?.slug || "accessories",
                     price: p.price,

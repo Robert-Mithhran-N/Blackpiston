@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
+import SEO from "../seo/SEO";
 import Header from "./Header";
 import Footer from "./Footer";
 import BackButton from "./BackButton";
@@ -30,8 +31,18 @@ const PagePlaceholder = ({
   highlights = [],
   children,
 }: PagePlaceholderProps) => {
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: eyebrow, url: window.location.pathname }
+  ];
+
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={title}
+        description={description}
+        breadcrumbs={breadcrumbs}
+      />
       <Header />
       <main className="container py-16 space-y-12">
         <BackButton />

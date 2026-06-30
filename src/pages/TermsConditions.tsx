@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import SEO from "@/components/seo/SEO";
 import BackButton from "@/components/layout/BackButton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,18 +9,10 @@ import { Scale, FileText, Wrench, ShieldAlert, CreditCard, ShoppingBag } from "l
 import { contactConfig } from "@/config/contact";
 
 const TermsConditions = () => {
-  useEffect(() => {
-    document.title = "Terms & Conditions | BlackPiston Garage";
-
-    // Update meta description
-    let metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute(
-        "content",
-        "Read the Terms & Conditions of BlackPiston Garage. Learn about ordering motorcycle gear, booking custom modifications, payments via Razorpay, and legal liabilities."
-      );
-    }
-  }, []);
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "Terms & Conditions", url: "/terms" }
+  ];
 
   const sections = [
     {
@@ -132,6 +125,11 @@ const TermsConditions = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Terms & Conditions"
+        description="Read the Terms & Conditions of BlackPiston Garage. Understand rules governing ordering gear, booking services, shipping rates, and dispute resolution."
+        breadcrumbs={breadcrumbs}
+      />
       <Header />
       <main className="pb-24">
         {/* Page Hero */}

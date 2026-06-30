@@ -113,12 +113,14 @@ export type Address = ShippingAddress;
 // ============================================================
 export interface Product {
     id: string;
+    slug?: string;
     name: string;
     category: string;
     price: number;
     stock: number;
     image?: string;
     status: 'Active' | 'Inactive' | 'Draft';
+    totalReviews?: number;
 }
 
 export interface LowStockProduct {

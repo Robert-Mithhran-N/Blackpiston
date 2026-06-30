@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import SEO from "@/components/seo/SEO";
 import BackButton from "@/components/layout/BackButton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,18 +9,10 @@ import { Shield, Eye, Lock, Database, CreditCard, RefreshCw } from "lucide-react
 import { contactConfig } from "@/config/contact";
 
 const Privacy = () => {
-  useEffect(() => {
-    document.title = "Privacy Policy | BlackPiston Garage";
-    
-    // Update meta description
-    let metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute(
-        "content",
-        "Read the Privacy Policy of BlackPiston Garage. Learn how we collect, protect, and use your data for riding gear orders and garage services securely through Razorpay."
-      );
-    }
-  }, []);
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "Privacy Policy", url: "/privacy" }
+  ];
 
   const sections = [
     {
@@ -133,6 +126,11 @@ const Privacy = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Privacy Policy"
+        description="Read the Privacy Policy of BlackPiston Garage. Learn how we collect, protect, and handle your personal identity and bike vehicle data securely."
+        breadcrumbs={breadcrumbs}
+      />
       <Header />
       <main className="pb-24">
         {/* Page Hero */}

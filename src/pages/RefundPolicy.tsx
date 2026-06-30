@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import SEO from "@/components/seo/SEO";
 import BackButton from "@/components/layout/BackButton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,18 +9,10 @@ import { AlertCircle, RotateCcw, Calendar, CheckCircle2, ShieldAlert, Sparkles }
 import { contactConfig } from "@/config/contact";
 
 const RefundPolicy = () => {
-  useEffect(() => {
-    document.title = "Refund & Cancellation Policy | BlackPiston Garage";
-
-    // Update meta description
-    let metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute(
-        "content",
-        "Read the Refund & Cancellation Policy of BlackPiston Garage. Learn about our 7-day return policy, helmet safety exceptions, booking cancellations, and Razorpay refunds."
-      );
-    }
-  }, []);
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "Refund Policy", url: "/refund-policy" }
+  ];
 
   const refundSections = [
     {
@@ -119,6 +112,11 @@ const RefundPolicy = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Refund & Cancellation Policy"
+        description="Learn about the return, refund, and cancellation policies at BlackPiston Garage for riding gear, helmets, custom tuning, and parts orders."
+        breadcrumbs={breadcrumbs}
+      />
       <Header />
       <main className="pb-24">
         {/* Page Hero */}

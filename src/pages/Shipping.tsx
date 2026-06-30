@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import SEO from "@/components/seo/SEO";
 import BackButton from "@/components/layout/BackButton";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -8,18 +9,10 @@ import { Truck, Navigation, Calendar, Wrench, AlertTriangle, ShieldCheck } from 
 import { contactConfig } from "@/config/contact";
 
 const Shipping = () => {
-  useEffect(() => {
-    document.title = "Shipping & Delivery Policy | BlackPiston Garage";
-
-    // Update meta description
-    let metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute(
-        "content",
-        "Read the Shipping & Delivery Policy of BlackPiston Garage. Learn about domestic timelines, flat rates, local garage pickup/drop-off, and damaged item claims."
-      );
-    }
-  }, []);
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "Shipping Policy", url: "/shipping" }
+  ];
 
   const sections = [
     {
@@ -115,6 +108,11 @@ const Shipping = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Shipping & Delivery Policy"
+        description="Learn about dispatch schedules, tracking, delivery timelines, and transit insurance for helmets and riding gear at BlackPiston Garage."
+        breadcrumbs={breadcrumbs}
+      />
       <Header />
       <main className="pb-24">
         {/* Page Hero */}

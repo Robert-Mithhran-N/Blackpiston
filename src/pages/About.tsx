@@ -2,27 +2,25 @@ import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import SEO from "@/components/seo/SEO";
 import BackButton from "@/components/layout/BackButton";
 import { CheckCircle2, Wrench, Shield, ShoppingBag, MapPin, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { contactConfig } from "@/config/contact";
 
 const About = () => {
-  useEffect(() => {
-    document.title = "About Us | BlackPiston Garage";
-    
-    // Update meta description
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute(
-        "content",
-        "Learn more about BlackPiston Garage - a premium motorcycle gear store and advanced workshop in Tamil Nadu. Discover our mission, values, and track-grade services."
-      );
-    }
-  }, []);
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "About Us", url: "/about" }
+  ];
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="About Us"
+        description="Learn more about BlackPiston Garage - a premium motorcycle gear store and advanced multi-brand service clinic in Tamil Nadu. Discover our values, team, and mission."
+        breadcrumbs={breadcrumbs}
+      />
       <Header />
       <main className="py-16 space-y-20">
         <div className="container">

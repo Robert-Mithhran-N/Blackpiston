@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
+import SEO from "@/components/seo/SEO";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -302,8 +303,18 @@ const GarageCTASection = () => (
 const Garage = () => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
 
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "Garage Services", url: "/garage" }
+  ];
+
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Garage Services & ECU Tuning Studio"
+        description="Book premium motorcycle garage services at BlackPiston Garage. Professional dyno tuning, custom exhaust fittings, ECU flashing, restorations, and track-prep."
+        breadcrumbs={breadcrumbs}
+      />
       <Header />
       
       <main>

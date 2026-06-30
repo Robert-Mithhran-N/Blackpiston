@@ -28,7 +28,7 @@ const ProductCard = ({ product, variant = "default", onAddToCart }: ProductCardP
 
     return (
         <Link
-            to={`/product/${product.id}`}
+            to={`/product/${product.slug || product.id}`}
             className="block group w-full"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}

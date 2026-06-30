@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
+import SEO from "@/components/seo/SEO";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { Card, CardContent } from "@/components/ui/card";
@@ -21,18 +22,49 @@ import { toast } from "sonner";
 import { createRequest } from "@/lib/api";
 
 const Contact = () => {
-  useEffect(() => {
-    document.title = "Contact Us | BlackPiston Garage";
-    
-    // Update meta description
-    let metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute(
-        "content",
-        "Get in touch with BlackPiston Garage. Contact us for premium motorcycle gear purchases, custom tuning service scheduling, and physical address details."
-      );
-    }
-  }, []);
+  const localBusinessSchema = {
+    "@context": "https://schema.org",
+    "@type": "MotorcycleRepair",
+    "@id": "https://blackpistongarage.com/#localbusiness",
+    "name": "BlackPiston Garage",
+    "image": "https://blackpistongarage.com/logo.png",
+    "telephone": contactConfig.phone.raw,
+    "email": contactConfig.email.display,
+    "url": "https://blackpistongarage.com",
+    "logo": "https://blackpistongarage.com/logo.png",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": contactConfig.address.line1 + ", " + contactConfig.address.line2,
+      "addressLocality": contactConfig.address.city,
+      "addressRegion": "Tamil Nadu",
+      "postalCode": contactConfig.address.pincode,
+      "addressCountry": "IN"
+    },
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+        "opens": "09:00",
+        "closes": "20:00"
+      },
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": "Saturday",
+        "opens": "09:00",
+        "closes": "18:00"
+      }
+    ],
+    "sameAs": [
+      contactConfig.social?.instagram,
+      contactConfig.social?.facebook,
+      contactConfig.social?.youtube
+    ].filter(Boolean)
+  };
+
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "Contact", url: "/contact" }
+  ];
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -83,6 +115,12 @@ const Contact = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Contact Us"
+        description="Get in touch with BlackPiston Garage. Locate our workshop in Pattukottai, Tanjavur, call our team, or send a request for motorcycle styling and dyno tuning."
+        breadcrumbs={breadcrumbs}
+        jsonLd={localBusinessSchema}
+      />
       <Header />
       <main className="pb-16">
         {/* Hero Section */}

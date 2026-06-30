@@ -25,6 +25,7 @@ export interface ProductSection {
 
 export interface Product {
     id: string;
+    slug?: string;
     name: string;
     category: string;
     price: number;
@@ -48,6 +49,7 @@ export interface Product {
     warrantyBadgeDesc?: string;
     returnBadgeTitle?: string;
     returnBadgeDesc?: string;
+    totalReviews?: number;
 }
 
 export type ProductCategory = string;

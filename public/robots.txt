@@ -1,14 +1,39 @@
-User-agent: Googlebot
+# Group 1: General search engines
+User-agent: *
 Allow: /
+Allow: /shop
+Allow: /product/
+Allow: /garage
+Allow: /about
+Allow: /blog
+Allow: /contact
+Allow: /faq
+Allow: /privacy
+Allow: /terms
+Allow: /refund-policy
+Allow: /shipping
+Allow: /warranty
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /checkout
+Disallow: /payment/
+Disallow: /profile
+Disallow: /account
+Disallow: /onboarding
+Disallow: /api/
+Disallow: /api/wishlist
+Disallow: /api/payments
 
-User-agent: Bingbot
-Allow: /
-
+# Group 2: Social media crawler previews
 User-agent: Twitterbot
 Allow: /
+Allow: /product/
+Allow: /blog/
 
 User-agent: facebookexternalhit
 Allow: /
+Allow: /product/
+Allow: /blog/
 
-User-agent: *
-Allow: /
+# Sitemap location
+Sitemap: https://blackpistongarage.com/sitemap.xml

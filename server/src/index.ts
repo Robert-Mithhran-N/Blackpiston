@@ -41,6 +41,7 @@ import couponRoutes from './routes/coupons.js';
 import wishlistRoutes from './routes/wishlist.js';
 import requestRoutes from './routes/requests.js';
 import paymentRoutes from './routes/payments.js';
+import sitemapRoutes from './routes/sitemap.js';
 import { initSocketServer } from './socketManager.js';
 import { cleanupExpiredOrders } from './utils/paymentService.js';
 
@@ -140,6 +141,9 @@ app.use('/api/coupons', generalLimiter, couponRoutes);
 app.use('/api/wishlist', generalLimiter, wishlistRoutes);
 app.use('/api/requests', generalLimiter, requestRoutes);
 app.use('/api/payments', generalLimiter, paymentRoutes);
+
+// Dynamic sitemap endpoint — rate limited to 100/min
+app.use('/sitemap.xml', searchLimiter, sitemapRoutes);
 
 // ============================================================
 // Error Handling (must be LAST)

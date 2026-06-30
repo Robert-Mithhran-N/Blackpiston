@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import SEO from "@/components/seo/SEO";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import ProductCard from "@/components/ProductCard";
@@ -202,6 +203,7 @@ const ProductDetail = () => {
 
                 const mapped: Product = {
                     id: p.id,
+                    slug: p.slug,
                     name: p.name,
                     category: p.categorySlug || p.category?.slug || "accessories",
                     price: p.price,
@@ -210,6 +212,7 @@ const ProductDetail = () => {
                     images: imageUrls.length > 0 ? imageUrls : [mainImageUrl],
                     rating: p.averageRating || p.rating || 0,
                     description: p.description || "",
+                    shortDescription: p.shortDescription || "",
                     inStock: p.inStock !== false && (p.stockQuantity === undefined || p.stockQuantity > 0),
                     featured: p.isFeatured || false,
                     isTopOffer: false,
@@ -224,6 +227,7 @@ const ProductDetail = () => {
                     warrantyBadgeDesc: p.warrantyBadgeDesc || "",
                     returnBadgeTitle: p.returnBadgeTitle || "",
                     returnBadgeDesc: p.returnBadgeDesc || "",
+                    totalReviews: p.totalReviews || p.reviews?.length || 0,
                 };
                 setProduct(mapped);
 
@@ -539,8 +543,53 @@ const ProductDetail = () => {
         );
     }
 
+    const breadcrumbs = product ? [
+        { name: "Home", url: "/" },
+        { name: "Shop", url: "/shop" },
+        { name: product.category, url: `/shop?brand=${product.category}` },
+        { name: product.name, url: `/product/${product.slug || product.id}` }
+    ] : undefined;
+
+    const productSchema = product ? {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        "name": product.name,
+        "image": product.images || [product.image],
+        "description": product.shortDescription || product.description?.slice(0, 300),
+        "sku": product.variants?.[0]?.sku || `BP-${product.id}`,
+        "brand": {
+            "@type": "Brand",
+            "name": product.category
+        },
+        "offers": {
+            "@type": "Offer",
+            "url": window.location.href,
+            "priceCurrency": "INR",
+            "price": product.offerPrice || product.price,
+            "availability": product.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+            "priceValidUntil": "2030-12-31"
+        },
+        ...(product.rating > 0 && {
+            "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": product.rating,
+                "reviewCount": Math.max(1, product.totalReviews || 5)
+            }
+        })
+    } : undefined;
+
     return (
         <div className="min-h-screen bg-background">
+            {product && (
+                <SEO
+                    title={product.name}
+                    description={product.shortDescription || product.description?.slice(0, 160)}
+                    ogType="product"
+                    ogImage={product.image}
+                    breadcrumbs={breadcrumbs}
+                    jsonLd={productSchema}
+                />
+            )}
             <Header />
             <main className="pb-16">
                 {/* Breadcrumb */}

@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { fetchProducts, fetchProductFilters } from "@/lib/api";
 import { Product } from "@/types/user";
+import SEO from "@/components/seo/SEO";
 
 // ============================================================
 // Constants
@@ -119,6 +120,7 @@ function mapProduct(p: any): Product {
 
   return {
     id: p.id,
+    slug: p.slug,
     name: p.name,
     category: p.brand || "Gear",
     price: p.price,
@@ -702,8 +704,31 @@ const Shop = () => {
     (filters.discount ? 1 : 0) +
     (filters.inStock ? 1 : 0);
 
+  const dynamicTitle = useMemo(() => {
+    let titleStr = "Shop Motorcycle Gear & Parts";
+    if (filters.search) {
+      titleStr = `Search results for "${filters.search}"`;
+    } else if (filters.types.length > 0) {
+      const tagLabel = filters.types[0].charAt(0).toUpperCase() + filters.types[0].slice(1).replace(/-/g, " ");
+      titleStr = `Buy Premium ${tagLabel}`;
+    } else if (filters.brands.length > 0) {
+      titleStr = `${filters.brands.join(", ")} Collection`;
+    }
+    return titleStr;
+  }, [filters.search, filters.types, filters.brands]);
+
+  const breadcrumbs = [
+    { name: "Home", url: "/" },
+    { name: "Shop", url: "/shop" }
+  ];
+
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title={dynamicTitle}
+        description="Browse the BlackPiston Garage catalog of premium motorcycle helmets, riding gear, protectors, and performance components. Dynamic search and filters."
+        breadcrumbs={breadcrumbs}
+      />
       <Header />
       <main className="pb-16">
         {/* Hero Banner */}
