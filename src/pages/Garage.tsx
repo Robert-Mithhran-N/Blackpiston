@@ -19,9 +19,10 @@ import {
   Zap,
   ShieldCheck
 } from "lucide-react";
-import { services } from "@/config/services";
-import { contactConfig } from "@/config/contact";
 import { Service } from "@/types/user";
+import { contactConfig } from "@/config/contact";
+import { useQuery } from "@tanstack/react-query";
+import { fetchServices, trackServiceView, trackServiceClick, trackServiceInquiry } from "@/lib/api";
 import FloatingCard from "@/components/FloatingCard";
 
 // --- Components ---
@@ -72,55 +73,68 @@ const ServiceHighlights = ({ highlights }: { highlights: string[] }) => (
   </ul>
 );
 
-const ServiceCard = ({ service, onClick, index }: { service: Service; onClick: () => void; index: number }) => (
-  <FloatingCard 
-    seed={index}
-    onClick={onClick}
-    className="flex flex-col h-full bg-zinc-950/40"
-  >
-    {/* Image Container */}
-    <div className="relative h-64 overflow-hidden">
-      <div className="absolute inset-0 bg-black/40 group-hover:bg-black/0 transition-colors duration-500 z-10" />
-      <img
-        src={service.image}
-        alt={service.name}
-        className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-[1.03] transition-opacity"
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent z-10" />
-      
-      {/* Duration Badge */}
-      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-1.5 text-xs font-medium text-zinc-300 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-sm border border-white/10">
-        <Clock className="h-3.5 w-3.5 text-orange-500" />
-        {service.duration}
-      </div>
-    </div>
+const ServiceCard = ({ service, onClick, index }: { service: Service; onClick: () => void; index: number }) => {
+  const isComingSoon = service.status === 'COMING_SOON';
 
-    {/* Content */}
-    <div className="flex-1 p-6 relative z-20 bg-zinc-950/30 flex flex-col">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-2xl font-display font-bold text-white group-hover:text-orange-500 transition-colors uppercase tracking-wide">
-          {service.name}
-        </h3>
-      </div>
-      
-      <p className="text-zinc-400 text-sm leading-relaxed mb-6 flex-1">
-        {service.description}
-      </p>
-
-      {service.highlights && (
-        <div className="border-t border-white/5 pt-4">
-          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-2">Highlights</p>
-          <ServiceHighlights highlights={service.highlights.slice(0, 3)} />
+  return (
+    <FloatingCard 
+      seed={index}
+      onClick={isComingSoon ? undefined : onClick}
+      className={`flex flex-col h-full bg-zinc-950/40 ${isComingSoon ? 'opacity-65 cursor-not-allowed' : 'cursor-pointer'}`}
+    >
+      {/* Image Container */}
+      <div className="relative h-64 overflow-hidden">
+        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/0 transition-colors duration-500 z-10" />
+        <img
+          src={service.image}
+          alt={service.name}
+          className={`w-full h-full object-cover transform transition-transform duration-700 ${!isComingSoon ? 'group-hover:scale-[1.03]' : ''} transition-opacity`}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/40 to-transparent z-10" />
+        
+        {/* Badges */}
+        <div className="absolute bottom-4 left-4 z-20 flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-300 bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-sm border border-white/10">
+            <Clock className="h-3.5 w-3.5 text-orange-500" />
+            {service.duration}
+          </div>
+          {isComingSoon && (
+            <div className="flex items-center gap-1.5 text-xs font-bold text-black bg-yellow-500 px-2.5 py-1 rounded-sm">
+              COMING SOON
+            </div>
+          )}
         </div>
-      )}
-
-      {/* Decorative Arrow */}
-      <div className="absolute bottom-6 right-6 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
-        <ArrowRight className="h-6 w-6 text-orange-500" />
       </div>
-    </div>
-  </FloatingCard>
-);
+
+      {/* Content */}
+      <div className="flex-1 p-6 relative z-20 bg-zinc-950/30 flex flex-col">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className={`text-2xl font-display font-bold text-white ${!isComingSoon ? 'group-hover:text-orange-500' : ''} transition-colors uppercase tracking-wide`}>
+            {service.name}
+          </h3>
+        </div>
+        
+        <p className="text-zinc-400 text-sm leading-relaxed mb-6 flex-1">
+          {service.description}
+        </p>
+
+        {service.highlights && service.highlights.length > 0 && (
+          <div className="border-t border-white/5 pt-4">
+            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-2">Highlights</p>
+            <ServiceHighlights highlights={service.highlights.slice(0, 3)} />
+          </div>
+        )}
+
+        {/* Decorative Arrow */}
+        {!isComingSoon && (
+          <div className="absolute bottom-6 right-6 opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+            <ArrowRight className="h-6 w-6 text-orange-500" />
+          </div>
+        )}
+      </div>
+    </FloatingCard>
+  );
+};
 
 const ServiceDetailModal = ({ service, onClose }: { service: Service; onClose: () => void }) => {
   // Prevent scrolling when modal is open
@@ -243,7 +257,7 @@ const ServiceDetailModal = ({ service, onClose }: { service: Service; onClose: (
             )}
           </div>
 
-          <div className="mt-8 pt-8 border-t border-white/10 flex justify-end">
+          <div className="mt-8 pt-8 border-t border-white/10 flex justify-end gap-3">
             <Button 
               onClick={onClose}
               variant="outline" 
@@ -251,6 +265,16 @@ const ServiceDetailModal = ({ service, onClose }: { service: Service; onClose: (
             >
               Close Details
             </Button>
+            <Link to={`/contact?subject=Inquiry: ${encodeURIComponent(service.name)}`}>
+              <Button 
+                className="bg-orange-500 hover:bg-orange-600 text-white border-0"
+                onClick={() => {
+                  trackServiceInquiry(service.id).catch(console.error);
+                }}
+              >
+                Inquire Now
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -302,6 +326,30 @@ const GarageCTASection = () => (
 
 const Garage = () => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [trackedViews, setTrackedViews] = useState<Set<string>>(new Set());
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["publicServices"],
+    queryFn: fetchServices
+  });
+
+  const services: Service[] = data?.services || [];
+
+  // Track views on load
+  useEffect(() => {
+    services.forEach(service => {
+      if (!trackedViews.has(service.id)) {
+        trackServiceView(service.id).catch(console.error);
+        setTrackedViews(prev => new Set(prev).add(service.id));
+      }
+    });
+  }, [services, trackedViews]);
+
+  const handleServiceClick = (service: Service) => {
+    if (service.status === 'COMING_SOON') return;
+    trackServiceClick(service.id).catch(console.error);
+    setSelectedService(service);
+  };
 
   const breadcrumbs = [
     { name: "Home", url: "/" },
@@ -366,16 +414,29 @@ const Garage = () => {
               </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {services.map((service, idx) => (
-                <ServiceCard 
-                  key={service.id} 
-                  service={service} 
-                  index={idx}
-                  onClick={() => setSelectedService(service)} 
-                />
-              ))}
-            </div>
+            {isLoading ? (
+              <div className="py-24 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                <p className="text-zinc-400">Loading garage services...</p>
+              </div>
+            ) : services.length === 0 ? (
+              <div className="py-24 text-center">
+                <Wrench className="h-16 w-16 text-zinc-800 mx-auto mb-4" />
+                <h3 className="text-2xl font-display font-bold text-white mb-2">No Services Available</h3>
+                <p className="text-zinc-500">We are currently updating our garage offerings. Please check back soon.</p>
+              </div>
+            ) : (
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {services.map((service, idx) => (
+                  <ServiceCard 
+                    key={service.id} 
+                    service={service} 
+                    index={idx}
+                    onClick={() => handleServiceClick(service)} 
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </section>
 

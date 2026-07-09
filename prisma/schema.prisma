@@ -743,16 +743,29 @@ model Blog {
 }
 
 model Service {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  slug        String   @unique
-  description String
-  price       Float
-  duration    String
-  category    String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  slug           String   @unique
+  description    String
+  price          Float
+  duration       String
+  category       String?
+  isActive       Boolean  @default(true)
+  image          String?
+  status         String   @default("AVAILABLE") // AVAILABLE, UNAVAILABLE, COMING_SOON, SEASONAL, ARCHIVED
+  visible        Boolean  @default(true)
+  featured       Boolean  @default(false)
+  displayOrder   Int      @default(0)
+  highlights     String[]
+  included       String[]
+  benefits       String[]
+  process        String[]
+  supportedBikes String?
+  views          Int      @default(0)
+  clicks         Int      @default(0)
+  inquiries      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@map("services")
 }
@@ -853,4 +866,48 @@ model WebhookEvent {
   createdAt     DateTime  @default(now())
 
   @@map("webhook_events")
+}
+
+// ==================== AI ASSISTANT ====================
+
+enum AiKnowledgeCategory {
+  FAQ
+  POLICY
+  CUSTOM
+  STORE_INFO
+}
+
+model AiKnowledgeBase {
+  id        String              @id @default(auto()) @map("_id") @db.ObjectId
+  category  AiKnowledgeCategory @default(FAQ)
+  question  String
+  answer    String
+  tags      String[]
+  isActive  Boolean             @default(true)
+  priority  Int                 @default(0)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  @@index([category, isActive])
+  @@map("ai_knowledge_base")
+}
+
+type AiMessage {
+  role      String // "user" | "assistant"
+  content   String
+  timestamp DateTime @default(now())
+}
+
+model AiConversation {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId String
+  userId    String?     @db.ObjectId
+  messages  AiMessage[]
+  intent    String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("ai_conversations")
 }

@@ -21,12 +21,11 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Wrench, Search, PenSquare, Trash2 } from "lucide-react";
+import { Plus, Wrench, Search, PenSquare, Trash2, Copy, Eye, MousePointerClick, MessageSquare } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAdminServices, createService, updateService, deleteService } from "@/lib/api";
+import { fetchAdminServices, createService, updateService, deleteService, duplicateService } from "@/lib/api";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 const AdminServices = () => {
   const queryClient = useQueryClient();
@@ -43,7 +42,12 @@ const AdminServices = () => {
     price: "",
     duration: "",
     category: "",
-    isActive: true,
+    image: "",
+    status: "ACTIVE",
+    visible: true,
+    featured: false,
+    displayOrder: 0,
+    highlights: "",
   });
 
   const { data, isLoading } = useQuery({
@@ -84,6 +88,15 @@ const AdminServices = () => {
     onError: (err: any) => toast.error(err.message || "Failed to delete service"),
   });
 
+  const duplicateMutation = useMutation({
+    mutationFn: duplicateService,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminServices"] });
+      toast.success("Service duplicated successfully");
+    },
+    onError: (err: any) => toast.error(err.message || "Failed to duplicate service"),
+  });
+
   const resetForm = () => {
     setFormData({
       name: "",
@@ -91,7 +104,12 @@ const AdminServices = () => {
       price: "",
       duration: "",
       category: "",
-      isActive: true,
+      image: "",
+      status: "ACTIVE",
+      visible: true,
+      featured: false,
+      displayOrder: 0,
+      highlights: "",
     });
     setEditingService(null);
   };
@@ -104,7 +122,12 @@ const AdminServices = () => {
       price: service.price?.toString() || "",
       duration: service.duration || "",
       category: service.category || "",
-      isActive: service.isActive,
+      image: service.image || "",
+      status: service.status || "ACTIVE",
+      visible: service.visible !== undefined ? service.visible : true,
+      featured: service.featured || false,
+      displayOrder: service.displayOrder || 0,
+      highlights: service.highlights ? service.highlights.join("\n") : "",
     });
     setIsDialogOpen(true);
   };
@@ -129,6 +152,8 @@ const AdminServices = () => {
     const payload = {
       ...formData,
       price: Number(formData.price),
+      displayOrder: Number(formData.displayOrder),
+      highlights: formData.highlights.split("\n").map(h => h.trim()).filter(h => h.length > 0),
     };
 
     if (editingService) {
@@ -138,8 +163,8 @@ const AdminServices = () => {
     }
   };
 
-  const handleToggleActive = (service: any, checked: boolean) => {
-    updateMutation.mutate({ id: service.id, data: { isActive: checked } });
+  const handleToggleVisible = (service: any, checked: boolean) => {
+    updateMutation.mutate({ id: service.id, data: { visible: checked } });
   };
 
   return (
@@ -149,7 +174,7 @@ const AdminServices = () => {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Services</h1>
             <p className="text-muted-foreground">
-              Configure garage services and pricing.
+              Configure garage services, availability, and pricing.
             </p>
           </div>
           <div className="flex gap-4 w-full sm:w-auto">
@@ -169,7 +194,7 @@ const AdminServices = () => {
                   Add service
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
+              <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{editingService ? "Edit Service" : "Add Service"}</DialogTitle>
                 </DialogHeader>
@@ -213,21 +238,77 @@ const AdminServices = () => {
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Category</label>
+                      <Input 
+                        placeholder="e.g., Maintenance" 
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Display Order</label>
+                      <Input 
+                        type="number"
+                        placeholder="0" 
+                        value={formData.displayOrder}
+                        onChange={(e) => setFormData({ ...formData, displayOrder: Number(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Category</label>
+                    <label className="text-sm font-medium">Image URL</label>
                     <Input 
-                      placeholder="e.g., Maintenance, Customization" 
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                      placeholder="https://..." 
+                      value={formData.image}
+                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Highlights (One per line)</label>
+                    <Textarea 
+                      placeholder="Premium Oil\nFilter Change\nCheckup" 
+                      rows={3} 
+                      value={formData.highlights}
+                      onChange={(e) => setFormData({ ...formData, highlights: e.target.value })}
                     />
                   </div>
 
-                  <div className="flex items-center justify-between pt-2">
-                    <label className="text-sm font-medium">Active Status</label>
-                    <Switch 
-                      checked={formData.isActive}
-                      onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
-                    />
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Status</label>
+                      <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v })}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="ACTIVE">Active</SelectItem>
+                          <SelectItem value="INACTIVE">Inactive</SelectItem>
+                          <SelectItem value="COMING_SOON">Coming Soon</SelectItem>
+                          <SelectItem value="ARCHIVED">Archived</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="flex flex-col justify-center gap-2 pt-6">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Visible to Public</label>
+                        <Switch 
+                          checked={formData.visible}
+                          onCheckedChange={(checked) => setFormData({ ...formData, visible: checked })}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">Featured</label>
+                        <Switch 
+                          checked={formData.featured}
+                          onCheckedChange={(checked) => setFormData({ ...formData, featured: checked })}
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex justify-end gap-2 pt-4 border-t mt-4">
@@ -244,6 +325,47 @@ const AdminServices = () => {
               </DialogContent>
             </Dialog>
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground font-medium">Total Services</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{data?.services?.length || 0}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground font-medium">Active & Visible</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-500">
+                {data?.services?.filter((s: any) => s.status === 'ACTIVE' && s.visible).length || 0}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground font-medium">Coming Soon</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-yellow-500">
+                {data?.services?.filter((s: any) => s.status === 'COMING_SOON').length || 0}
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground font-medium">Total Views</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-500">
+                {data?.services?.reduce((acc: number, s: any) => acc + (s.views || 0), 0) || 0}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card className="border-border/50 shadow-sm overflow-hidden">
@@ -276,68 +398,91 @@ const AdminServices = () => {
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
                       <TableHead>Service Info</TableHead>
-                      <TableHead>Category</TableHead>
+                      <TableHead>Status & Visibility</TableHead>
                       <TableHead>Price</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right w-36">Actions</TableHead>
+                      <TableHead>Analytics</TableHead>
+                      <TableHead className="text-right w-48">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {data?.services?.map((srv: any) => (
                       <TableRow key={srv.id} className="group">
                         <TableCell>
-                          <div className="font-medium text-foreground">{srv.name}</div>
+                          <div className="font-medium text-foreground flex items-center gap-2">
+                            {srv.name}
+                            {srv.featured && <Badge variant="secondary" className="text-[10px] h-4">Featured</Badge>}
+                          </div>
                           <div className="text-xs text-muted-foreground mt-1 line-clamp-1 max-w-sm">
                             {srv.description}
                           </div>
                           <div className="text-xs text-muted-foreground mt-1 flex items-center gap-2">
                             <span className="bg-muted px-1.5 py-0.5 rounded">⏱️ {srv.duration}</span>
+                            <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] uppercase">{srv.category || "Uncategorized"}</span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="font-normal">
-                            {srv.category || "Uncategorized"}
-                          </Badge>
+                          <div className="flex flex-col gap-1 items-start">
+                            <Badge
+                              className={
+                                srv.status === 'ACTIVE'
+                                  ? "bg-green-500/10 text-green-500 hover:bg-green-500/20"
+                                  : srv.status === 'COMING_SOON'
+                                  ? "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20"
+                                  : "bg-muted/60 text-muted-foreground border-border/60"
+                              }
+                            >
+                              {srv.status}
+                            </Badge>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-muted-foreground">Visible:</span>
+                              <Switch 
+                                checked={srv.visible} 
+                                onCheckedChange={(checked) => handleToggleVisible(srv, checked)}
+                                disabled={updateMutation.isPending}
+                                className="scale-75 origin-left"
+                              />
+                            </div>
+                          </div>
                         </TableCell>
                         <TableCell className="font-mono font-medium text-foreground">
                           ₹{srv.price?.toLocaleString() || "0"}
                         </TableCell>
                         <TableCell>
-                          <Badge
-                            className={
-                              srv.isActive
-                                ? "bg-green-500/10 text-green-500 hover:bg-green-500/20"
-                                : "bg-muted/60 text-muted-foreground border-border/60"
-                            }
-                          >
-                            {srv.isActive ? "Active" : "Inactive"}
-                          </Badge>
+                          <div className="flex gap-3 text-muted-foreground text-xs font-mono">
+                            <span className="flex items-center gap-1" title="Views"><Eye className="h-3 w-3" /> {srv.views || 0}</span>
+                            <span className="flex items-center gap-1" title="Clicks"><MousePointerClick className="h-3 w-3" /> {srv.clicks || 0}</span>
+                            <span className="flex items-center gap-1" title="Inquiries"><MessageSquare className="h-3 w-3" /> {srv.inquiries || 0}</span>
+                          </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end items-center gap-3">
-                            <Switch 
-                              checked={srv.isActive} 
-                              onCheckedChange={(checked) => handleToggleActive(srv, checked)}
-                              disabled={updateMutation.isPending}
-                            />
-                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                className="h-8 w-8 hover:!bg-primary/20 hover:text-primary"
-                                onClick={() => handleEdit(srv)}
-                              >
-                                <PenSquare className="h-4 w-4" />
-                              </Button>
-                              <Button 
-                                size="icon" 
-                                variant="ghost" 
-                                className="h-8 w-8 hover:!bg-red-500/20 hover:text-red-500"
-                                onClick={() => handleDeleteClick(srv.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
+                          <div className="flex justify-end items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-8 w-8 hover:!bg-blue-500/20 hover:text-blue-500"
+                              onClick={() => duplicateMutation.mutate(srv.id)}
+                              title="Duplicate"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-8 w-8 hover:!bg-primary/20 hover:text-primary"
+                              onClick={() => handleEdit(srv)}
+                              title="Edit"
+                            >
+                              <PenSquare className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="icon" 
+                              variant="ghost" 
+                              className="h-8 w-8 hover:!bg-red-500/20 hover:text-red-500"
+                              onClick={() => handleDeleteClick(srv.id)}
+                              title="Delete"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -380,5 +525,3 @@ const AdminServices = () => {
 };
 
 export default AdminServices;
-
-

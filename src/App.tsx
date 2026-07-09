@@ -61,6 +61,10 @@ const AdminMessages = lazy(() => import("./pages/admin/AdminMessages"));
 const AdminPayments = lazy(() => import("./pages/admin/AdminPayments"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
 const AdminUsers = lazy(() => import("./pages/admin/AdminUsers"));
+const AdminAiKnowledge = lazy(() => import("./pages/admin/AdminAiKnowledge"));
+
+// Lazy-loaded AI Chat Widget
+const AiChatWidget = lazy(() => import("@/components/ai/AiChatWidget"));
 
 import AdminRoute from "./routes/AdminRoute";
 import { AdminAuthProvider } from "./context/AdminAuthContext";
@@ -122,6 +126,9 @@ const App = () => {
                     <ScrollToTop />
                     <AdminRedirectEnforcer />
                     <MobileBottomNav />
+                    <Suspense fallback={null}>
+                      <AiChatWidget />
+                    </Suspense>
                     <Suspense fallback={<PageLoader />}>
                     <Routes>
                     <Route path="/" element={<Index />} />
@@ -167,6 +174,7 @@ const App = () => {
                       <Route path="services" element={<AdminServices />} />
                       <Route path="messages" element={<AdminMessages />} />
                       <Route path="users" element={<AdminUsers />} />
+                      <Route path="ai-knowledge" element={<AdminAiKnowledge />} />
                       <Route path="settings" element={<AdminSettings />} />
                     </Route>
 

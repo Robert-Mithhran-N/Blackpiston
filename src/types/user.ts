@@ -71,15 +71,34 @@ export interface Category {
 export interface Service {
     id: string;
     name: string;
+    slug?: string;
     price: number;
     description: string;
-    image: string;
+    image?: string;
     duration: string;
+    category?: string;
+    isActive: boolean;
+    
+    // Management Toggles
+    status?: 'AVAILABLE' | 'UNAVAILABLE' | 'COMING_SOON' | 'SEASONAL' | 'ARCHIVED';
+    visible?: boolean;
+    featured?: boolean;
+    displayOrder?: number;
+    
+    // Detailed Lists
     highlights?: string[];
     included?: string[];
     benefits?: string[];
     process?: string[];
     supportedBikes?: string;
+
+    // Engagement Metrics
+    views?: number;
+    clicks?: number;
+    inquiries?: number;
+    
+    createdAt?: string;
+    updatedAt?: string;
 }
 
 // ============================================================

@@ -177,6 +177,17 @@ export const aiLimiter = rateLimit({
     message: 'AI generation rate limit exceeded. Please wait before trying again.',
 });
 
+/** AI Chat assistant: 15 requests per minute per IP */
+export const aiChatLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 15,
+    standardHeaders: true,
+    legacyHeaders: false,
+    handler: rateLimitResponse,
+    message: 'AI chat rate limit exceeded. Please slow down.',
+});
+
+
 /** General API fallback: 200 requests per minute */
 export const generalLimiter = rateLimit({
     windowMs: 60 * 1000,

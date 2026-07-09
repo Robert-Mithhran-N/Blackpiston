@@ -40,6 +40,16 @@ const serviceSchema = z.object({
   duration: z.string().min(1, 'Duration is required'),
   category: z.string().optional().nullable(),
   isActive: z.boolean().optional().default(true),
+  image: z.string().optional().nullable(),
+  status: z.string().optional().default('AVAILABLE'),
+  visible: z.boolean().optional().default(true),
+  featured: z.boolean().optional().default(false),
+  displayOrder: z.coerce.number().int().optional().default(0),
+  highlights: z.array(z.string()).optional().default([]),
+  included: z.array(z.string()).optional().default([]),
+  benefits: z.array(z.string()).optional().default([]),
+  process: z.array(z.string()).optional().default([]),
+  supportedBikes: z.string().optional().nullable(),
 });
 
 // GET all services (Admin)
@@ -57,15 +67,21 @@ router.get('/', authenticateAdmin, async (req: Request, res: Response) => {
       ];
     }
     if (category) where.category = category as string;
-    if (status === 'active') where.isActive = true;
-    if (status === 'inactive') where.isActive = false;
+    if (status) {
+      if (status === 'active') where.isActive = true;
+      else if (status === 'inactive') where.isActive = false;
+      else where.status = status as string;
+    }
 
     const [services, total] = await Promise.all([
       prisma.service.findMany({
         where,
         skip: (pageNum - 1) * limitNum,
         take: limitNum,
-        orderBy: { createdAt: 'desc' }
+        orderBy: [
+          { displayOrder: 'asc' },
+          { createdAt: 'desc' }
+        ]
       }),
       prisma.service.count({ where })
     ]);
@@ -107,6 +123,80 @@ router.post('/', authenticateAdmin, async (req: Request, res: Response) => {
     if (error.code === 'P2002') return res.status(400).json({ error: 'Slug must be unique' });
     console.error('Create service error:', error);
     res.status(500).json({ error: 'Failed to create service' });
+  }
+});
+
+// POST duplicate service
+router.post('/duplicate/:id', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const original = await prisma.service.findUnique({ where: { id } });
+    if (!original) {
+      return res.status(404).json({ error: 'Original service not found' });
+    }
+
+    const randomSuffix = Math.floor(Math.random() * 10000);
+    const duplicatedName = `${original.name} - Copy`;
+    const duplicatedSlug = `${original.slug}-copy-${randomSuffix}`;
+
+    const duplicate = await prisma.service.create({
+      data: {
+        name: duplicatedName,
+        slug: duplicatedSlug,
+        description: original.description,
+        price: original.price,
+        duration: original.duration,
+        category: original.category,
+        isActive: original.isActive,
+        image: original.image,
+        status: original.status,
+        visible: original.visible,
+        featured: original.featured,
+        displayOrder: original.displayOrder + 1,
+        highlights: original.highlights,
+        included: original.included,
+        benefits: original.benefits,
+        process: original.process,
+        supportedBikes: original.supportedBikes
+      }
+    });
+
+    res.status(201).json({ message: 'Service duplicated', service: duplicate });
+  } catch (error) {
+    console.error('Duplicate service error:', error);
+    res.status(500).json({ error: 'Failed to duplicate service' });
+  }
+});
+
+// POST bulk update services
+router.post('/bulk-update', authenticateAdmin, async (req: Request, res: Response) => {
+  try {
+    const bulkSchema = z.object({
+      ids: z.array(z.string().min(1)),
+      visible: z.boolean().optional(),
+      status: z.string().optional(),
+      featured: z.boolean().optional(),
+      isActive: z.boolean().optional()
+    });
+
+    const parseResult = bulkSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      return res.status(400).json({ error: 'Validation failed', details: parseResult.error.errors });
+    }
+
+    const { ids, ...updateFields } = parseResult.data;
+
+    await prisma.service.updateMany({
+      where: {
+        id: { in: ids }
+      },
+      data: updateFields
+    });
+
+    res.json({ message: `Successfully updated ${ids.length} services` });
+  } catch (error) {
+    console.error('Bulk update services error:', error);
+    res.status(500).json({ error: 'Failed to update services bulk' });
   }
 });
 

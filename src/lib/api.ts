@@ -702,6 +702,34 @@ export async function deleteBlogPost(id: string) {
 }
 
 // ============================================================
+// Public - Services
+// ============================================================
+
+export async function fetchServices() {
+    const res = await fetch(`${API_BASE}/services`);
+    if (!res.ok) throw new Error("Failed to fetch services");
+    return res.json();
+}
+
+export async function trackServiceView(id: string) {
+    const res = await fetch(`${API_BASE}/services/${id}/view`, { method: "POST" });
+    if (!res.ok) throw new Error("Failed to track view");
+    return res.json();
+}
+
+export async function trackServiceClick(id: string) {
+    const res = await fetch(`${API_BASE}/services/${id}/click`, { method: "POST" });
+    if (!res.ok) throw new Error("Failed to track click");
+    return res.json();
+}
+
+export async function trackServiceInquiry(id: string) {
+    const res = await fetch(`${API_BASE}/services/${id}/inquiry`, { method: "POST" });
+    if (!res.ok) throw new Error("Failed to track inquiry");
+    return res.json();
+}
+
+// ============================================================
 // Admin - Services
 // ============================================================
 
@@ -738,6 +766,25 @@ export async function deleteService(id: string) {
         headers: getAuthHeaders(),
     });
     if (!res.ok) throw new Error("Failed to delete service");
+    return res.json();
+}
+
+export async function duplicateService(id: string) {
+    const res = await fetch(`${API_BASE}/admin/services/duplicate/${id}`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error("Failed to duplicate service");
+    return res.json();
+}
+
+export async function bulkUpdateServices(data: { ids: string[]; visible?: boolean; status?: string; isActive?: boolean; featured?: boolean }) {
+    const res = await fetch(`${API_BASE}/admin/services/bulk-update`, {
+        method: "POST",
+        headers: getAuthHeaders(),
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error("Failed to bulk update services");
     return res.json();
 }
 

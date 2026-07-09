@@ -23,6 +23,7 @@ import {
     searchLimiter,
     adminLimiter,
     generalLimiter,
+    aiChatLimiter,
 } from './middlewares/security.js';
 import { requestLogger } from './middlewares/logger.js';
 import { sanitizeInput } from './middlewares/sanitize.js';
@@ -31,6 +32,7 @@ import { errorHandler, notFoundHandler } from './middlewares/errorHandler.js';
 // Route imports
 import authRoutes from './routes/auth.js';
 import productRoutes from './routes/products.js';
+import aiRoutes from './routes/ai.js';
 import orderRoutes from './routes/orders.js';
 import uploadRoutes from './routes/upload.js';
 import adminRoutes from './routes/admin.js';
@@ -41,6 +43,7 @@ import couponRoutes from './routes/coupons.js';
 import wishlistRoutes from './routes/wishlist.js';
 import requestRoutes from './routes/requests.js';
 import paymentRoutes from './routes/payments.js';
+import servicePublicRoutes from './routes/servicesPublic.js';
 import sitemapRoutes from './routes/sitemap.js';
 import { initSocketServer } from './socketManager.js';
 import { cleanupExpiredOrders } from './utils/paymentService.js';
@@ -130,6 +133,12 @@ app.use('/api/upload', uploadLimiter, uploadRoutes);
 app.use('/api/admin', adminLimiter, adminRoutes);
 app.use('/api/admin/blog', adminLimiter, blogRoutes);
 app.use('/api/admin/services', adminLimiter, serviceRoutes);
+
+// AI Chat assistant — 15/min
+app.use('/api/ai', aiChatLimiter, aiRoutes);
+
+// Public client services — 100/min
+app.use('/api/services', searchLimiter, servicePublicRoutes);
 
 // Product/search routes — 100/min
 app.use('/api/products', searchLimiter, productRoutes);

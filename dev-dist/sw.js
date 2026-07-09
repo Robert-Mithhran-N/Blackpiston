@@ -86,15 +86,16 @@ define(['./workbox-b79e8dca'], (function (workbox) { 'use strict';
     "revision": "3ca0b8505b4bec776b69afdba2768812"
   }, {
     "url": "/index.html",
-    "revision": "0.80jppqqdbg4"
+    "revision": "0.dm0avbvkes8"
   }], {});
   workbox.cleanupOutdatedCaches();
   workbox.registerRoute(new workbox.NavigationRoute(workbox.createHandlerBoundToURL("/index.html"), {
     allowlist: [/^\/$/],
-    denylist: [/^\/api\//, /^\/version\.json/]
+    denylist: [/^\/api\//, /^\/version\.json/, /^\/sitemap\.xml/]
   }));
   workbox.registerRoute(/\/version\.json$/, new workbox.NetworkOnly(), 'GET');
-  workbox.registerRoute(/^https?:\/\/.*\/api\/(checkout|payments|admin|orders|user\/orders|appointments|services|messages|users|settings).*/i, new workbox.NetworkOnly(), 'GET');
+  workbox.registerRoute(/\/sitemap\.xml$/, new workbox.NetworkOnly(), 'GET');
+  workbox.registerRoute(/^https?:\/\/.*\/api\/(auth|checkout|payments|admin|orders|user\/orders|appointments|services|messages|users|settings|wishlist).*/i, new workbox.NetworkOnly(), 'GET');
   workbox.registerRoute(/^https?:\/\/.*\/api\/.*/i, new workbox.NetworkFirst({
     "cacheName": "api-cache",
     plugins: [new workbox.ExpirationPlugin({

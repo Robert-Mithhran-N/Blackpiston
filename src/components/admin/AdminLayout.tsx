@@ -20,6 +20,7 @@ import {
   Tag,
   History,
   Package,
+  Brain,
 } from "lucide-react";
 import {
   Sidebar,
@@ -57,8 +58,10 @@ const navItems = [
   { to: "/admin/low-stock", label: "Low Stock", icon: Factory },
   { to: "/admin/requests", label: "Requests", icon: MessagesSquare },
   { to: "/admin/users", label: "Users", icon: Users },
+  { to: "/admin/ai-knowledge", label: "AI Knowledge", icon: Brain },
   { to: "/admin/settings", label: "Settings", icon: Settings },
 ];
+
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   const { user, logout } = useAdminAuth();

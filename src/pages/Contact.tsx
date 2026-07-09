@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import SEO from "@/components/seo/SEO";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
@@ -66,12 +66,15 @@ const Contact = () => {
     { name: "Contact", url: "/contact" }
   ];
 
+  const [searchParams] = useSearchParams();
+  const initialSubject = searchParams.get("subject") || "";
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
     email: "",
-    subject: "",
+    subject: initialSubject,
     message: ""
   });
 

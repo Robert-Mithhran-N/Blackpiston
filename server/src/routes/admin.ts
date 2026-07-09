@@ -1069,4 +1069,137 @@ router.patch('/orders/:id/cod-received', authenticateAdmin, async (req: Request,
     }
 });
 
+// ============================================================
+// AI Knowledge Base — CRUD (Admin Only)
+// ============================================================
+
+const aiKnowledgeSchema = z.object({
+    category: z.enum(['FAQ', 'POLICY', 'CUSTOM', 'STORE_INFO']),
+    question: z.string().min(3, 'Question is required').max(500),
+    answer: z.string().min(3, 'Answer is required').max(5000),
+    tags: z.array(z.string().max(50)).max(20).optional().default([]),
+    isActive: z.boolean().optional().default(true),
+    priority: z.number().int().min(0).max(100).optional().default(0),
+});
+
+// GET /api/admin/ai/knowledge — List all knowledge entries
+router.get('/ai/knowledge', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const { category, search } = req.query;
+
+        const where: any = {};
+        if (category && ['FAQ', 'POLICY', 'CUSTOM', 'STORE_INFO'].includes(category as string)) {
+            where.category = category;
+        }
+        if (search && typeof search === 'string') {
+            where.OR = [
+                { question: { contains: search, mode: 'insensitive' } },
+                { answer: { contains: search, mode: 'insensitive' } },
+                { tags: { hasSome: [search.toLowerCase()] } },
+            ];
+        }
+
+        const entries = await prisma.aiKnowledgeBase.findMany({
+            where,
+            orderBy: [{ category: 'asc' }, { priority: 'desc' }, { createdAt: 'desc' }],
+        });
+
+        res.json({ entries, total: entries.length });
+    } catch (error) {
+        console.error('List AI knowledge error:', error);
+        res.status(500).json({ error: 'Failed to fetch knowledge entries' });
+    }
+});
+
+// POST /api/admin/ai/knowledge — Create new entry
+router.post('/ai/knowledge', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const parseResult = aiKnowledgeSchema.safeParse(req.body);
+        if (!parseResult.success) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: parseResult.error.errors,
+            });
+        }
+
+        const entry = await prisma.aiKnowledgeBase.create({
+            data: parseResult.data,
+        });
+
+        res.status(201).json({ message: 'Knowledge entry created', entry });
+    } catch (error) {
+        console.error('Create AI knowledge error:', error);
+        res.status(500).json({ error: 'Failed to create knowledge entry' });
+    }
+});
+
+// PUT /api/admin/ai/knowledge/:id — Update entry
+router.put('/ai/knowledge/:id', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const parseResult = aiKnowledgeSchema.partial().safeParse(req.body);
+        if (!parseResult.success) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: parseResult.error.errors,
+            });
+        }
+
+        const entry = await prisma.aiKnowledgeBase.update({
+            where: { id },
+            data: parseResult.data,
+        });
+
+        res.json({ message: 'Knowledge entry updated', entry });
+    } catch (error: any) {
+        if (error?.code === 'P2025') {
+            return res.status(404).json({ error: 'Entry not found' });
+        }
+        console.error('Update AI knowledge error:', error);
+        res.status(500).json({ error: 'Failed to update knowledge entry' });
+    }
+});
+
+// DELETE /api/admin/ai/knowledge/:id — Delete entry
+router.delete('/ai/knowledge/:id', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        await prisma.aiKnowledgeBase.delete({ where: { id } });
+        res.json({ message: 'Knowledge entry deleted' });
+    } catch (error: any) {
+        if (error?.code === 'P2025') {
+            return res.status(404).json({ error: 'Entry not found' });
+        }
+        console.error('Delete AI knowledge error:', error);
+        res.status(500).json({ error: 'Failed to delete knowledge entry' });
+    }
+});
+
+// GET /api/admin/ai/conversations — View recent AI conversations (debugging)
+router.get('/ai/conversations', authenticateAdmin, async (req: Request, res: Response) => {
+    try {
+        const page = parseInt(req.query.page as string) || 1;
+        const limit = Math.min(parseInt(req.query.limit as string) || 20, 50);
+
+        const [conversations, total] = await Promise.all([
+            prisma.aiConversation.findMany({
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma.aiConversation.count(),
+        ]);
+
+        res.json({
+            conversations,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        });
+    } catch (error) {
+        console.error('List AI conversations error:', error);
+        res.status(500).json({ error: 'Failed to fetch conversations' });
+    }
+});
+
 export default router;

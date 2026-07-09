@@ -46,7 +46,11 @@ router.get('/', async (req: Request, res: Response) => {
                 select: { slug: true, updatedAt: true }
             }),
             prisma.service.findMany({
-                where: { isActive: true },
+                where: { 
+                    isActive: true,
+                    visible: true,
+                    status: { not: 'ARCHIVED' }
+                },
                 select: { slug: true, updatedAt: true }
             })
         ]);
