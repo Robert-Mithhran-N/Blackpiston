@@ -8,6 +8,8 @@ import { emitStockUpdate } from '../socketManager.js';
 import { Parser } from 'json2csv';
 import { generateProductContent, regenerateSection } from '../config/gemini.js';
 import { JWT_VERIFY_OPTIONS } from '../middlewares/security.js';
+import { invalidateProducts, invalidateKnowledge } from '../utils/ai/cacheManager.js';
+import { aiAnalyticsService } from '../utils/ai/analytics.js';
 
 const router = Router();
 
@@ -372,6 +374,7 @@ router.post('/products', authenticateAdmin, async (req: Request, res: Response) 
             // include: { category: true } removed
         });
 
+        invalidateProducts().catch(err => console.error('[Cache Invalidation] Failed to invalidate products cache:', err));
         res.status(201).json({ message: 'Product created', product });
     } catch (error: any) {
         console.error('❌ [POST /products] Create product error:', error);
@@ -525,6 +528,7 @@ router.put('/products/:id', authenticateAdmin, async (req: Request, res: Respons
             });
         }
 
+        invalidateProducts().catch(err => console.error('[Cache Invalidation] Failed to invalidate products cache:', err));
         res.json({ message: 'Product updated', product });
     } catch (error: any) {
         console.error('❌ [PUT /products/:id] Update error:', error?.message || error);
@@ -553,7 +557,7 @@ router.delete('/products/:id', authenticateAdmin, async (req: Request, res: Resp
         await Promise.allSettled(imageCleanups);
 
         await prisma.product.delete({ where: { id } });
-
+        invalidateProducts().catch(err => console.error('[Cache Invalidation] Failed to invalidate products cache:', err));
         res.json({ message: 'Product deleted' });
     } catch (error) {
         console.error('Delete product error:', error);
@@ -1126,6 +1130,7 @@ router.post('/ai/knowledge', authenticateAdmin, async (req: Request, res: Respon
             data: parseResult.data,
         });
 
+        invalidateKnowledge().catch(err => console.error('[Cache Invalidation] Failed to invalidate knowledge cache:', err));
         res.status(201).json({ message: 'Knowledge entry created', entry });
     } catch (error) {
         console.error('Create AI knowledge error:', error);
@@ -1150,6 +1155,7 @@ router.put('/ai/knowledge/:id', authenticateAdmin, async (req: Request, res: Res
             data: parseResult.data,
         });
 
+        invalidateKnowledge().catch(err => console.error('[Cache Invalidation] Failed to invalidate knowledge cache:', err));
         res.json({ message: 'Knowledge entry updated', entry });
     } catch (error: any) {
         if (error?.code === 'P2025') {
@@ -1165,6 +1171,7 @@ router.delete('/ai/knowledge/:id', authenticateAdmin, async (req: Request, res: 
     try {
         const { id } = req.params;
         await prisma.aiKnowledgeBase.delete({ where: { id } });
+        invalidateKnowledge().catch(err => console.error('[Cache Invalidation] Failed to invalidate knowledge cache:', err));
         res.json({ message: 'Knowledge entry deleted' });
     } catch (error: any) {
         if (error?.code === 'P2025') {
@@ -1199,6 +1206,17 @@ router.get('/ai/conversations', authenticateAdmin, async (req: Request, res: Res
     } catch (error) {
         console.error('List AI conversations error:', error);
         res.status(500).json({ error: 'Failed to fetch conversations' });
+    }
+});
+
+// GET /api/admin/ai/monitoring — AI Diagnostics Observability
+router.get('/ai/monitoring', authenticateAdmin, (req: Request, res: Response) => {
+    try {
+        const stats = aiAnalyticsService.getDashboardReport();
+        res.json({ success: true, data: stats });
+    } catch (error) {
+        console.error('Get AI monitoring error:', error);
+        res.status(500).json({ error: 'Failed to fetch AI monitoring stats' });
     }
 });
 

@@ -23,6 +23,11 @@ const AiMessageBubble = memo(({ message, onSuggestionClick }: AiMessageBubblePro
                     }`}
                 >
                     {message.content}
+                    {message.isQueued && (
+                        <span className="text-[9px] opacity-70 ml-2 italic bg-black/30 px-1.5 py-0.5 rounded">
+                            (Queued)
+                        </span>
+                    )}
                 </div>
 
                 {/* Product Cards */}
@@ -112,15 +117,20 @@ AiMessageBubble.displayName = 'AiMessageBubble';
 
 // ── Typing Indicator ──
 
-export const AiTypingIndicator = () => (
-    <div className="flex justify-start mb-3">
-        <div className="bg-zinc-800/80 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3">
+export const AiTypingIndicator = ({ status }: { status?: string | null }) => (
+    <div className="flex flex-col justify-start mb-3 gap-1 animate-fadeIn">
+        <div className="bg-zinc-800/80 border border-white/5 rounded-2xl rounded-bl-md px-4 py-3 w-fit">
             <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                <div className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-bounce" style={{ animationDelay: '300ms' }} />
             </div>
         </div>
+        {status && (
+            <p className="text-[10px] text-zinc-400 ml-1.5 italic animate-pulse">
+                {status}
+            </p>
+        )}
     </div>
 );
 

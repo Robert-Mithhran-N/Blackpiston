@@ -28,7 +28,7 @@ const AiChatWidget = () => {
     const [showScrollDown, setShowScrollDown] = useState(false);
 
     const location = useLocation();
-    const { messages, isLoading, sendMessage, clearChat } = useAiChat();
+    const { messages, isLoading, queueStatus, sendMessage, clearChat, queueLength } = useAiChat();
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -66,7 +66,7 @@ const AiChatWidget = () => {
     };
 
     const handleSend = () => {
-        if (!input.trim() || isLoading) return;
+        if (!input.trim()) return;
         sendMessage(input.trim());
         setInput('');
     };
@@ -238,7 +238,7 @@ const AiChatWidget = () => {
                                         onSuggestionClick={handleSuggestionClick}
                                     />
                                 ))}
-                                {isLoading && <AiTypingIndicator />}
+                                {isLoading && <AiTypingIndicator status={queueStatus} />}
                             </>
                         )}
                         <div ref={messagesEndRef} />
@@ -267,8 +267,8 @@ const AiChatWidget = () => {
                                     value={input}
                                     onChange={(e) => setInput(e.target.value)}
                                     onKeyDown={handleKeyDown}
-                                    placeholder="Ask about products, services..."
-                                    disabled={isLoading}
+                                    placeholder={queueLength > 3 ? "Queue is full. Please wait..." : "Ask about products, services..."}
+                                    disabled={queueLength > 3}
                                     maxLength={500}
                                     className="w-full px-4 py-2.5 pr-12 rounded-xl text-sm
                                         bg-zinc-800/80 border border-white/10 text-white

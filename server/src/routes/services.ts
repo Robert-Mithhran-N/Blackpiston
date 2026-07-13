@@ -3,6 +3,7 @@ import { z } from 'zod';
 import jwt from 'jsonwebtoken';
 import prisma from '../config/database.js';
 import { JWT_VERIFY_OPTIONS } from '../middlewares/security.js';
+import { invalidateServices } from '../utils/ai/cacheManager.js';
 
 const router = Router();
 
@@ -118,6 +119,7 @@ router.post('/', authenticateAdmin, async (req: Request, res: Response) => {
       }
     });
 
+    invalidateServices().catch(err => console.error('[Cache Invalidation] Failed to invalidate services cache:', err));
     res.status(201).json({ message: 'Service created', service });
   } catch (error: any) {
     if (error.code === 'P2002') return res.status(400).json({ error: 'Slug must be unique' });
@@ -161,6 +163,7 @@ router.post('/duplicate/:id', authenticateAdmin, async (req: Request, res: Respo
       }
     });
 
+    invalidateServices().catch(err => console.error('[Cache Invalidation] Failed to invalidate services cache:', err));
     res.status(201).json({ message: 'Service duplicated', service: duplicate });
   } catch (error) {
     console.error('Duplicate service error:', error);
@@ -193,6 +196,7 @@ router.post('/bulk-update', authenticateAdmin, async (req: Request, res: Respons
       data: updateFields
     });
 
+    invalidateServices().catch(err => console.error('[Cache Invalidation] Failed to invalidate services cache:', err));
     res.json({ message: `Successfully updated ${ids.length} services` });
   } catch (error) {
     console.error('Bulk update services error:', error);
@@ -215,6 +219,7 @@ router.put('/:id', authenticateAdmin, async (req: Request, res: Response) => {
       data: parseResult.data
     });
 
+    invalidateServices().catch(err => console.error('[Cache Invalidation] Failed to invalidate services cache:', err));
     res.json({ message: 'Service updated', service });
   } catch (error: any) {
     if (error.code === 'P2025') return res.status(404).json({ error: 'Service not found' });
@@ -228,6 +233,7 @@ router.delete('/:id', authenticateAdmin, async (req: Request, res: Response) => 
   try {
     const { id } = req.params;
     await prisma.service.delete({ where: { id } });
+    invalidateServices().catch(err => console.error('[Cache Invalidation] Failed to invalidate services cache:', err));
     res.json({ message: 'Service deleted' });
   } catch (error: any) {
     if (error.code === 'P2025') return res.status(404).json({ error: 'Service not found' });
